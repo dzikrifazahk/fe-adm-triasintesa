@@ -6,8 +6,13 @@ import { ProductionForm } from "./custom/productionForm";
 import { QCTable } from "./custom/qcTable";
 import { TankStatus } from "./custom/tankStatus";
 import { SalesTable } from "./custom/salesTable";
+import { getDictionary } from "../../../get-dictionary";
 
-export default function WorkspaceManPowerMain() {
+export default function WorkspaceManPowerMain({
+  dictionary,
+}: {
+  dictionary: Awaited<ReturnType<typeof getDictionary>>["man_power"];
+}) {
   return (
     <div className="p-6 space-y-6">
 
