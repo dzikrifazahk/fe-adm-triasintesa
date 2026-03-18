@@ -11,7 +11,7 @@ import { getDictionary } from "../../../get-dictionary";
 export default function WorkspaceManPowerMain({
   dictionary,
 }: {
-  dictionary: Awaited<ReturnType<typeof getDictionary>>["man_power"];
+  dictionary: Awaited<ReturnType<typeof getDictionary>>["dashboard"];
 }) {
   return (
     <div className="p-6 space-y-6">
