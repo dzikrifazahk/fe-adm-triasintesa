@@ -86,6 +86,8 @@
     "projects": "Projects",
     "users_divisions": "Users and Divisions",
     "users": "Users",
+    "roles": "Role",
+    "tanks": "Tanks",
     "divisions": "Divisions",
     "tax": "Tax",
     "permissions": "Permissions",
@@ -93,7 +95,10 @@
     "settings": "Settings",
     "contact": "Contact (Client/Vendor)",
     "default_page_title": "Please Select Menu Beside",
-    "default_page_description": "Please select one of the menus above for seeing details."
+    "default_page_description": "Please select one of the menus above for seeing details.",
+    "landing_publication_category": "Publication Category",
+    "landing_publication": "Publication",
+    "landing_catalogs": "Catalogs"
   },
   "settings_projects": {
     "title": "Projects",

@@ -15,6 +15,7 @@ import { usePathname } from "next/navigation";
 import { useLoading } from "@/context/loadingContext";
 import { useContext, useState } from "react";
 import {
+  FaBottleWater,
   FaChildReaching,
   FaHelmetSafety,
   FaHourglassHalf,
@@ -22,6 +23,9 @@ import {
   FaPassport,
   FaPeopleGroup,
   FaPersonMilitaryToPerson,
+  FaScroll,
+  FaSignHanging,
+  FaTv,
   FaUserLock,
   FaWrench,
 } from "react-icons/fa6";
@@ -75,6 +79,7 @@ export function MenuBar({ dictionary, children }: Props) {
     system: (dictionary as any)?.system_configuration ?? "System Configuration",
     employee: (dictionary as any)?.employee ?? "Employee",
     resources: (dictionary as any)?.resources ?? "Resources",
+    landingPage: (dictionary as any)?.landing_page ?? "Landing Page",
   };
 
   const menu: NavNode[] = [
@@ -88,9 +93,15 @@ export function MenuBar({ dictionary, children }: Props) {
     },
     {
       kind: "item",
-      title: dictionary.divisions,
+      title: dictionary.roles,
       icon: <FaPersonMilitaryToPerson size={18} />,
       to: "/dashboard/settings/divisions",
+    },
+    {
+      kind: "item",
+      title: dictionary.permissions,
+      icon: <FaUserLock size={20} />,
+      to: "/dashboard/settings/permissions",
     },
     // {
     //   kind: "item",
@@ -114,36 +125,50 @@ export function MenuBar({ dictionary, children }: Props) {
     { kind: "header", title: SECTION.resources },
     {
       kind: "item",
-      title: dictionary.projects,
-      icon: <FaHelmetSafety size={20} />,
+      title: dictionary.tanks,
+      icon: <FaBottleWater size={20} />,
       to: "/dashboard/settings/projects",
     },
-    {
-      kind: "item",
-      title: dictionary.tax,
-      icon: <FaMoneyBillTransfer size={20} />,
-      to: "/dashboard/settings/tax",
-    },
+    // {
+    //   kind: "item",
+    //   title: dictionary.tax,
+    //   icon: <FaMoneyBillTransfer size={20} />,
+    //   to: "/dashboard/settings/tax",
+    // },
     {
       kind: "item",
       title: dictionary.contact,
       icon: <FaPassport size={20} />,
       to: "/dashboard/settings/contacts",
     },
+    { kind: "header", title: SECTION.landingPage },
+
+    {
+      kind: "item",
+      title: dictionary.landing_publication_category,
+      icon: <FaTv size={20} />,
+      to: "/dashboard/settings/theme",
+    },
+    {
+      kind: "item",
+      title: dictionary.landing_publication,
+      icon: <FaScroll size={20} />,
+      to: "/dashboard/settings/theme",
+    },
+    {
+      kind: "item",
+      title: dictionary.landing_catalogs,
+      icon: <FaSignHanging size={20} />,
+      to: "/dashboard/settings/theme",
+    },
     // ——— System Configuration ———
     { kind: "header", title: SECTION.system },
-    {
-      kind: "item",
-      title: "Operation",
-      icon: <FaHourglassHalf size={20} />,
-      to: "/dashboard/settings/operation",
-    },
-    {
-      kind: "item",
-      title: dictionary.permissions,
-      icon: <FaUserLock size={20} />,
-      to: "/dashboard/settings/permissions",
-    },
+    // {
+    //   kind: "item",
+    //   title: "Operation",
+    //   icon: <FaHourglassHalf size={20} />,
+    //   to: "/dashboard/settings/operation",
+    // },
     {
       kind: "item",
       title: dictionary.theme,

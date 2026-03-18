@@ -86,6 +86,8 @@
     "projects": "Proyek",
     "users_divisions": "Pengguna dan Divisi",
     "users": "Pengguna",
+    "roles": "Role",
+    "tanks": "Tangki",
     "divisions": "Divisi",
     "tax": "Pajak",
     "permissions": "Hak Akses",
@@ -93,7 +95,10 @@
     "settings": "Pengaturan",
     "contact": "Kontak (Klien)",
     "default_page_title": "Silahkan Pilih Menu Disamping",
-    "default_page_description": "Silahkan pilih menu terlebih dahulu untuk melihat data detail"
+    "default_page_description": "Silahkan pilih menu terlebih dahulu untuk melihat data detail",
+    "landing_publication_category": "Kategori Publikasi",
+    "landing_publication": "Publikasi",
+    "landing_catalogs": "Katalog"
   },
   "settings_projects": {
     "title": "Proyek",
