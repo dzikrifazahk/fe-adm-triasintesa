@@ -73,11 +73,11 @@ export default function SignIn({
 
       if (splitPath === "id") {
         setTimeout(() => {
-          window.location.replace("/id/dashboard");
+          window.location.replace("/id");
         }, 1500);
       } else {
         setTimeout(() => {
-          window.location.replace("/en/dashboard");
+          window.location.replace("/");
         }, 1500);
       }
     } catch (error) {
