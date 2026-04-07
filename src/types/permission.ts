@@ -1,8 +1,11 @@
 export interface IPermissions {
   id: string;
-  name: string;
-  parent_id: string;
-  children: [];
+  resource: string;
+  action: string;
+  permission: string;
+  description: string;
+  deletedAt?: string | null;
+  deletedBy?: string | null;
 }
 
 export interface IPermissionsDetail {
@@ -12,7 +15,6 @@ export interface IPermissionsDetail {
   parent_name: string;
 }
 
-export interface IAddOrUpdatePermissionsRequest {
-  name: string;
-  parent_id?: string;
+export interface IAssignPermissionsToRoleRequest {
+  permissionIds: String[];
 }

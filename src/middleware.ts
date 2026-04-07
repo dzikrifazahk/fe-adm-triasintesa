@@ -4,9 +4,11 @@ import Negotiator from "negotiator";
 import { NextRequest, NextResponse } from "next/server";
 
 const protectedRoutes = ["/", "/dashboard"];
+
 interface RoutePermissions {
   [key: string]: string[];
 }
+
 const routePermissions: RoutePermissions = {
   "/loans": ["Loans"],
 };
@@ -22,7 +24,9 @@ function getLocale(request: NextRequest): string {
 }
 
 export function middleware(request: NextRequest) {
-  const { pathname } = request.nextUrl;
+  const { pathname, searchParams } = request.nextUrl;
+  const crea = searchParams.get("crea");
+
   const segments = pathname.split("/");
   const locale = isLocale(segments[1]) ? segments[1] : i18n.defaultLocale;
   const basePath = `/${segments.slice(2).join("/")}`;
@@ -32,7 +36,6 @@ export function middleware(request: NextRequest) {
   const permsCookie = request.cookies.get("perms")?.value;
   const userPermissions = permsCookie ? JSON.parse(permsCookie) : [];
 
-  // Bypass static/assets
   const isStaticAsset =
     [
       "/_next",
@@ -45,61 +48,63 @@ export function middleware(request: NextRequest) {
     [".ico", ".png", ".jpg", ".webp", ".svg", ".json"].some((ext) =>
       pathname.endsWith(ext)
     );
+
   if (isStaticAsset) return NextResponse.next();
 
-  // Bypass API auth
   if (pathname.startsWith("/api/signin")) return NextResponse.next();
+  if (pathname.startsWith("/api/forgot-pass")) return NextResponse.next();
 
-  // Redirect locale jika belum ada di URL
   const missingLocale = i18n.locales.every(
     (loc) => !pathname.startsWith(`/${loc}/`) && pathname !== `/${loc}`
   );
+
   if (missingLocale) {
     const resolvedLocale = getLocale(request);
-    return NextResponse.redirect(
-      new URL(`/${resolvedLocale}${pathname}`, request.url)
-    );
+    const redirectUrl = new URL(`/${resolvedLocale}${pathname}`, request.url);
+
+    // preserve query string termasuk ?crea=
+    request.nextUrl.searchParams.forEach((value, key) => {
+      redirectUrl.searchParams.set(key, value);
+    });
+
+    return NextResponse.redirect(redirectUrl);
   }
 
-  // Signin page: redirect kalau sudah login
+  // allow access kalau ada query ?crea=
+  const hasCreaToken = !!crea;
+
   if (basePath === "/signin") {
-    if (accessToken) {
+    if (accessToken && !hasCreaToken) {
       return NextResponse.redirect(new URL(`/${locale}/`, request.url));
     }
     return NextResponse.next();
   }
 
-  // ❗ Hanya role 4 yang tidak boleh akses dashboard
   if (pathname.startsWith(`/${locale}/dashboard`) && role === "4") {
     return NextResponse.redirect(new URL(`/${locale}/forbidden`, request.url));
   }
 
-  // 🔐 Protected route: redirect ke signin jika belum login
-  const protectedRoutes = ["/", "/dashboard"];
   const isProtectedRoute = protectedRoutes.some((route) =>
     basePath.startsWith(route)
   );
-  if (isProtectedRoute && !accessToken) {
+
+  if (isProtectedRoute && !accessToken && !hasCreaToken) {
     return NextResponse.redirect(new URL(`/${locale}/signin`, request.url));
   }
 
-  // ✅ Force role 1/2/3 ke dashboard jika bukan di dashboard
   const shouldForceDashboard =
-    (role === "admin") &&
+    role === "admin" &&
     accessToken &&
+    !hasCreaToken &&
     !pathname.startsWith(`/${locale}/dashboard`) &&
     !pathname.startsWith(`/${locale}/signin`) &&
     !pathname.startsWith(`/${locale}/forbidden`) &&
-    !pathname.startsWith(`/${locale}/api/`); // cegah bentrok dengan API berlokasi di bawah locale
+    !pathname.startsWith(`/${locale}/api/`);
 
   if (shouldForceDashboard) {
     return NextResponse.redirect(new URL(`/${locale}/dashboard`, request.url));
   }
 
-  // 🎯 Route permission check
-  const routePermissions: Record<string, string[]> = {
-    "/loans": ["Loans"],
-  };
   const requiredPermissions = routePermissions[basePath];
   if (requiredPermissions?.length) {
     const hasPermission = requiredPermissions.some((perm) =>

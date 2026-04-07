@@ -13,6 +13,7 @@ import { getUser } from "@/services/base.service";
 import NavHeader from "./navHeader";
 import { NavItems } from "./navItems";
 import { NavUser } from "./navUser";
+import { ChangePasswordAuthenticated } from "../changePasswordAuthenticated";
 
 type AppSidebarProps = React.ComponentProps<typeof Sidebar> & {
   dictionary: Awaited<ReturnType<typeof getDictionary>>["primary_sidebar"];
@@ -23,7 +24,8 @@ export function AppSidebar({ dictionary, ...props }: AppSidebarProps) {
   const [isOpenSearchModalMobile, setIsOpenSearchModalMobile] = useState(false);
   const [isOpenModalDetailProfileMobile, setIsOpenModalDetailProfileMobile] =
     useState(false);
-
+  const [isOpenChangePasswordModal, setIsOpenChangePasswordModal] =
+    useState(false);
   // const { setIsLoading } = useLoading();
   const cookies = getUser();
 
@@ -34,7 +36,7 @@ export function AppSidebar({ dictionary, ...props }: AppSidebarProps) {
 
   const userData = {
     user: {
-      name: cookies?.name as string,
+      name: cookies?.username as string,
       email: cookies?.email as string,
       avatar: "/avatars.webp",
     },
@@ -48,6 +50,11 @@ export function AppSidebar({ dictionary, ...props }: AppSidebarProps) {
     setIsOpenModalDetailProfileMobile(val);
   };
 
+  const handleActions = (act: string) => {
+    if (act === "change_password") {
+      setIsOpenChangePasswordModal(true);
+    }
+  };
   return (
     <>
       <Sidebar collapsible="icon" {...props} className="">
@@ -57,18 +64,30 @@ export function AppSidebar({ dictionary, ...props }: AppSidebarProps) {
             // dictionary={dictionary}
           />
         </SidebarHeader>
-        <SidebarContent className={`dark:bg-black ${isMobile ? "" : "min-h-0"}`}>
-          <NavItems dictionary={dictionary}/>
+        <SidebarContent
+          className={`dark:bg-black ${isMobile ? "" : "min-h-0"}`}
+        >
+          <NavItems dictionary={dictionary} />
         </SidebarContent>
         <SidebarFooter>
           <NavUser
             user={userData.user}
             openDetailProfile={handleIsOpenDetailProfile}
             dictionary={dictionary}
+            actions={handleActions}
           />
         </SidebarFooter>
         <SidebarRail />
       </Sidebar>
+      <ChangePasswordAuthenticated
+        isOpen={isOpenChangePasswordModal}
+        onClose={() => setIsOpenChangePasswordModal(false)}
+        dictionary={dictionary}
+        title="Change Password"
+        isGetData={() => {
+          setIsOpenChangePasswordModal(false);
+        }}
+      />
     </>
   );
 }

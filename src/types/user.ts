@@ -1,36 +1,44 @@
 import { CommonColumn } from "./common";
-import { IDivision } from "./division";
+import { IRole } from "./role";
 
 export interface IUser extends CommonColumn {
-  name: string;
+  version: number;
+  createdAt: string;
+  createdBy: string;
+  updatedAt: string;
+  updatedBy: string;
+  deletedAt: string;
+  deletedBy: string;
+  id: string;
   email: string;
-  role: number | string;
-  divisi: IDivision;
-  daily_salary: number;
-  hourly_salary: number;
-  hourly_overtime_salary: number;
-  status_users?: string;
-  roleId: number;
-  bank_name?: string;
-  account_number?: string;
-  nomor_karyawan?: string;
-  nik: string;
+  username: string;
+  password: string;
+  roleId: string;
+  lastLoginAt: string;
+  role: IRole;
+  userDetail: IUserDetail;
 }
 
 export interface IUserDetail extends CommonColumn {
-  nik: string;
-  name: string;
-  email: string;
-  roles: IRoles;
-  divisi: IDivisionResponse;
-  daily_salary: number;
-  hourly_salary: number;
-  hourly_overtime_salary: number;
-  transport: number;
-  makan: number;
-  bank_name?: string;
-  account_number?: string;
-  nomor_karyawan?: string;
+  version: number;
+  createdAt: string;
+  createdBy: string;
+  updatedAt: string;
+  updatedBy: string;
+  deletedAt: string;
+  deletedBy: string;
+  id: string;
+  userId: string;
+  fullName: string;
+  phoneNumber: string;
+  address: string;
+  city: string;
+  country: string;
+  postalCode: string;
+  avatarUrl: string;
+  bio: string;
+  dateOfBirth: string;
+  gender: string;
 }
 
 interface IRoles {
@@ -44,19 +52,22 @@ interface IDivisionResponse {
   kode_divisi: string;
 }
 export interface IAddUser extends CommonColumn {
-  nik: string;
-  name: string;
   email: string;
-  role: number | string;
-  divisi?: string;
-  daily_salary: number;
-  hourly_salary: number;
-  hourly_overtime_salary: number;
-  transport: number;
-  makan: number;
-  bank_name?: string;
-  account_number?: string;
-  nomor_karyawan?: string;
+  username: string;
+  password: string;
+  roleId: string;
+  userDetail: {
+    fullName: string;
+    phoneNumber: string;
+    address: string;
+    city: string;
+    country: string;
+    postalCode: string;
+    avatarUrl: string;
+    bio: string;
+    dateOfBirth: string;
+    gender: string;
+  };
 }
 
 export interface IUserCookies {

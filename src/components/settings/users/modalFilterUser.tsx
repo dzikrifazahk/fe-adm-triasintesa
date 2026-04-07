@@ -13,7 +13,6 @@ import {
   ComboboxItem,
   ComboboxPopoverCustom,
 } from "@/components/custom/comboboxProperCustom";
-import { divisionService, userService } from "@/services";
 import { useEffect, useState } from "react";
 import { IUser } from "@/types/user";
 import { Circle } from "lucide-react";
@@ -59,17 +58,6 @@ export const ModalFilterUser = ({
   const [isPopoverDivisionOpen, setPopoverDivisionOpen] = useState(false);
   const [statusUser, setStatusUser] = useState<"1" | "2" | "">("");
 
-  const getDivisions = async () => {
-    const { data } = await divisionService.getAllDivisions();
-    const mappedResponse = data.map((division: IDivision) => ({
-      value: division.id,
-      label: division.name,
-      icon: Circle,
-    }));
-
-    setDivisions(mappedResponse);
-  };
-
   const handleSubmit = () => {
     const payload: any = {};
     if (selectedDateRange) {
@@ -112,7 +100,7 @@ export const ModalFilterUser = ({
   };
 
   useEffect(() => {
-    getDivisions();
+    // getDivisions();
   }, []);
   return (
     <>

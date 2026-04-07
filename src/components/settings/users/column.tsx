@@ -11,20 +11,27 @@ import {
 } from "@radix-ui/react-dropdown-menu";
 import { ColumnDef } from "@tanstack/react-table";
 import { ArrowUpDown, MoreHorizontal } from "lucide-react";
-import Image from "next/image";
 import { getUser } from "@/services/base.service";
 import { useEffect, useState } from "react";
-import { FaEye, FaPencil, FaRepeat, FaRoadLock } from "react-icons/fa6";
+import {
+  FaEye,
+  FaLocationArrow,
+  FaPencil,
+  FaRepeat,
+  FaRoadLock,
+  FaTrash,
+} from "react-icons/fa6";
 import { IUser } from "@/types/user";
 import { getDictionary } from "../../../../get-dictionary";
 
 type childProps = {
-  detailData: (id: string) => void;
+  detailData: (data: IUser) => void;
   deleteData: (id: string) => void;
   editData: (id: string) => void;
   resetPassword: (id: string) => void;
   unActiveUser: (id: string, status: string) => void;
   dictionary: Awaited<ReturnType<typeof getDictionary>>["settings_users"];
+  resendPassword: (id: string) => void;
 };
 
 export const columns = (props: childProps): ColumnDef<IUser>[] => {
@@ -51,24 +58,31 @@ export const columns = (props: childProps): ColumnDef<IUser>[] => {
           <div className="flex flex-col gap-2">
             <DropdownMenuItem
               className="border border-slate-500 cursor-pointer"
-              onClick={() => props.detailData(uid.id ?? "")}
+              onClick={() => props.detailData(uid)}
             >
               <FaEye className="text-primary" />
               Lihat Detail
             </DropdownMenuItem>
-            {/* <DropdownMenuItem
+            <DropdownMenuItem
               className="border border-red-500 cursor-pointer"
               onClick={() => props.deleteData(uid.id ?? "")}
             >
-              <Image src={IDelete} alt="Delete Ic" />
+              <FaTrash className="text-red-500" />
               Delete
-            </DropdownMenuItem> */}
+            </DropdownMenuItem>
             <DropdownMenuItem
               className="border border-yellow-500 cursor-pointer"
               onClick={() => props.editData(uid.id ?? "")}
             >
               <FaPencil className="text-yellow-400" />
               Edit
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              className="border border-yellow-500 cursor-pointer"
+              onClick={() => props.resendPassword(uid.id ?? "")}
+            >
+              <FaLocationArrow className="text-blue-500" />
+              Kirim Ulang Password
             </DropdownMenuItem>
             {(role === 1 || role === 2) && (
               <>
@@ -79,7 +93,7 @@ export const columns = (props: childProps): ColumnDef<IUser>[] => {
                   <FaRepeat className="text-blue-500" />
                   Reset Password
                 </DropdownMenuItem>
-                <DropdownMenuItem
+                {/* <DropdownMenuItem
                   className="border border-red-500 cursor-pointer"
                   onClick={() =>
                     props.unActiveUser(uid.id ?? "", uid.status_users ?? "")
@@ -95,7 +109,7 @@ export const columns = (props: childProps): ColumnDef<IUser>[] => {
                   {uid.status_users === "Aktif"
                     ? "Nonaktifkan Pegawai"
                     : "Aktifkan Pegawai"}
-                </DropdownMenuItem>
+                </DropdownMenuItem> */}
               </>
             )}
           </div>
@@ -128,7 +142,16 @@ export const columns = (props: childProps): ColumnDef<IUser>[] => {
       enableHiding: false,
     },
     {
-      accessorKey: "name",
+      accessorFn: (row) => row.userDetail?.fullName || "-",
+      id: "fullName",
+      header: "Full Name",
+      cell: ({ getValue }) => {
+        const value = getValue() as string;
+        return <span>{value}</span>;
+      },
+    },
+    {
+      accessorKey: "username",
       header: ({ column }) => (
         <Button
           variant="ghost"
@@ -144,48 +167,36 @@ export const columns = (props: childProps): ColumnDef<IUser>[] => {
       header: "Email",
     },
     {
-      accessorKey: "role",
-      header: ({ column }) => (
-        <Button
-          variant="ghost"
-          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-        >
-          {props.dictionary.column.role}
-          <ArrowUpDown className="ml-2 h-4 w-4" />
-        </Button>
-      ),
-    },
-    {
-      accessorFn: (row) => row.divisi?.name || "-",
-      id: "divisi",
-      header: props.dictionary.column.division,
+      accessorFn: (row) => row.role?.name || "-",
+      id: "role",
+      header: props.dictionary.column.role,
       cell: ({ getValue }) => {
         const value = getValue() as string;
         return <span>{value}</span>;
       },
     },
-    {
-      accessorFn: (row) => row.status_users || "-",
-      id: "status",
-      header: props.dictionary.column.status,
-      cell: ({ getValue }) => {
-        const value = getValue() as string;
+    // {
+    //   accessorFn: (row) => row.status_users || "-",
+    //   id: "status",
+    //   header: props.dictionary.column.status,
+    //   cell: ({ getValue }) => {
+    //     const value = getValue() as string;
 
-        const isActive = value.toUpperCase() === "AKTIF";
-        const bgColor = isActive ? "bg-green-100" : "bg-red-100";
-        const textColor = isActive ? "text-green-700" : "text-red-700";
+    //     const isActive = value.toUpperCase() === "AKTIF";
+    //     const bgColor = isActive ? "bg-green-100" : "bg-red-100";
+    //     const textColor = isActive ? "text-green-700" : "text-red-700";
 
-        return (
-          <div className="w-full flex justify-center">
-            <span
-              className={`px-3 py-1 rounded-full text-sm font-medium ${bgColor} ${textColor}`}
-            >
-              {value}
-            </span>
-          </div>
-        );
-      },
-    },
+    //     return (
+    //       <div className="w-full flex justify-center">
+    //         <span
+    //           className={`px-3 py-1 rounded-full text-sm font-medium ${bgColor} ${textColor}`}
+    //         >
+    //           {value}
+    //         </span>
+    //       </div>
+    //     );
+    //   },
+    // },
     {
       accessorKey: "actions",
       header: props.dictionary.column.actions,

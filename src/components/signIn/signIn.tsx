@@ -22,48 +22,55 @@ export default function SignIn({
 }) {
   const { theme, setTheme } = useTheme();
   const { setIsLoading } = useLoading();
+
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [forgotEmail, setForgotEmail] = useState("");
+
   const pathname = usePathname();
   const splitPath = pathname.split("/")[1];
+
   const toggleShowPassword = () => setShowPassword(!showPassword);
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
     setIsLoading(true);
 
-    const response = await fetch("/api/signin", {
-      method: "POST",
-      credentials: "include",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ xuser: username, xpass: password }),
-    });
-
-    const data = await response.json();
-
-    setIsLoading(false);
-
-    if (!response.ok) {
-      Swal.fire({
-        icon: "error",
-        title: "Login failed",
-        text: data.message,
-        toast: true,
-        position: "top-right",
-        showConfirmButton: false,
+    try {
+      const response = await fetch("/api/signin", {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ xuser: username, xpass: password }),
       });
-    } else {
+
+      const data = await response.json();
+
       setIsLoading(false);
+
+      if (!response.ok) {
+        Swal.fire({
+          icon: "error",
+          title: "Login failed",
+          text: data?.message || "Terjadi kesalahan saat login",
+          toast: true,
+          position: "top-right",
+          showConfirmButton: false,
+        });
+        return;
+      }
+
       Swal.fire({
         icon: "success",
         title: "Login Success",
-        text: "Sucessfully login, redirecting to dashboard",
+        text: "Successfully login, redirecting to dashboard",
         toast: true,
         position: "top-right",
         showConfirmButton: false,
         timer: 1500,
       });
+
       if (splitPath === "id") {
         setTimeout(() => {
           window.location.replace("/id");
@@ -73,6 +80,16 @@ export default function SignIn({
           window.location.replace("/");
         }, 1500);
       }
+    } catch (error) {
+      setIsLoading(false);
+      Swal.fire({
+        icon: "error",
+        title: "Login failed",
+        text: "Terjadi kesalahan saat menghubungi server",
+        toast: true,
+        position: "top-right",
+        showConfirmButton: false,
+      });
     }
   };
 
@@ -80,6 +97,89 @@ export default function SignIn({
     const newTheme = theme === "light" ? "dark" : "light";
     setTheme(newTheme);
   };
+
+  const handleSubmitForgotPassword = async () => {
+    if (!forgotEmail) {
+      Swal.fire({
+        icon: "error",
+        title: "Error",
+        text: "Please enter your email",
+        toast: true,
+        position: "top-right",
+        showConfirmButton: false,
+      });
+      return;
+    }
+
+    Swal.fire({
+      icon: "warning",
+      text: "Apakah anda ingin melakukan reset password?",
+      showDenyButton: true,
+      confirmButtonText: "Ya",
+      confirmButtonColor: "#493628",
+      denyButtonText: "Tidak",
+      position: "center",
+      showConfirmButton: true,
+    }).then(async (result) => {
+      if (!result.isConfirmed) {
+        Swal.fire({
+          icon: "info",
+          text: "Perubahan tidak disimpan",
+          position: "center",
+          showConfirmButton: true,
+        });
+        return;
+      }
+
+      try {
+        setIsLoading(true);
+
+        const response = await fetch("/api/forgot-pass", {
+          method: "POST",
+          credentials: "include",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ xmail: forgotEmail }),
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          let errorMessage = "Gagal menyimpan perubahan";
+
+          if (data?.message) {
+            if (Array.isArray(data.message)) {
+              errorMessage = data.message.join(", ");
+            } else {
+              errorMessage = data.message;
+            }
+          }
+
+          throw new Error(errorMessage);
+        }
+
+        setIsLoading(false);
+
+        Swal.fire({
+          icon: "success",
+          title: "Berhasil mengirim email reset password",
+          position: "top-right",
+          toast: true,
+          showConfirmButton: false,
+          timer: 1700,
+        });
+      } catch (e: any) {
+        setIsLoading(false);
+
+        Swal.fire({
+          icon: "error",
+          text: e?.message || "Gagal menyimpan perubahan",
+          position: "center",
+          showConfirmButton: true,
+        });
+      }
+    });
+  };
+
   return (
     <div className="flex h-screen w-full flex-col lg:flex-row relative overflow-hidden">
       <div className="absolute inset-0 -z-10">
@@ -94,18 +194,14 @@ export default function SignIn({
         <title>Login Page</title>
       </Head>
 
-      {/* LEFT SIDE */}
       <div className="hidden lg:block w-full lg:w-1/2">
         <LeftLayout dictionary={dictionary} />
       </div>
 
-      {/* RIGHT SIDE */}
       <div className="w-full lg:w-1/2 h-full flex flex-col relative overflow-hidden bg-gradient-to-br from-blue-200 via-white to-blue-100 dark:from-gray-900 dark:via-gray-950 dark:to-gray-900">
-        {/* Decorative background */}
         <div className="absolute -top-20 -right-20 w-72 h-72 bg-blue-300 opacity-20 rounded-full blur-3xl"></div>
         <div className="absolute bottom-0 -left-20 w-72 h-72 bg-purple-300 opacity-20 rounded-full blur-3xl"></div>
 
-        {/* Top bar */}
         <div className="bg-transparent flex justify-end p-2 gap-2 items-center z-10">
           <SwitchDarkMode
             id="dark-mode"
@@ -115,7 +211,6 @@ export default function SignIn({
           <LocaleSwitcher />
         </div>
 
-        {/* Content */}
         <div className="w-full h-full flex justify-center items-center z-10">
           <div className="w-[90%] lg:w-[70%] flex flex-col gap-3 px-4 md:px-8 bg-white/70 dark:bg-white/10 backdrop-blur-xl rounded-xl shadow-xl p-6 border border-white/20">
             <div className="w-full flex flex-col justify-center items-center">
@@ -133,7 +228,6 @@ export default function SignIn({
                   </TabsTrigger>
                 </TabsList>
 
-                {/* SIGN IN */}
                 <TabsContent value="signin" className="mb-5">
                   <div className="w-full flex flex-col justify-center items-center gap-5">
                     <span className="text-xs text-center dark:text-white">
@@ -147,7 +241,6 @@ export default function SignIn({
                       onSubmit={handleSubmit}
                       className="w-full flex flex-col justify-center gap-3"
                     >
-                      {/* EMAIL */}
                       <div className="w-full flex flex-col gap-2">
                         <span className="flex font-sans text-xs dark:text-white">
                           Email&nbsp;<p className="text-iprimary-red">*</p>
@@ -162,7 +255,6 @@ export default function SignIn({
                         />
                       </div>
 
-                      {/* PASSWORD */}
                       <div className="w-full flex flex-col gap-2">
                         <span className="flex font-sans text-xs dark:text-white">
                           Password&nbsp;<p className="text-iprimary-red">*</p>
@@ -190,7 +282,6 @@ export default function SignIn({
                         </div>
                       </div>
 
-                      {/* BUTTON */}
                       <Button
                         className="w-full bg-iprimary-blue-secondary font-yaro font-bold"
                         type="submit"
@@ -201,7 +292,6 @@ export default function SignIn({
                   </div>
                 </TabsContent>
 
-                {/* FORGOT PASSWORD */}
                 <TabsContent value="signup" className="mb-5">
                   <div className="w-full flex flex-col justify-center items-center gap-5">
                     <span className="text-xs text-center dark:text-white">
@@ -217,10 +307,20 @@ export default function SignIn({
                           type="text"
                           placeholder="Email"
                           className="bg-white/80 dark:bg-white/10 font-sans dark:text-white text-xs"
+                          value={forgotEmail}
+                          onChange={(e) => setForgotEmail(e.target.value)}
                         />
                       </div>
 
-                      <Button className="w-full bg-iprimary-blue-secondary font-yaro font-bold">
+                      <Button
+                        className="w-full bg-iprimary-blue-secondary font-yaro font-bold"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          e.preventDefault();
+                          handleSubmitForgotPassword();
+                        }}
+                        type="button"
+                      >
                         {dictionary?.button_forgot_pass ?? "-"}
                       </Button>
                     </div>

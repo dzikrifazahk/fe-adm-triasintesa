@@ -6,12 +6,12 @@ type Props = {
   params: Promise<{ lang: Locale }>;
 };
 
-export default async function Report({ params }: Props) {
+export default async function ReportPage({ params }: Props) {
   const { lang } = await params;
   const dictionary = await getDictionary(lang);
   return (
     <>
-      <ReportMain dictionary={dictionary.report ?? "-"} />
+      <ReportMain dictionary={dictionary.report_page_dic ?? "-"} />
     </>
   );
 }

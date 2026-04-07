@@ -20,49 +20,65 @@ export class UsersService extends BaseHttpService {
   }
 
   async getUsers(queryParams = {}) {
-    const response = await this.httpClient.get("/user", {
+    const response = await this.httpClient.get("/system/users", {
       params: queryParams,
     });
     return response.data;
   }
 
-  async getAllUsers(queryParams = {}) {
-    const response = await this.httpClient.get("/user/all", {
-      params: queryParams,
-    });
+  async resendPassword(id: string) {
+    const response = await this.httpClient.post(
+      `/system/users/${id}/resend-password`,
+    );
+
     return response.data;
   }
 
   async deleteUser(id: string) {
-    const response = await this.httpClient.delete(`/user/destroy/${id}`);
+    const response = await this.httpClient.delete(`/system/users/${id}`);
+    return response.data;
+  }
+
+  async uploadUserAvatar(userId: string, formData: FormData) {
+
+    const response = await this.httpClient.patch(
+      `/system/users/${userId}/avatar`,
+      formData,
+      {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      },
+    );
+
     return response.data;
   }
 
   async getUser(id: string) {
-    const response = await this.httpClient.get(`/user/${id}`);
+    const response = await this.httpClient.get(`/system/users/${id}`);
     return response.data;
   }
 
   async createUser(payload: IAddUser) {
-    const response = await this.httpClient.post("/user/store", payload);
+    const response = await this.httpClient.post("/system/users", payload);
     return response.data;
   }
 
   async updateUser(id: string, payload: IAddUser) {
-    const response = await this.httpClient.put(`/user/update/${id}`, payload);
+    const response = await this.httpClient.patch(`/system/users/${id}`, payload);
     return response.data;
   }
 
   async unActiveUser(id: string) {
     const response = await this.httpClient.put(
-      `/user/update-status-tidak-aktif/${id}`
+      `/user/update-status-tidak-aktif/${id}`,
     );
     return response.data;
   }
 
   async activateUser(id: string) {
     const response = await this.httpClient.put(
-      `/user/update-status-aktif/${id}`
+      `/user/update-status-aktif/${id}`,
     );
     return response.data;
   }
@@ -70,7 +86,7 @@ export class UsersService extends BaseHttpService {
   async updatePassword(payload: IChangePassword) {
     const response = await this.httpClient.put(
       `/user/update-password`,
-      payload
+      payload,
     );
     return response.data;
   }
@@ -97,7 +113,7 @@ export class UsersService extends BaseHttpService {
   async submitForgotPassword(
     token: string,
     password: string,
-    confirmPassword: string
+    confirmPassword: string,
   ) {
     const response = await this.httpClient.put(`/verify-token`, {
       token: token,

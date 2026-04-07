@@ -95,7 +95,7 @@ export function MenuBar({ dictionary, children }: Props) {
       kind: "item",
       title: dictionary.roles,
       icon: <FaPersonMilitaryToPerson size={18} />,
-      to: "/dashboard/settings/divisions",
+      to: "/dashboard/settings/roles",
     },
     {
       kind: "item",
@@ -127,7 +127,7 @@ export function MenuBar({ dictionary, children }: Props) {
       kind: "item",
       title: dictionary.tanks,
       icon: <FaBottleWater size={20} />,
-      to: "/dashboard/settings/projects",
+      to: "/dashboard/settings/tanks",
     },
     // {
     //   kind: "item",
@@ -135,31 +135,31 @@ export function MenuBar({ dictionary, children }: Props) {
     //   icon: <FaMoneyBillTransfer size={20} />,
     //   to: "/dashboard/settings/tax",
     // },
-    {
-      kind: "item",
-      title: dictionary.contact,
-      icon: <FaPassport size={20} />,
-      to: "/dashboard/settings/contacts",
-    },
+    // {
+    //   kind: "item",
+    //   title: dictionary.contact,
+    //   icon: <FaPassport size={20} />,
+    //   to: "/dashboard/settings/contacts",
+    // },
     { kind: "header", title: SECTION.landingPage },
 
     {
       kind: "item",
       title: dictionary.landing_publication_category,
       icon: <FaTv size={20} />,
-      to: "/dashboard/settings/theme",
+      to: "/dashboard/settings/publication-category",
     },
     {
       kind: "item",
       title: dictionary.landing_publication,
       icon: <FaScroll size={20} />,
-      to: "/dashboard/settings/theme",
+      to: "/dashboard/settings/publications",
     },
     {
       kind: "item",
       title: dictionary.landing_catalogs,
       icon: <FaSignHanging size={20} />,
-      to: "/dashboard/settings/theme",
+      to: "/dashboard/settings/catalogs",
     },
     // ——— System Configuration ———
     { kind: "header", title: SECTION.system },

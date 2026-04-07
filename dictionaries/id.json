@@ -1,15 +1,53 @@
 {
-  "emp_sidebar": {
-    "main": "Menu Utama",
-    "home": "Halaman Utama",
-    "attendance": "Absensi",
-    "overtime": "Lembur",
-    "cash_advance": "Pinjaman",
-    "payroll": "Penggajian",
-    "purchase": "Pembelian",
-    "notification": "Notifikasi",
-    "report": "Laporan",
-    "logout": "Keluar"
+  "production_page_dic": {
+    "title": "Produksi",
+    "description": "Kelola produksi dengan mudah dan efisien, mulai dari perencanaan hingga pelaporan.",
+    "page_greetings": "Selamat datang di Halaman Produksi",
+    "page_description": "Silakan pilih salah satu menu di atas untuk mulai mengelola produksi, memantau progres, atau membuat laporan produksi.",
+    "production_input": {
+      "title_tab_1": "Produksi Harian",
+      "default_page_title": "Silahkan Pilih Tab",
+      "default_page_description": "Silahkan pilih salah satu tab di atas untuk melihat detail."
+    }
+  },
+  "inventory_page_dic": {
+    "title": "Stok Barang",
+    "description": "Kelola data persediaan secara efisien dan akurat.",
+    "page_greetings": "Selamat datang di Halaman Stok Barang",
+    "page_description": "Silakan pilih salah satu menu di atas untuk mulai mengelola data persediaan.",
+    "inventory": {
+      "title_tab_1": "Manajemen Stok",
+      "default_page_title": "Silahkan Pilih Tab",
+      "default_page_description": "Silahkan pilih salah satu tab di atas untuk melihat detail."
+    }
+  },
+  "sales_order_page_dic": {
+    "title": "Penjualan",
+    "description": "Kelola penjualan dengan mudah dan efisien, mulai dari pengelolaan order hingga pelaporan penjualan.",
+    "page_greetings": "Selamat datang di Halaman Penjualan",
+    "page_description": "Silakan pilih salah satu menu di atas untuk mulai mengelola order, memantau progres, atau membuat laporan penjualan.",
+    "sales_order": {
+      "title_tab_1": "Order Penjualan",
+      "default_page_title": "Silahkan Pilih Tab",
+      "default_page_description": "Silahkan pilih salah satu tab di atas untuk melihat detail."
+    }
+  },
+  "shipping_page_dic": {
+    "title": "Pengiriman",
+    "description": "Kelola pengiriman dengan mudah dan efisien, mulai dari perencanaan hingga pelaporan.",
+    "page_greetings": "Selamat datang di Halaman Pengiriman",
+    "page_description": "Silakan pilih salah satu menu di atas untuk mulai mengelola pengiriman, memantau progres, atau membuat laporan pengiriman.",
+    "shipping": {
+      "title_tab_1": "Manajemen Pengiriman",
+      "default_page_title": "Silahkan Pilih Tab",
+      "default_page_description": "Silahkan pilih salah satu tab di atas untuk melihat detail."
+    }
+  },
+  "report_page_dic": {
+    "title": "Laporan",
+    "description": "Kelola pinjaman, penggajian, absensi, dan lembur karyawan dengan mudah.",
+    "page_greetings": "Selamat datang di Halaman Sumber Daya Manusia",
+    "page_description": "Silakan pilih salah satu menu di atas untuk mulai mengelola pinjaman, penggajian, absensi, atau lembur karyawan."
   },
   "signin": {
     "greetings": "Selamat Datang Kembali",
@@ -26,24 +64,6 @@
     "ll_description_2": "Lacak perkembangan proyek dan pekerjaan harian dengan mudah dan cepat.",
     "ll_title_3": "Dokumentasi Proyek Digital",
     "ll_description_3": "Simpan semua dokumen proyek secara aman dan mudah diakses."
-  },
-  "chat_page": {
-    "dashboard_button": "Beranda",
-    "greetings": "Ada yang Bisa Saya Bantu ?",
-    "search_chat_placeholder": "Cari Pesan...",
-    "textarea_placeholder": "Tulis pesan Anda di sini...",
-    "title_model_information": "Informasi Model",
-    "description_model_information": "Ini adalah informasi model, Anda dapat belajar lebih banyak tentang model terbaru atau model lama",
-    "card_title_model_information": "Informasi",
-    "card_description_model_information": "Astrid GPT Model V2 adalah versi kedua Astrid GPT. Dikeluarkan pada 24/02/2025.",
-    "button_change_password": "Ganti Kata Sandi",
-    "title_change_password": "Ganti Kata Sandi",
-    "desc_change_password": "Kamu dapat merubah password disini.",
-    "old_password": "Password Lama",
-    "new_password": "Password Baru",
-    "new_confirmation_password": "Konfirmasi Password Baru",
-    "button_submit_change_password": "Simpan",
-    "button_cancel_change_password": "Batal"
   },
   "dashboard": {
     "search_menu_placeholder": "Cari Menu...",
@@ -80,7 +100,8 @@
     "main": "Menu Utama",
     "configuration": "Konfigurasi",
     "notification": "Notifikasi",
-    "logout": "Keluar"
+    "logout": "Keluar",
+    "forgot_password": "Lupa Password"
   },
   "menu_bar_settings": {
     "projects": "Proyek",
@@ -138,16 +159,40 @@
     "apply_filter": "Terapkan Filter",
     "cancel": "Batal"
   },
-  "settings_divisions": {
-    "title": "Divisi",
-    "description": "Daftar Divisi",
-    "button_add_division": "Tambah Divisi",
-    "search_division_placeholder": "Cari Nama Divisi",
-    "select_division_placeholder": "Pilih Divisi",
+  "settings_tanks": {
+    "title": "Tangki",
+    "description": "Daftar Tangki",
+    "button_add_tank": "Tambah Tangki",
+    "search_tank_placeholder": "Cari Nama Tangki",
+    "select_tank_placeholder": "Pilih Tangki",
     "column_filter": "Filter Kolom",
     "column": {
-      "name": "Nama Divisi",
-      "division_code": "Kode Divisi"
+      "tank_name": "Nama Tangki",
+      "tank_code": "Kode Tangki",
+      "total_capacity": "Kapasitas (Liter)",
+      "current_volume": "Volume Saat Ini (Liter)",
+      "location": "Lokasi",
+      "status": "Status",
+      "lastRefillDate": "Tanggal Pengisian Terakhir",
+      "lastUpdated": "Tanggal Pembaruan Terakhir",
+      "notes": "Catatan",
+      "actions": "Aksi"
+    },
+    "apply_filter": "Terapkan Filter",
+    "cancel": "Batal"
+  },
+  "settings_roles": {
+    "title": "Role",
+    "description": "Daftar Role",
+    "button_add_role": "Tambah Role",
+    "search_role_placeholder": "Cari Nama Role",
+    "select_role_placeholder": "Pilih Role",
+    "column_filter": "Filter Kolom",
+    "column": {
+      "name": "Kode Role",
+      "display_name": "Nama Role",
+      "description": "Deskripsi",
+      "is_system": "Role Sistem"
     },
     "apply_filter": "Terapkan Filter",
     "cancel": "Batal"
@@ -294,11 +339,6 @@
       "default_page_title": "Sumber Daya Manusia",
       "default_page_description": "Selamat Datang Di Halaman Sumber Daya Manusia"
     }
-  },
-  "report": {
-    "title": "Laporan",
-    "description": "Kelola pinjaman, penggajian, absensi, dan lembur karyawan dengan mudah.",
-    "page_greetings": "Selamat datang di Halaman Sumber Daya Manusia",
-    "page_description": "Silakan pilih salah satu menu di atas untuk mulai mengelola pinjaman, penggajian, absensi, atau lembur karyawan."
   }
+  
 }

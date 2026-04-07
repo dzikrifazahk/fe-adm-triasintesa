@@ -1,15 +1,53 @@
 {
-  "emp_sidebar": {
-    "main": "Main Menu",
-    "home": "Home",
-    "attendance": "Attendance",
-    "overtime": "Overtime",
-    "cash_advance": "Cash Advance",
-    "payroll": "Payroll",
-    "purchase": "Purchase",
-    "notification": "Notification",
-    "report": "Report",
-    "logout": "Logout"
+  "production_page_dic": {
+    "title": "Production Input",
+    "description": "Manage production input data efficiently and accurately.",
+    "page_greetings": "Welcome to Production Input",
+    "page_description": "Please select one of the menus above to start managing production input data.",
+    "production_input": {
+      "title_tab_1": "Daily Production",
+      "default_page_title": "Please Select Tab",
+      "default_page_description": "Please select one of the tabs above for seeing details."
+    }
+  },
+  "inventory_page_dic": {
+    "title": "Inventory",
+    "description": "Manage inventory data efficiently and accurately.",
+    "page_greetings": "Welcome to Inventory",
+    "page_description": "Please select one of the menus above to start managing inventory data.",
+    "inventory": {
+      "title_tab_1": "Stock Management",
+      "default_page_title": "Please Select Tab",
+      "default_page_description": "Please select one of the tabs above for seeing details."
+    }
+  },
+  "sales_order_page_dic": {
+    "title": "Sales Order",
+    "description": "Manage sales order data efficiently and accurately.",
+    "page_greetings": "Welcome to Sales Order",
+    "page_description": "Please select one of the menus above to start managing sales order data.",
+    "sales_order": {
+      "title_tab_1": "Order Management",
+      "default_page_title": "Please Select Tab",
+      "default_page_description": "Please select one of the tabs above for seeing details."
+    }
+  },
+  "shipping_page_dic": {
+    "title": "Shipping",
+    "description": "Manage shipping data efficiently and accurately.",
+    "page_greetings": "Welcome to Shipping",
+    "page_description": "Please select one of the menus above to start managing shipping data.",
+    "shipping": {
+      "title_tab_1": "Shipping Management",
+      "default_page_title": "Please Select Tab",
+      "default_page_description": "Please select one of the tabs above for seeing details."
+    }
+  },
+  "report_page_dic": {
+    "title": "Report",
+    "description": "Report Description",
+    "page_greetings": "Welcome to Report",
+    "page_description": "Please select one of the menus above to start managing loan, payroll, attendance, or overtime employees."
   },
   "signin": {
     "greetings": "Welcome Back",
@@ -26,24 +64,6 @@
     "ll_description_2": "Track project progress and daily work easily and quickly.",
     "ll_title_3": "Digital Project Documentation",
     "ll_description_3": "Keep all project documents safe and easily accessible."
-  },
-  "chat_page": {
-    "dashboard_button": "Home",
-    "greetings": "Can I Help You Today ?",
-    "search_chat_placeholder": "Search Chat..",
-    "textarea_placeholder": "Type your message here...",
-    "title_model_information": "Model Information",
-    "description_model_information": "This is a model information, you can learn more about the latest or older model",
-    "card_title_model_information": "Information",
-    "card_description_model_information": "Astrid GPT Model V2 is the second version of Astrid GPT. It was released on 24/02/2025.",
-    "button_change_password": "Change Password",
-    "title_change_password": "Change Password",
-    "desc_change_password": "You can change your password here.",
-    "old_password": "Old Password",
-    "new_password": "New Password",
-    "new_confirmation_password": "New Password Confirmation",
-    "button_submit_change_password": "Save",
-    "button_cancel_change_password": "Cancel"
   },
   "dashboard": {
     "search_menu_placeholder": "Search Menus...",
@@ -80,13 +100,14 @@
     "main": "Main Menu",
     "configuration": "Configuration",
     "notification": "Notification",
-    "logout": "Logout"
+    "logout": "Logout",
+    "forgot_password": "Forgot Password"
   },
   "menu_bar_settings": {
     "projects": "Projects",
     "users_divisions": "Users and Divisions",
     "users": "Users",
-    "roles": "Role",
+    "roles": "Roles",
     "tanks": "Tanks",
     "divisions": "Divisions",
     "tax": "Tax",
@@ -137,16 +158,41 @@
     "apply_filter": "Apply Filter",
     "cancel": "Batal"
   },
-  "settings_divisions": {
-    "title": "Divisions",
-    "description": "List of Divisions",
-    "button_add_division": "Add Division",
-    "search_division_placeholder": "Search Division",
-    "select_division_placeholder": "Select Divisi",
+  "settings_tanks": {
+    "title": "Tanks",
+    "description": "List of Tanks",
+    "button_add_tank": "Add Tank",
+    "search_tank_placeholder": "Search Tank",
+    "select_tank_placeholder": "Select Tank",
     "column_filter": "Column Filter",
     "column": {
-      "name": "Division Name",
-      "division_code": "Division Code"
+      "tank_name": "Tank Name",
+      "tank_code": "Kode Tangki",
+      "description": "Description",
+      "total_capacity": "Capacity",
+      "current_volume": "Current Volume",
+      "location": "Location",
+      "status": "Status",
+      "lastRefillDate": "Last Refill Date",
+      "lastUpdated": "Last Updated",
+      "notes": "Notes",
+      "actions": "Actions"
+    },
+    "apply_filter": "Apply Filter",
+    "cancel": "Cancel"
+  },
+  "settings_roles": {
+    "title": "Roles",
+    "description": "List of Roles",
+    "button_add_role": "Add Role",
+    "search_role_placeholder": "Search Role",
+    "select_role_placeholder": "Select Divisi",
+    "column_filter": "Column Filter",
+    "column": {
+      "name": "Role Code",
+      "display_name": "Role Name",
+      "description": "Description",
+      "is_system": "System Role"
     },
     "apply_filter": "Apply Filter",
     "cancel": "Cancel"
@@ -295,11 +341,5 @@
       "default_page_title": "Man Power",
       "default_page_description": "Welcome to Man Power"
     }
-  },
-  "report": {
-    "title": "Report",
-    "description": "Report Description",
-    "page_greetings": "Welcome to Report",
-    "page_description": "Please select one of the menus above to start managing loan, payroll, attendance, or overtime employees."
   }
 }

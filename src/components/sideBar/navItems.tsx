@@ -59,23 +59,23 @@ export function NavItems({ isOpen, dictionary }: SideBarDashboardProps) {
     {
       title: `${dictionary.production}`,
       icon: <InputProductionIcon className="w-5 h-5 hover:text-white transition" />,
-      to: `/${locale}/dashboard/workspace`,
+      to: `/${locale}/dashboard/production`,
     },
     {
       title: `${dictionary.inventory}`,
       icon: <InventoryIC className="w-5 h-5 hover:text-white transition" />,
-      to: `/${locale}/dashboard/man-power`,
+      to: `/${locale}/dashboard/inventory`,
     },
     { header: `${dictionary.sales_title}` },
     {
       title: `${dictionary.sales_order}`,
       icon: <SalesOrderIC className="w-5 h-5 hover:text-white transition" />,
-      to: `/${locale}/dashboard/report`,
+      to: `/${locale}/dashboard/sales-order`,
     },
     {
       title: `${dictionary.shipping}`,
       icon: <ShippingIC className="w-5 h-5 hover:text-white transition" />,
-      to: `/${locale}/dashboard/report`,
+      to: `/${locale}/dashboard/shipping`,
     },
     { header: `${dictionary.report}` },
     {

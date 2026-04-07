@@ -1,6 +1,6 @@
 "use client";
 
-import { Bell, ChevronsUpDown, LogOut } from "lucide-react";
+import { Bell, ChevronsUpDown, Key, LogOut } from "lucide-react";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
@@ -22,11 +22,13 @@ import Swal from "sweetalert2";
 import { deleteCookie, getCookies } from "cookies-next";
 import { useEffect, useState } from "react";
 import { getDictionary } from "../../../get-dictionary";
+import { ChangePasswordAuthenticated } from "../changePasswordAuthenticated";
 
 export function NavUser({
   user,
   openDetailProfile,
-  dictionary
+  dictionary,
+  actions
 }: {
   user: {
     name: string;
@@ -35,10 +37,12 @@ export function NavUser({
   };
   openDetailProfile: (val: boolean) => void;
   dictionary: Awaited<ReturnType<typeof getDictionary>>["primary_sidebar"];
+  actions: (act: string) => void;
 }) {
   const { isMobile } = useSidebar();
-  const [cookies, setCookies] = useState<any>(null); 
+  const [cookies, setCookies] = useState<any>(null);
   const [isOpenDetailProfile, setIsOpenDetailProfile] = useState(false);
+  
   const { setOpenMobile } = useSidebar();
   useEffect(() => {
     const cookiesData = getCookies();
@@ -147,11 +151,18 @@ export function NavUser({
               </DropdownMenuLabel>
               <DropdownMenuSeparator />
               <DropdownMenuGroup>
-              <DropdownMenuItem>
-                <Bell />
-                {dictionary.notification}
-              </DropdownMenuItem>
-            </DropdownMenuGroup>
+                <DropdownMenuItem>
+                  <Bell />
+                  {dictionary.notification}
+                </DropdownMenuItem>
+              </DropdownMenuGroup>
+              <DropdownMenuSeparator />
+              <DropdownMenuGroup onClick={() => actions("change_password")}>
+                <DropdownMenuItem>
+                  <Key />
+                  {dictionary.forgot_password}
+                </DropdownMenuItem>
+              </DropdownMenuGroup>
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={handleLogout}>
                 <LogOut />
@@ -161,6 +172,8 @@ export function NavUser({
           </DropdownMenu>
         </SidebarMenuItem>
       </SidebarMenu>
+
+      
     </>
   );
 }

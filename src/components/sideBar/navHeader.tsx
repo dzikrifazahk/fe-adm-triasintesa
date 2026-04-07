@@ -10,12 +10,10 @@ import { Separator } from "../ui/separator";
 
 type NavHeaderProps = {
   isOpenSearchModalMobile: (val: boolean) => void;
-  // dictionary: Awaited<ReturnType<typeof getDictionary>>["chat_page"];
 };
 
 export default function NavHeader({
   isOpenSearchModalMobile,
-  // dictionary,
 }: NavHeaderProps) {
   const { state, isMobile, setOpenMobile } = useSidebar();
   const [isMounted, setIsMounted] = useState(false);
@@ -53,7 +51,7 @@ export default function NavHeader({
       )}
 
       <div
-        className={`flex justify-center items-center gap-2 mt-5 transition-all duration-300 ease-in-out ${
+        className={`flex justify-center items-center gap-2 transition-all duration-300 ease-in-out ${
           state === "collapsed" ? "flex-col" : "flex-row"
         }`}
       >

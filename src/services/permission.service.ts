@@ -1,6 +1,6 @@
 import { IDivision } from "@/types/division";
 import { BaseHttpService } from "./base.service";
-import { IAddOrUpdatePermissionsRequest } from "@/types/permission";
+import { IAssignPermissionsToRoleRequest } from "@/types/permission";
 
 export class PermissionService extends BaseHttpService {
   constructor() {
@@ -8,19 +8,21 @@ export class PermissionService extends BaseHttpService {
   }
 
   async getPermissions(queryParams?: {}) {
-    const response = await this.httpClient.get("/permission/index", {
+    const response = await this.httpClient.get("/permissions", {
       params: queryParams,
     });
     return response.data;
   }
 
-  async addOrUpdatePermissions(payload: IAddOrUpdatePermissionsRequest) {
-    const response = await this.httpClient.post("/permission/store", payload);
+  async assignPermissionsToRole(
+    roleId: string,
+    payload: IAssignPermissionsToRoleRequest,
+  ) {
+    const response = await this.httpClient.post(
+      `/permissions/roles/${roleId}`,
+      payload,
+    );
     return response.data;
   }
-
-  async deletePermission(id: number) {
-    const response = await this.httpClient.delete(`/permission/destroy/${id}`);
-    return response.data;
-  }
+  
 }

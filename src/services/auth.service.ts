@@ -1,4 +1,3 @@
-import { getCookie } from "cookies-next";
 import { BaseHttpService } from "./base.service";
 
 export class AuthService extends BaseHttpService {
@@ -11,6 +10,34 @@ export class AuthService extends BaseHttpService {
       emailOrUsername: emailOrUsername,
       password: password,
     });
+
+    return response.data;
+  }
+
+  async changePasswordAuthenticated(
+    currentPassword: string,
+    newPassword: string,
+  ) {
+    const response = await this.httpClient.post("/auth/change-password", {
+      currentPassword,
+      newPassword,
+    });
+
+    return response.data;
+  }
+
+  async forgotPasswordUnauthenticated(email: string) {
+    const response = await this.httpClient.post(
+      "/system/users/reset-password",
+      {
+        emailOrUsername: email,
+      },
+      {
+        headers: {
+          "x-public-key": `${process.env.NEXT_PUBLIC_ACCESS_CODE}`,
+        },
+      },
+    );
 
     return response.data;
   }
