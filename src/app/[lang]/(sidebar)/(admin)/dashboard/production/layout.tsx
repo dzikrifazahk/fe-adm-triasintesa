@@ -1,6 +1,7 @@
 import { Locale } from "../../../../../../../i18n-config";
 import { getDictionary } from "../../../../../../../get-dictionary";
-import { ProductionLayoutMain } from "@/components/production/productionLayoutMain";
+import ProductionLayoutMain from "@/components/production/productionLayoutMain";
+
 
 export default async function ProductionLayout({
   children,

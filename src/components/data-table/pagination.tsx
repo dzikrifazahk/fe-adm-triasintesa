@@ -15,6 +15,7 @@ interface DataTablePaginationProps<TData> {
   onPageChange?: (page: number) => void;
   onPageSizeChange?: (pageSize: number) => void;
   lastPage: number;
+  layout?: string;
 }
 
 export const DataTablePagination = <TData,>({
@@ -23,18 +24,19 @@ export const DataTablePagination = <TData,>({
   onPageChange,
   onPageSizeChange,
   lastPage,
+  layout = "horizontal",
 }: DataTablePaginationProps<TData>) => {
   const pageSizes = [5, 10, 20, 30, 40, 50];
   const [page, setPage] = useState(1);
   const [selectedPageSize, setSelectedPageSize] = useState("10");
   const handlePageChange = (actions: string) => {
     let newPage: number = page;
-    if(actions === "prev") {
+    if (actions === "prev") {
       newPage = page - 1;
     }
-    if(actions === "next") {
-      if(newPage > lastPage) {
-        newPage = lastPage
+    if (actions === "next") {
+      if (newPage > lastPage) {
+        newPage = lastPage;
       } else {
         newPage = page + 1;
       }
@@ -56,47 +58,109 @@ export const DataTablePagination = <TData,>({
   };
 
   return (
-    <div className="flex items-center justify-end space-x-2 py-4">
-      {isSelectItem && (
-        <div className="flex-1 text-sm text-muted-foreground">
-          {table.getFilteredSelectedRowModel().rows.length} of{" "}
-          {table.getFilteredRowModel().rows.length} row(s) selected.
-        </div>
+    <>
+      {layout === "vertical" ? (
+        <>
+          <div className="w-full min-w-0 overflow-x-auto py-4">
+            <div className="flex flex-col min-w-max justify-end gap-2 w-full">
+              {isSelectItem && (
+                <div className="flex-1 text-sm text-muted-foreground">
+                  {table.getFilteredSelectedRowModel().rows.length} of{" "}
+                  {table.getFilteredRowModel().rows.length} row(s) selected.
+                </div>
+              )}
+              <div className="flex items-center justify-between gap-2">
+                <span className="whitespace-nowrap text-xs">
+                  Halaman {page} dari {lastPage}
+                </span>
+                <Select
+                  value={selectedPageSize}
+                  onValueChange={handlePageSizeChange}
+                >
+                  <SelectTrigger className="w-auto shrink-0">
+                    <SelectValue placeholder="Select Page Size" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {pageSizes.map((pageSize) => (
+                      <SelectItem key={pageSize} value={String(pageSize)}>
+                        {pageSize}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => handlePageChange("prev")}
+                disabled={page === 1}
+                className="shrink-0 cursor-pointer"
+              >
+                Previous
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => handlePageChange("next")}
+                disabled={page === lastPage}
+                className="shrink-0 cursor-pointer"
+              >
+                Next
+              </Button>
+            </div>
+          </div>
+        </>
+      ) : (
+        <>
+          {" "}
+          <div className="w-full min-w-0 overflow-x-auto py-4">
+            <div className="flex min-w-max items-center justify-end gap-2">
+              {isSelectItem && (
+                <div className="flex-1 text-sm text-muted-foreground">
+                  {table.getFilteredSelectedRowModel().rows.length} of{" "}
+                  {table.getFilteredRowModel().rows.length} row(s) selected.
+                </div>
+              )}
+              <span className="whitespace-nowrap text-xs">
+                Halaman {page} dari {lastPage}
+              </span>
+              <Select
+                value={selectedPageSize}
+                onValueChange={handlePageSizeChange}
+              >
+                <SelectTrigger className="w-auto shrink-0">
+                  <SelectValue placeholder="Select Page Size" />
+                </SelectTrigger>
+                <SelectContent>
+                  {pageSizes.map((pageSize) => (
+                    <SelectItem key={pageSize} value={String(pageSize)}>
+                      {pageSize}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => handlePageChange("prev")}
+                disabled={page === 1}
+                className="shrink-0 cursor-pointer"
+              >
+                Previous
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => handlePageChange("next")}
+                disabled={page === lastPage}
+                className="shrink-0 cursor-pointer"
+              >
+                Next
+              </Button>
+            </div>
+          </div>
+        </>
       )}
-    <span className="text-xs">Halaman {page} dari {lastPage}</span>
-      <Select
-        value={selectedPageSize}
-        onValueChange={handlePageSizeChange} // Panggil fungsi handlePageSizeChange
-      >
-        <SelectTrigger className="w-auto">
-          <SelectValue placeholder="Select Page Size" />
-        </SelectTrigger>
-        <SelectContent>
-          {pageSizes.map((pageSize) => (
-            <SelectItem key={pageSize} value={String(pageSize)}>
-              {pageSize}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
-      <Button
-        variant="outline"
-        size="sm"
-        onClick={() => handlePageChange("prev")}
-        disabled={page === 1}
-        className="cursor-pointer"
-      >
-        Previous
-      </Button>
-      <Button
-        variant="outline"
-        size="sm"
-        onClick={() => handlePageChange("next")}
-        disabled={page === lastPage}
-        className="cursor-pointer"
-      >
-        Next
-      </Button>
-    </div>
+    </>
   );
 };
