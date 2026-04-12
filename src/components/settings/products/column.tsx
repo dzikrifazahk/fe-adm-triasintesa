@@ -3,29 +3,27 @@
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+} from "@radix-ui/react-dropdown-menu";
+import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuLabel,
 } from "@/components/ui/dropdown-menu";
-import {
-  DropdownMenu,
-  DropdownMenuTrigger,
-} from "@radix-ui/react-dropdown-menu";
 import { ColumnDef } from "@tanstack/react-table";
-import { ArrowUpDown, MoreHorizontal } from "lucide-react";
+import { ArrowUpDown, Check, MoreHorizontal, X } from "lucide-react";
 import { FaPencil, FaTrash } from "react-icons/fa6";
 import { getDictionary } from "../../../../get-dictionary";
-import { IPublicationCategory } from "@/types/publication-category";
+import { IProduct } from "@/types/product";
 
-type childProps = {
+type ChildProps = {
   deleteData: (id: string) => void;
-  editData: (data: IPublicationCategory) => void;
-  dictionary: Awaited<ReturnType<typeof getDictionary>>["settings_publication_category"];
+  editData: (data: IProduct) => void;
+  dictionary: Awaited<ReturnType<typeof getDictionary>>["settings_products"];
 };
 
-export const columns = (
-  props: childProps
-): ColumnDef<IPublicationCategory>[] => [
+export const columns = (props: ChildProps): ColumnDef<IProduct>[] => [
   {
     id: "select",
     header: ({ table }) => (
@@ -49,47 +47,49 @@ export const columns = (
     enableHiding: false,
   },
   {
-    id: `${props.dictionary.column.name}`,
-    accessorFn: (row) => row.name || "-",
-    header: ({ column }) => {
-      return (
-        <Button
-          variant="ghost"
-          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-        >
-          {props.dictionary.column.name}
-          <ArrowUpDown className="ml-2 h-4 w-4" />
-        </Button>
-      );
-    },
+    id: `${props.dictionary.column.title}`,
+    accessorFn: (row) => row.title || "-",
+    header: ({ column }) => (
+      <Button
+        variant="ghost"
+        onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+      >
+        {props.dictionary.column.title}
+        <ArrowUpDown className="ml-2 h-4 w-4" />
+      </Button>
+    ),
   },
   {
     id: `${props.dictionary.column.slug}`,
     accessorFn: (row) => row.slug || "-",
-    header: ({ column }) => {
-      return (
-        <Button
-          variant="ghost"
-          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-        >
-          {props.dictionary.column.slug}
-          <ArrowUpDown className="ml-2 h-4 w-4" />
-        </Button>
-      );
-    },
+    header: ({ column }) => (
+      <Button
+        variant="ghost"
+        onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+      >
+        {props.dictionary.column.slug}
+        <ArrowUpDown className="ml-2 h-4 w-4" />
+      </Button>
+    ),
   },
   {
-    id: "description",
-    accessorFn: (row) => row.description || "-",
-    header: ({ column }) => {
+    id: `${props.dictionary.column.status}`,
+    accessorFn: (row) => row.isActive,
+    header: props.dictionary.column.status,
+    cell: ({ getValue }) => {
+      const value = Boolean(getValue());
       return (
-        <Button
-          variant="ghost"
-          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+        <span
+          className={`flex items-center justify-center w-6 h-6 rounded-full ${
+            value ? "bg-green-100" : "bg-red-100"
+          }`}
         >
-          {props.dictionary.column.description}
-          <ArrowUpDown className="ml-2 h-4 w-4" />
-        </Button>
+          {value ? (
+            <Check className="text-green-600 w-3 h-3" />
+          ) : (
+            <X className="text-red-600 w-3 h-3" />
+          )}
+        </span>
       );
     },
   },

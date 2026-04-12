@@ -44,7 +44,7 @@ interface DataTableProps<TData, TValue> {
   onPageSizeChange?: (newPageSize: number) => void;
   lastPage?: number;
   onSearchChange: (searchValue: string) => void;
-  dictionary: Awaited<ReturnType<typeof getDictionary>>["settings_publication_category"];
+  dictionary: Awaited<ReturnType<typeof getDictionary>>["settings_publication"];
   isGetData?: () => void;
 }
 
@@ -150,7 +150,7 @@ export function DataTable<TData, TValue>({
           <div className={controlsWrapClass}>
             <div className={searchWrapperClass}>
               <Input
-                placeholder={dictionary?.search_category_placeholder ?? "-"}
+                placeholder={dictionary?.search_post_placeholder ?? "-"}
                 value={search}
                 onChange={handleSearchChange}
                 className="w-full"
@@ -200,7 +200,7 @@ export function DataTable<TData, TValue>({
               className={`bg-iprimary-blue hover:bg-iprimary-blue-tertiary text-white shrink-0 ${buttonWidthClass} whitespace-nowrap cursor-pointer`}
               onClick={() => addData(true)}
             >
-              {dictionary.button_add_category ?? "-"}
+              {dictionary.button_add_post ?? "-"}
             </Button>
           </div>
         </div>

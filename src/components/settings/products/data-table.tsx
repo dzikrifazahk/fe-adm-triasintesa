@@ -44,7 +44,7 @@ interface DataTableProps<TData, TValue> {
   onPageSizeChange?: (newPageSize: number) => void;
   lastPage?: number;
   onSearchChange: (searchValue: string) => void;
-  dictionary: Awaited<ReturnType<typeof getDictionary>>["settings_publication_category"];
+  dictionary: Awaited<ReturnType<typeof getDictionary>>["settings_products"];
   isGetData?: () => void;
 }
 
@@ -59,17 +59,13 @@ export function DataTable<TData, TValue>({
   dictionary,
   isGetData,
 }: DataTableProps<TData, TValue>) {
-  // sorting
   const [sorting, setSorting] = React.useState<SortingState>([]);
-  // filtering
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(
     []
   );
   const { isMobile } = useContext(MobileContext);
-  // visibility
   const [columnVisibility, setColumnVisibility] =
     React.useState<VisibilityState>({});
-  // row selection with checkbox
   const [rowSelection, setRowSelection] = React.useState({});
   const [pagination, setPagination] = React.useState<PaginationState>({
     pageIndex: 0,
@@ -88,18 +84,18 @@ export function DataTable<TData, TValue>({
     data,
     columns,
     getCoreRowModel: getCoreRowModel(),
-    getPaginationRowModel: getPaginationRowModel(), // pagination
-    onSortingChange: setSorting, // sorting
-    getSortedRowModel: getSortedRowModel(), // sorting
-    onColumnFiltersChange: setColumnFilters, // filtering
-    getFilteredRowModel: getFilteredRowModel(), // filtering
-    onColumnVisibilityChange: setColumnVisibility, // visibility
-    onRowSelectionChange: setRowSelection, // row selection
+    getPaginationRowModel: getPaginationRowModel(),
+    onSortingChange: setSorting,
+    getSortedRowModel: getSortedRowModel(),
+    onColumnFiltersChange: setColumnFilters,
+    getFilteredRowModel: getFilteredRowModel(),
+    onColumnVisibilityChange: setColumnVisibility,
+    onRowSelectionChange: setRowSelection,
     state: {
-      sorting, //sorting
-      columnFilters, // filtering
-      columnVisibility, // visibility
-      rowSelection, // row selection
+      sorting,
+      columnFilters,
+      columnVisibility,
+      rowSelection,
       pagination,
     },
     manualPagination: true,
@@ -107,15 +103,11 @@ export function DataTable<TData, TValue>({
   });
 
   const handlePageChange = (newPage: number) => {
-    if (onPageChange) {
-      onPageChange(newPage);
-    }
+    onPageChange?.(newPage);
   };
 
   const handlePageSizeChange = (newPageSize: number) => {
-    if (onPageSizeChange) {
-      onPageSizeChange(newPageSize);
-    }
+    onPageSizeChange?.(newPageSize);
   };
 
   const controlsWrapClass = isMobile
@@ -150,7 +142,7 @@ export function DataTable<TData, TValue>({
           <div className={controlsWrapClass}>
             <div className={searchWrapperClass}>
               <Input
-                placeholder={dictionary?.search_category_placeholder ?? "-"}
+                placeholder={dictionary?.search_product_placeholder ?? "-"}
                 value={search}
                 onChange={handleSearchChange}
                 className="w-full"
@@ -200,7 +192,7 @@ export function DataTable<TData, TValue>({
               className={`bg-iprimary-blue hover:bg-iprimary-blue-tertiary text-white shrink-0 ${buttonWidthClass} whitespace-nowrap cursor-pointer`}
               onClick={() => addData(true)}
             >
-              {dictionary.button_add_category ?? "-"}
+              {dictionary.button_add_product ?? "-"}
             </Button>
           </div>
         </div>
@@ -211,18 +203,16 @@ export function DataTable<TData, TValue>({
           <TableHeader>
             {table.getHeaderGroups().map((headerGroup) => (
               <TableRow key={headerGroup.id}>
-                {headerGroup.headers.map((header) => {
-                  return (
-                    <TableHead key={header.id}>
-                      {header.isPlaceholder
-                        ? null
-                        : flexRender(
-                            header.column.columnDef.header,
-                            header.getContext()
-                          )}
-                    </TableHead>
-                  );
-                })}
+                {headerGroup.headers.map((header) => (
+                  <TableHead key={header.id}>
+                    {header.isPlaceholder
+                      ? null
+                      : flexRender(
+                          header.column.columnDef.header,
+                          header.getContext()
+                        )}
+                  </TableHead>
+                ))}
               </TableRow>
             ))}
           </TableHeader>

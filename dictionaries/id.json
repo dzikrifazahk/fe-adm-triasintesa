@@ -121,7 +121,7 @@
     "default_page_description": "Silahkan pilih menu terlebih dahulu untuk melihat data detail",
     "landing_publication_category": "Kategori Publikasi",
     "landing_publication": "Publikasi",
-    "landing_catalogs": "Katalog"
+    "landing_products": "Produk"
   },
   "settings_projects": {
     "title": "Proyek",
@@ -198,6 +198,73 @@
     },
     "apply_filter": "Terapkan Filter",
     "cancel": "Batal"
+  },
+  "settings_publication_category": {
+    "title": "Kategori Publikasi",
+    "description": "Daftar kategori publikasi",
+    "button_add_category": "Tambah Kategori",
+    "search_category_placeholder": "Cari Kategori",
+    "column_filter": "Filter Kolom",
+    "title_create": "Tambah Kategori",
+    "title_edit": "Ubah Kategori",
+    "pdf_status": {
+      "label": "Company Profile PDF",
+      "available": "Tersedia",
+      "missing": "Belum ada",
+      "checking": "Mengecek..."
+    },
+    "column": {
+      "name": "Nama",
+      "slug": "Slug",
+      "description": "Deskripsi",
+      "actions": "Aksi"
+    }
+  },
+  "settings_publication": {
+    "title": "Publikasi",
+    "description": "Daftar posting publikasi",
+    "button_add_post": "Tambah Post",
+    "search_post_placeholder": "Cari Post",
+    "column_filter": "Filter Kolom",
+    "title_create": "Tambah Post",
+    "title_edit": "Ubah Post",
+    "column": {
+      "title": "Judul",
+      "slug": "Slug",
+      "category": "Kategori",
+      "status": "Status",
+      "published_at": "Tanggal Terbit",
+      "actions": "Aksi"
+    }
+  },
+  "settings_products": {
+    "title": "Produk",
+    "description": "Daftar produk perusahaan",
+    "button_add_product": "Tambah Produk",
+    "search_product_placeholder": "Cari Produk",
+    "column_filter": "Filter Kolom",
+    "title_create": "Tambah Produk",
+    "title_edit": "Ubah Produk",
+    "field": {
+      "title": "Judul",
+      "slug": "Slug",
+      "featured_image": "Gambar",
+      "content": "Konten",
+      "status": "Status Aktif"
+    },
+    "column": {
+      "title": "Judul",
+      "slug": "Slug",
+      "status": "Status",
+      "actions": "Aksi"
+    },
+    "pdf_section": {
+      "title": "Katalog PDF",
+      "description": "Upload file PDF untuk Katalog dan download file terbaru.",
+      "button_upload": "Upload PDF",
+      "button_download": "Download PDF",
+      "selected_file": "File terpilih"
+    }
   },
   "settings_users": {
     "title": "Pengguna",

@@ -157,9 +157,9 @@ export function MenuBar({ dictionary, children }: Props) {
     },
     {
       kind: "item",
-      title: dictionary.landing_catalogs,
+      title: dictionary.landing_products,
       icon: <FaSignHanging size={20} />,
-      to: "/dashboard/settings/catalogs",
+      to: "/dashboard/settings/products",
     },
     // ——— System Configuration ———
     { kind: "header", title: SECTION.system },

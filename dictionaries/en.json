@@ -121,7 +121,7 @@
     "default_page_description": "Please select one of the menus above for seeing details.",
     "landing_publication_category": "Publication Category",
     "landing_publication": "Publication",
-    "landing_catalogs": "Catalogs"
+    "landing_products": "Products"
   },
   "settings_projects": {
     "title": "Projects",
@@ -198,6 +198,73 @@
     },
     "apply_filter": "Apply Filter",
     "cancel": "Cancel"
+  },
+  "settings_publication_category": {
+    "title": "Publication Category",
+    "description": "List of publication categories",
+    "button_add_category": "Add Category",
+    "search_category_placeholder": "Search Category",
+    "column_filter": "Column Filter",
+    "title_create": "Add Category",
+    "title_edit": "Edit Category",
+    "pdf_status": {
+      "label": "Company Profile PDF",
+      "available": "Available",
+      "missing": "Not available",
+      "checking": "Checking..."
+    },
+    "column": {
+      "name": "Name",
+      "slug": "Slug",
+      "description": "Description",
+      "actions": "Actions"
+    }
+  },
+  "settings_publication": {
+    "title": "Publication",
+    "description": "List of publication posts",
+    "button_add_post": "Add Post",
+    "search_post_placeholder": "Search Post",
+    "column_filter": "Column Filter",
+    "title_create": "Add Post",
+    "title_edit": "Edit Post",
+    "column": {
+      "title": "Title",
+      "slug": "Slug",
+      "category": "Category",
+      "status": "Status",
+      "published_at": "Published At",
+      "actions": "Actions"
+    }
+  },
+  "settings_products": {
+    "title": "Products",
+    "description": "Company product list",
+    "button_add_product": "Add Product",
+    "search_product_placeholder": "Search Products",
+    "column_filter": "Column Filter",
+    "title_create": "Add Product",
+    "title_edit": "Edit Product",
+    "field": {
+      "title": "Title",
+      "slug": "Slug",
+      "featured_image": "Featured Image",
+      "content": "Content",
+      "status": "Active Status"
+    },
+    "column": {
+      "title": "Title",
+      "slug": "Slug",
+      "status": "Status",
+      "actions": "Actions"
+    },
+    "pdf_section": {
+      "title": "Catalog PDF",
+      "description": "Upload a catalog PDF and download the latest file.",
+      "button_upload": "Upload PDF",
+      "button_download": "Download PDF",
+      "selected_file": "Selected file"
+    }
   },
   "settings_users": {
     "title": "Users",

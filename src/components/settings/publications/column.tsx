@@ -12,20 +12,26 @@ import {
   DropdownMenuTrigger,
 } from "@radix-ui/react-dropdown-menu";
 import { ColumnDef } from "@tanstack/react-table";
-import { ArrowUpDown, MoreHorizontal } from "lucide-react";
+import { ArrowUpDown, Check, MoreHorizontal, X } from "lucide-react";
 import { FaPencil, FaTrash } from "react-icons/fa6";
 import { getDictionary } from "../../../../get-dictionary";
-import { IPublicationCategory } from "@/types/publication-category";
+import { IPublicationPost } from "@/types/publication-post";
+
+const formatDate = (value?: string | null) => {
+  if (!value) return "-";
+  if (typeof value === "string") {
+    return value.includes("T") ? value.split("T")[0] : value;
+  }
+  return "-";
+};
 
 type childProps = {
   deleteData: (id: string) => void;
-  editData: (data: IPublicationCategory) => void;
-  dictionary: Awaited<ReturnType<typeof getDictionary>>["settings_publication_category"];
+  editData: (data: IPublicationPost) => void;
+  dictionary: Awaited<ReturnType<typeof getDictionary>>["settings_publication"];
 };
 
-export const columns = (
-  props: childProps
-): ColumnDef<IPublicationCategory>[] => [
+export const columns = (props: childProps): ColumnDef<IPublicationPost>[] => [
   {
     id: "select",
     header: ({ table }) => (
@@ -49,15 +55,15 @@ export const columns = (
     enableHiding: false,
   },
   {
-    id: `${props.dictionary.column.name}`,
-    accessorFn: (row) => row.name || "-",
+    id: `${props.dictionary.column.title}`,
+    accessorFn: (row) => row.title || "-",
     header: ({ column }) => {
       return (
         <Button
           variant="ghost"
           onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
         >
-          {props.dictionary.column.name}
+          {props.dictionary.column.title}
           <ArrowUpDown className="ml-2 h-4 w-4" />
         </Button>
       );
@@ -79,15 +85,51 @@ export const columns = (
     },
   },
   {
-    id: "description",
-    accessorFn: (row) => row.description || "-",
+    id: `${props.dictionary.column.category}`,
+    accessorFn: (row) => row.category?.name || "-",
     header: ({ column }) => {
       return (
         <Button
           variant="ghost"
           onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
         >
-          {props.dictionary.column.description}
+          {props.dictionary.column.category}
+          <ArrowUpDown className="ml-2 h-4 w-4" />
+        </Button>
+      );
+    },
+  },
+  {
+    id: `${props.dictionary.column.status}`,
+    accessorFn: (row) => row.isActive,
+    header: props.dictionary.column.status,
+    cell: ({ getValue }) => {
+      const value = Boolean(getValue());
+      return (
+        <span
+          className={`flex items-center justify-center w-6 h-6 rounded-full ${
+            value ? "bg-green-100" : "bg-red-100"
+          }`}
+        >
+          {value ? (
+            <Check className="text-green-600 w-3 h-3" />
+          ) : (
+            <X className="text-red-600 w-3 h-3" />
+          )}
+        </span>
+      );
+    },
+  },
+  {
+    id: `${props.dictionary.column.published_at}`,
+    accessorFn: (row) => formatDate(row.publishedAt),
+    header: ({ column }) => {
+      return (
+        <Button
+          variant="ghost"
+          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+        >
+          {props.dictionary.column.published_at}
           <ArrowUpDown className="ml-2 h-4 w-4" />
         </Button>
       );
