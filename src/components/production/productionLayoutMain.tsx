@@ -1,5 +1,6 @@
 "use client";
 import React, { useContext, useEffect, useRef, useState } from "react";
+import { usePathname, useRouter } from "next/navigation";
 import {
   FaAngleLeft,
   FaAngleRight,
@@ -7,8 +8,7 @@ import {
   FaPlus,
 } from "react-icons/fa6";
 import { DataTable } from "./data-table";
-import { IProject } from "@/types/project";
-import { productionPlanService, projectService } from "@/services";
+import { productionPlanService } from "@/services";
 import { IMeta } from "@/types/common";
 import { useWorkspaceContext } from "@/context/workspaceContext";
 import { Button } from "@/components/ui/button";
@@ -38,15 +38,11 @@ export default function ProductionLayoutMain({
   const [metadata, setMetadata] = useState<IMeta>();
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
-
-  const [isModalProjectOpen, setIsModalProjectOpen] = useState(false);
-  const [modalType, setModalType] = useState<"create" | "edit" | "detail">(
-    "create",
-  );
-  const [detailData, setDetailData] = useState<IProject | null>(null);
   const [loading, setLoading] = useState(false);
 
   const { isCollapsed, setIsCollapsed } = useWorkspaceContext();
+  const router = useRouter();
+  const pathname = usePathname();
 
   const [selectedDateRange, setSelectedDateRange] = useState<
     DateRange | undefined
@@ -55,7 +51,6 @@ export default function ProductionLayoutMain({
   const debouncedSearch = useDebounce(search, 400);
 
   /* ---------- filter modal ---------- */
-  const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
   const [filterPayload, setFilterPayload] = useState("");
 
   /* ---------- skip initial render refs ---------- */
@@ -111,6 +106,11 @@ export default function ProductionLayoutMain({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  useEffect(() => {
+    getData("", page, pageSize, search, selectedDateRange, filterPayload);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pathname]);
+
   /* ---------- fetch on search debounce ---------- */
   useEffect(() => {
     if (isFirstSearchRender.current) {
@@ -148,22 +148,24 @@ export default function ProductionLayoutMain({
   };
 
   /* ---------- CRUD handlers (create/edit/delete) ---------- */
+  const locale = pathname.split("/")[1] || "id";
+
   const handleCreateProductionPlan = () => {
-    setModalType("create");
-    setIsModalProjectOpen(true);
+    router.push(`/${locale}/dashboard/production/form-production-plan`);
   };
 
-  const handleEditProject = async (id: string) => {
-    setModalType("edit");
-    const response = await projectService.getProject(id);
-    setDetailData(response);
-    setIsModalProjectOpen(true);
+  const handleEditProject = (id: string) => {
+    router.push(`/${locale}/dashboard/production/${id}/form-production-plan`);
+  };
+
+  const handleViewProductionPlan = (id: string) => {
+    router.push(`/${locale}/dashboard/production/${id}`);
   };
 
   const handleDeleteProject = async (id: string) => {
     const confirm = await Swal.fire({
       icon: "warning",
-      text: "Apakah anda ingin menghapus Proyek ini?",
+      text: "Apakah anda ingin menghapus Production Plan ini?",
       showDenyButton: true,
       confirmButtonText: "Ya",
       confirmButtonColor: "#493628",
@@ -174,11 +176,11 @@ export default function ProductionLayoutMain({
     if (confirm.isConfirmed) {
       try {
         setLoading(true);
-        const res = await projectService.deleteProject(id);
+        const res = await productionPlanService.deleteProductionPlan(id);
 
         Swal.fire({
-          icon: res.status_code === 200 ? "success" : "error",
-          title: res.message,
+          icon: "success",
+          title: "Production Plan berhasil dihapus",
           position: "top-right",
           toast: true,
           showConfirmButton: false,
@@ -189,7 +191,7 @@ export default function ProductionLayoutMain({
       } catch {
         Swal.fire({
           icon: "error",
-          title: "Terjadi Kesalahan Saat Menghapus Data",
+          title: "Terjadi Kesalahan Saat Menghapus Production Plan",
           position: "top-right",
           toast: true,
           showConfirmButton: false,
@@ -202,8 +204,6 @@ export default function ProductionLayoutMain({
   };
 
   /* ---------- filter handlers ---------- */
-  const handleOpenModalFilter = () => setIsFilterModalOpen(true);
-
   /* ---------- layout classes ---------- */
   const layoutWrapper = `flex h-full min-h-0 w-full flex-col gap-3 overflow-x-hidden ${
     !isMobile ? "xl:flex-row" : ""
@@ -215,16 +215,18 @@ export default function ProductionLayoutMain({
       : "w-full xl:w-[360px] 2xl:w-[400px]";
 
   return (
-    <div className="bg-card flex h-full min-h-0 w-full min-w-0 rounded-lg border p-2 shadow">
+    <div className="bg-card dark:bg-[#1F2023] flex h-full min-h-0 w-full min-w-0 rounded-lg border dark:border-[#34363B] p-2 shadow">
       <div className="h-full min-h-0 w-full">
         <div className={layoutWrapper}>
           <div
-            className={`${sidePanelWidth} order-1 flex shrink-0 flex-col rounded-lg border border-[#E4E4E4] bg-white p-3 transition-all duration-300 max-xl:h-auto max-xl:overflow-visible xl:min-h-0 xl:overflow-y-auto`}
+            className={`${sidePanelWidth} order-1 flex shrink-0 flex-col rounded-lg border border-[#E4E4E4] bg-white dark:border-[#34363B] dark:bg-[#26282D] p-3 transition-all duration-300 max-xl:h-auto max-xl:overflow-visible xl:min-h-0 xl:overflow-y-auto`}
           >
             <div className="flex justify-between items-center">
               <div
                 className={
-                  isCollapsed || isMobile ? "hidden" : "text-lg font-bold"
+                  isCollapsed || isMobile
+                    ? "hidden"
+                    : "text-lg font-bold text-slate-900 dark:text-slate-100"
                 }
               >
                 {dictionary.title}
@@ -253,7 +255,7 @@ export default function ProductionLayoutMain({
                       className="h-4 w-2"
                       style={{ background: clr, borderColor: clr }}
                     />
-                    <span className="text-sm">{lbl}</span>
+                    <span className="text-sm text-slate-700 dark:text-slate-200">{lbl}</span>
                   </div>
                 ))}
               </>
@@ -276,9 +278,9 @@ export default function ProductionLayoutMain({
               {(!isCollapsed || isMobile) && (
                 <>
                   <Button
-                    className="cursor-pointer border border-iprimary-blue items-center h-auto flex justify-between text-sm"
-                    onClick={handleOpenModalFilter}
+                    className="cursor-pointer border border-iprimary-blue items-center h-auto flex justify-between text-sm dark:border-[#4A67D6] dark:bg-[#2E3138] dark:text-slate-100"
                     variant="outline"
+                    type="button"
                   >
                     <span>Filter Berdasarkan</span>
                     <FaArrowDownWideShort className="text-iprimary-blue" />
@@ -304,6 +306,7 @@ export default function ProductionLayoutMain({
                 loadingTable={loading}
                 editData={handleEditProject}
                 deleteData={handleDeleteProject}
+                viewData={handleViewProductionPlan}
               />
             )}
           </div>
