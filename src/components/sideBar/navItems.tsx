@@ -22,6 +22,7 @@ import InputProductionIcon from "../icons/inputProductionIC";
 import InventoryIC from "../icons/inventoryIC";
 import SalesOrderIC from "../icons/salesOrderIC";
 import ShippingIC from "../icons/shippingIC";
+import { GitPullRequestDraft } from "lucide-react";
 
 interface NavItem {
   header?: string;
@@ -60,6 +61,11 @@ export function NavItems({ isOpen, dictionary }: SideBarDashboardProps) {
       title: `${dictionary.production}`,
       icon: <InputProductionIcon className="w-5 h-5 hover:text-white transition" />,
       to: `/${locale}/dashboard/production`,
+    },
+    {
+      title: `${dictionary.qc}`,
+      icon: <GitPullRequestDraft className="w-5 h-5 hover:text-white transition" />,
+      to: `/${locale}/dashboard/qc`,
     },
     {
       title: `${dictionary.inventory}`,
