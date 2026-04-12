@@ -98,6 +98,8 @@
     "report": "Report",
     "settings": "Settings",
     "main": "Main Menu",
+    "financial": "Financial",
+    "financial_note": "Financial Record",
     "configuration": "Configuration",
     "notification": "Notification",
     "logout": "Logout",

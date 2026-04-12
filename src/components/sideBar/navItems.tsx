@@ -12,7 +12,7 @@ import { useState, useEffect } from "react";
 import { useSidebar } from "../ui/sidebar";
 import { getDictionary } from "../../../get-dictionary";
 import { i18n } from "../../../i18n-config";
-import { isLocale } from "@/middleware";
+import { isLocale } from "@/utils/isLocale";
 import { useLoading } from "@/context/loadingContext";
 import Link from "next/link";
 import DashboardIc from "@/assets/ic/dashboard.svg";
@@ -76,6 +76,12 @@ export function NavItems({ isOpen, dictionary }: SideBarDashboardProps) {
       title: `${dictionary.shipping}`,
       icon: <ShippingIC className="w-5 h-5 hover:text-white transition" />,
       to: `/${locale}/dashboard/shipping`,
+    },
+    { header: `${dictionary.financial}` },
+    {
+      title: `${dictionary.financial_note}`,
+      icon: <FaMoneyBills className="hover:text-white" size={18} />,
+      to: `/${locale}/dashboard/finance-record`,
     },
     { header: `${dictionary.report}` },
     {

@@ -2,8 +2,9 @@ import { i18n } from "../i18n-config";
 import { match as matchLocale } from "@formatjs/intl-localematcher";
 import Negotiator from "negotiator";
 import { NextRequest, NextResponse } from "next/server";
+import { isLocale } from "@/utils/isLocale";
 
-const protectedRoutes = ["/", "/dashboard"];
+const protectedRoutes = ["/dashboard"];
 
 interface RoutePermissions {
   [key: string]: string[];
@@ -18,23 +19,30 @@ function getLocale(request: NextRequest): string {
   request.headers.forEach((value, key) => (negotiatorHeaders[key] = value));
   const locales: any = i18n.locales;
   const languages = new Negotiator({ headers: negotiatorHeaders }).languages(
-    locales
+    locales,
   );
   return matchLocale(languages, locales, i18n.defaultLocale);
 }
 
 export function middleware(request: NextRequest) {
-  const { pathname, searchParams } = request.nextUrl;
-  const crea = searchParams.get("crea");
+  const { pathname } = request.nextUrl;
 
   const segments = pathname.split("/");
   const locale = isLocale(segments[1]) ? segments[1] : i18n.defaultLocale;
-  const basePath = `/${segments.slice(2).join("/")}`;
+  const basePath = `/${segments.slice(2).join("/")}` || "/";
 
   const accessToken = request.cookies.get("accessToken")?.value;
   const role = request.cookies.get("role")?.value;
   const permsCookie = request.cookies.get("perms")?.value;
-  const userPermissions = permsCookie ? JSON.parse(permsCookie) : [];
+  let userPermissions: string[] = [];
+
+  if (permsCookie) {
+    try {
+      userPermissions = JSON.parse(permsCookie);
+    } catch {
+      userPermissions = [];
+    }
+  }
 
   const isStaticAsset =
     [
@@ -46,7 +54,7 @@ export function middleware(request: NextRequest) {
       "/manifest.json",
     ].some((p) => pathname.startsWith(p)) ||
     [".ico", ".png", ".jpg", ".webp", ".svg", ".json"].some((ext) =>
-      pathname.endsWith(ext)
+      pathname.endsWith(ext),
     );
 
   if (isStaticAsset) return NextResponse.next();
@@ -55,14 +63,13 @@ export function middleware(request: NextRequest) {
   if (pathname.startsWith("/api/forgot-pass")) return NextResponse.next();
 
   const missingLocale = i18n.locales.every(
-    (loc) => !pathname.startsWith(`/${loc}/`) && pathname !== `/${loc}`
+    (loc) => !pathname.startsWith(`/${loc}/`) && pathname !== `/${loc}`,
   );
 
   if (missingLocale) {
     const resolvedLocale = getLocale(request);
     const redirectUrl = new URL(`/${resolvedLocale}${pathname}`, request.url);
 
-    // preserve query string termasuk ?crea=
     request.nextUrl.searchParams.forEach((value, key) => {
       redirectUrl.searchParams.set(key, value);
     });
@@ -70,12 +77,17 @@ export function middleware(request: NextRequest) {
     return NextResponse.redirect(redirectUrl);
   }
 
-  // allow access kalau ada query ?crea=
-  const hasCreaToken = !!crea;
+  if (basePath === "/") {
+    const targetPath = accessToken
+      ? `/${locale}/dashboard`
+      : `/${locale}/signin`;
+
+    return NextResponse.redirect(new URL(targetPath, request.url));
+  }
 
   if (basePath === "/signin") {
-    if (accessToken && !hasCreaToken) {
-      return NextResponse.redirect(new URL(`/${locale}/`, request.url));
+    if (accessToken) {
+      return NextResponse.redirect(new URL(`/${locale}/dashboard`, request.url));
     }
     return NextResponse.next();
   }
@@ -85,17 +97,15 @@ export function middleware(request: NextRequest) {
   }
 
   const isProtectedRoute = protectedRoutes.some((route) =>
-    basePath.startsWith(route)
+    basePath.startsWith(route),
   );
 
-  if (isProtectedRoute && !accessToken && !hasCreaToken) {
+  if (isProtectedRoute && !accessToken) {
     return NextResponse.redirect(new URL(`/${locale}/signin`, request.url));
   }
 
   const shouldForceDashboard =
-    role === "admin" &&
     accessToken &&
-    !hasCreaToken &&
     !pathname.startsWith(`/${locale}/dashboard`) &&
     !pathname.startsWith(`/${locale}/signin`) &&
     !pathname.startsWith(`/${locale}/forbidden`) &&
@@ -108,11 +118,11 @@ export function middleware(request: NextRequest) {
   const requiredPermissions = routePermissions[basePath];
   if (requiredPermissions?.length) {
     const hasPermission = requiredPermissions.some((perm) =>
-      userPermissions.includes(perm)
+      userPermissions.includes(perm),
     );
     if (!hasPermission) {
       return NextResponse.redirect(
-        new URL(`/${locale}/forbidden`, request.url)
+        new URL(`/${locale}/forbidden`, request.url),
       );
     }
   }
@@ -120,6 +130,6 @@ export function middleware(request: NextRequest) {
   return NextResponse.next();
 }
 
-export function isLocale(value: string): value is "en" | "id" {
-  return (i18n.locales as readonly string[]).includes(value);
-}
+export const config = {
+  matcher: ["/((?!api|_next/static|_next/image|favicon.ico|.*\\..*).*)"],
+};
