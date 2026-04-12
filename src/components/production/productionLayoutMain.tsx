@@ -205,8 +205,9 @@ export default function ProductionLayoutMain({
   const handleOpenModalFilter = () => setIsFilterModalOpen(true);
 
   /* ---------- layout classes ---------- */
-  const layoutWrapper =
-    "flex h-full min-h-0 w-full flex-col gap-3 overflow-x-hidden xl:flex-row";
+  const layoutWrapper = `flex h-full min-h-0 w-full flex-col gap-3 overflow-x-hidden ${
+    !isMobile ? "xl:flex-row" : ""
+  }`;
 
   const sidePanelWidth =
     isCollapsed && !isMobile
