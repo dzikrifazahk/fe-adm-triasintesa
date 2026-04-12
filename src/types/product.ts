@@ -14,6 +14,7 @@ export interface IProduct {
   featuredImage?: string;
   featuredImageBase64?: string | null;
   featuredImageBase64Error?: string;
+  catalog?: string;
   isActive: boolean;
   publishedAt?: string;
 }
@@ -24,6 +25,7 @@ export interface IProductUpsert {
   content?: string;
   excerpt?: string;
   featuredImage?: string;
+  catalog?: string;
   isActive?: boolean;
   publishedAt?: string;
 }

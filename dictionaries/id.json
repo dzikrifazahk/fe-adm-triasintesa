@@ -207,12 +207,6 @@
     "column_filter": "Filter Kolom",
     "title_create": "Tambah Kategori",
     "title_edit": "Ubah Kategori",
-    "pdf_status": {
-      "label": "Company Profile PDF",
-      "available": "Tersedia",
-      "missing": "Belum ada",
-      "checking": "Mengecek..."
-    },
     "column": {
       "name": "Nama",
       "slug": "Slug",
@@ -245,10 +239,18 @@
     "column_filter": "Filter Kolom",
     "title_create": "Tambah Produk",
     "title_edit": "Ubah Produk",
+    "pdf_status": {
+      "label": "Company Profile PDF",
+      "available": "Tersedia",
+      "missing": "Belum ada",
+      "checking": "Mengecek..."
+    },
     "field": {
       "title": "Judul",
       "slug": "Slug",
       "featured_image": "Gambar",
+      "catalog_pdf": "Catalog PDF",
+      "selected_file": "File terpilih",
       "content": "Konten",
       "status": "Status Aktif"
     },

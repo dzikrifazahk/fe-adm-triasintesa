@@ -207,12 +207,6 @@
     "column_filter": "Column Filter",
     "title_create": "Add Category",
     "title_edit": "Edit Category",
-    "pdf_status": {
-      "label": "Company Profile PDF",
-      "available": "Available",
-      "missing": "Not available",
-      "checking": "Checking..."
-    },
     "column": {
       "name": "Name",
       "slug": "Slug",
@@ -245,10 +239,18 @@
     "column_filter": "Column Filter",
     "title_create": "Add Product",
     "title_edit": "Edit Product",
+    "pdf_status": {
+      "label": "Company Profile PDF",
+      "available": "Available",
+      "missing": "Not available",
+      "checking": "Checking..."
+    },
     "field": {
       "title": "Title",
       "slug": "Slug",
       "featured_image": "Featured Image",
+      "catalog_pdf": "Catalog PDF",
+      "selected_file": "Selected file",
       "content": "Content",
       "status": "Active Status"
     },
