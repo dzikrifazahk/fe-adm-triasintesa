@@ -88,3 +88,20 @@ export interface IUserSelect {
   role?: string;
   divisi?: string;
 }
+
+export interface ICreator {
+  version: number;
+  createdAt: string;
+  createdBy: string;
+  updatedAt: string;
+  updatedBy: string;
+  deletedAt: string;
+  deletedBy: string;
+  id: string;
+  email: string;
+  username: string;
+  password: string;
+  roleId: string;
+  lastLoginAt: string;
+  lastPasswordChangedAt: string;
+}

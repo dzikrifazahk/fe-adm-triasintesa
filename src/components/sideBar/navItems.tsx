@@ -2,9 +2,7 @@
 
 import { usePathname } from "next/navigation";
 import {
-  FaHouseChimney,
   FaGears,
-  FaCube,
   FaChartPie,
   FaMoneyBills,
 } from "react-icons/fa6";
@@ -15,8 +13,6 @@ import { i18n } from "../../../i18n-config";
 import { isLocale } from "@/utils/isLocale";
 import { useLoading } from "@/context/loadingContext";
 import Link from "next/link";
-import DashboardIc from "@/assets/ic/dashboard.svg";
-import Image from "next/image";
 import DashboardIcon from "../icons/dashboardIC";
 import InputProductionIcon from "../icons/inputProductionIC";
 import InventoryIC from "../icons/inventoryIC";

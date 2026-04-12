@@ -103,7 +103,7 @@
     "configuration": "Configuration",
     "notification": "Notification",
     "logout": "Logout",
-    "forgot_password": "Forgot Password"
+    "change_password": "Change Password"
   },
   "menu_bar_settings": {
     "projects": "Projects",

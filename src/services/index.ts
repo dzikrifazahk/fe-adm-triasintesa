@@ -21,6 +21,7 @@ import { PublicationCategoryService } from "./publication-category.service";
 import { PublicationService } from "./publication.service";
 import { CatalogService } from "./catalog.service";
 import { ProductService } from "./product.service";
+import { ProductionPlanService } from "./production.service";
 
 export const authService = new AuthService();
 export const taxService = new TaxsService();
@@ -45,3 +46,4 @@ export const publicationCategoryService = new PublicationCategoryService();
 export const publicationService = new PublicationService();
 export const catalogService = new CatalogService();
 export const productService = new ProductService();
+export const productionPlanService = new ProductionPlanService();

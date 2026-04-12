@@ -103,7 +103,7 @@
     "configuration": "Konfigurasi",
     "notification": "Notifikasi",
     "logout": "Keluar",
-    "forgot_password": "Lupa Password"
+    "change_password": "Ganti Password"
   },
   "menu_bar_settings": {
     "projects": "Proyek",
