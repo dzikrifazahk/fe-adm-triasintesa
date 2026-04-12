@@ -62,6 +62,11 @@ export function NavItems({ isOpen, dictionary }: SideBarDashboardProps) {
       to: `/${locale}/dashboard/production`,
     },
     {
+      title: `${dictionary.qc}`,
+      icon: <InputProductionIcon className="w-5 h-5 hover:text-white transition" />,
+      to: `/${locale}/dashboard/qc`,
+    },
+    {
       title: `${dictionary.inventory}`,
       icon: <InventoryIC className="w-5 h-5 hover:text-white transition" />,
       to: `/${locale}/dashboard/inventory`,
