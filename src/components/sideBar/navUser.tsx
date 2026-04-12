@@ -160,7 +160,7 @@ export function NavUser({
               <DropdownMenuGroup onClick={() => actions("change_password")}>
                 <DropdownMenuItem>
                   <Key />
-                  {dictionary.forgot_password}
+                  {dictionary.change_password}
                 </DropdownMenuItem>
               </DropdownMenuGroup>
               <DropdownMenuSeparator />
