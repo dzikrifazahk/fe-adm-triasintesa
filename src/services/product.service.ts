@@ -45,4 +45,17 @@ export class ProductService extends BaseHttpService {
     );
     return response.data;
   }
+
+  async uploadCatalog(payload: FormData) {
+    const response = await this.httpClient.post(
+      "/product/upload-catalog",
+      payload,
+      {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      }
+    );
+    return response.data;
+  }
 }

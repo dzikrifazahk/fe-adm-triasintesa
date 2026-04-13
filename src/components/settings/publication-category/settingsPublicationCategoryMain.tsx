@@ -18,7 +18,7 @@ import {
   IPublicationCategory,
   IPublicationCategoryUpsert,
 } from "@/types/publication-category";
-import { companyProfilePdfService, publicationCategoryService } from "@/services";
+import { publicationCategoryService } from "@/services";
 
 const slugify = (value: string) =>
   value
@@ -53,9 +53,6 @@ export default function SettingsPublicationCategoryMain({
   const [slug, setSlug] = useState("");
   const [description, setDescription] = useState("");
   const [slugTouched, setSlugTouched] = useState(false);
-  const [pdfStatus, setPdfStatus] = useState<"checking" | "available" | "missing">(
-    "checking"
-  );
 
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
@@ -100,19 +97,6 @@ export default function SettingsPublicationCategoryMain({
     setIsLoading(false);
   }, []);
 
-  useEffect(() => {
-    const loadPdfStatus = async () => {
-      setPdfStatus("checking");
-      try {
-        const response = await companyProfilePdfService.checkCompanyProfilePdf();
-        setPdfStatus(response.status === 200 ? "available" : "missing");
-      } catch {
-        setPdfStatus("missing");
-      }
-    };
-
-    loadPdfStatus();
-  }, []);
 
   const handleCreateData = () => {
     setTitle(dictionary?.title_create ?? "Tambah Kategori");
@@ -289,22 +273,6 @@ export default function SettingsPublicationCategoryMain({
     setSlug(value);
   };
 
-  const pdfStatusLabel =
-    dictionary?.pdf_status?.[
-      pdfStatus as "available" | "missing" | "checking"
-    ] ??
-    (pdfStatus === "available"
-      ? "Tersedia"
-      : pdfStatus === "missing"
-        ? "Belum ada"
-        : "Mengecek...");
-
-  const pdfStatusClass =
-    pdfStatus === "available"
-      ? "bg-green-100 text-green-700"
-      : pdfStatus === "missing"
-        ? "bg-gray-100 text-gray-600"
-        : "bg-yellow-100 text-yellow-700";
 
   return (
     <div className="w-full h-full">
@@ -350,17 +318,7 @@ export default function SettingsPublicationCategoryMain({
       </Modal>
 
       <Card className="h-full">
-        <CardContent className="flex flex-col gap-2">
-          <div className="flex items-center justify-end">
-            <div className="flex items-center gap-2 text-xs">
-              <span className="text-gray-500">
-                {dictionary?.pdf_status?.label ?? "Company Profile PDF"}
-              </span>
-              <span className={`px-2 py-1 rounded-full ${pdfStatusClass}`}>
-                {pdfStatusLabel}
-              </span>
-            </div>
-          </div>
+        <CardContent>
           <DataTable
             columns={columns({
               deleteData: handleDeleteData,

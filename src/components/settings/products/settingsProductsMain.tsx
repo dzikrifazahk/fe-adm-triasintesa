@@ -14,9 +14,8 @@ import { MobileContext } from "@/hooks/use-mobile-ssr";
 import { Card, CardContent } from "@/components/ui/card";
 import axios from "axios";
 import { IProduct, IProductUpsert } from "@/types/product";
-import { productService, companyProfilePdfService } from "@/services";
+import { productService } from "@/services";
 import { Switch } from "@/components/ui/switch";
-import { Button } from "@/components/ui/button";
 
 const slugify = (value: string) =>
   value
@@ -33,7 +32,7 @@ type PaginationMeta = {
   totalPages?: number;
 };
 
-const PDF_MAX_SIZE = 10_000_000;
+const CATALOG_MAX_SIZE = 2_000_000;
 
 export default function SettingsProductsMain({
   dictionary,
@@ -57,8 +56,7 @@ export default function SettingsProductsMain({
   const [featuredFile, setFeaturedFile] = useState<File | null>(null);
   const [featuredPreview, setFeaturedPreview] = useState<string>("");
   const [featuredBase64, setFeaturedBase64] = useState<string | null>(null);
-
-  const [pdfFile, setPdfFile] = useState<File | null>(null);
+  const [catalogFile, setCatalogFile] = useState<File | null>(null);
 
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
@@ -72,7 +70,7 @@ export default function SettingsProductsMain({
     pageSize?: number,
     search?: string
   ): Promise<IProduct[]> => {
-    let filterParams: Record<string, any> = {};
+    let filterParams: Record<string, unknown> = {};
 
     if (pageSize || page) {
       filterParams = { page: page, limit: pageSize };
@@ -129,6 +127,7 @@ export default function SettingsProductsMain({
     setSlugTouched(true);
     setFeaturedFile(null);
     setFeaturedBase64(product.featuredImageBase64 || null);
+    setCatalogFile(null);
     setTitle(dictionary?.title_edit ?? "Ubah Produk");
     setModalType("edit");
     toggleModal();
@@ -220,6 +219,16 @@ export default function SettingsProductsMain({
           }
         }
 
+        if (catalogFile) {
+          const formData = new FormData();
+          formData.append("catalog", catalogFile);
+          const uploadResponse = await productService.uploadCatalog(formData);
+          const uploadData = uploadResponse.data || {};
+          if (uploadData.path) {
+            payload.catalog = uploadData.path;
+          }
+        }
+
         if (modalType === "edit") {
           await productService.updateProduct(id, payload);
         } else {
@@ -267,6 +276,7 @@ export default function SettingsProductsMain({
     setFeaturedFile(null);
     setFeaturedPreview("");
     setFeaturedBase64(null);
+    setCatalogFile(null);
   };
 
   const handleSearchChange = (val: string) => setSearch(val);
@@ -341,12 +351,10 @@ export default function SettingsProductsMain({
     setFeaturedFile(file);
   };
 
-  const previewSrc = featuredPreview || featuredBase64 || "";
-
-  const handlePdfChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleCatalogChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) {
-      setPdfFile(null);
+      setCatalogFile(null);
       return;
     }
 
@@ -361,123 +369,24 @@ export default function SettingsProductsMain({
       return;
     }
 
-    if (file.size > PDF_MAX_SIZE) {
+    if (file.size > CATALOG_MAX_SIZE) {
       Swal.fire({
         icon: "error",
         title: "Oops...",
         position: "top-right",
         toast: true,
-        text: "Ukuran file maksimal 10MB.",
+        text: "Ukuran file maksimal 2MB.",
       });
       return;
     }
 
-    setPdfFile(file);
+    setCatalogFile(file);
   };
 
-  const handleUploadPdf = async () => {
-    if (!pdfFile) {
-      Swal.fire({
-        icon: "warning",
-        title: "Pilih file PDF terlebih dahulu",
-        toast: true,
-        position: "top-right",
-        showConfirmButton: false,
-        timer: 2000,
-      });
-      return;
-    }
-
-    try {
-      setIsLoading(true);
-      const formData = new FormData();
-      formData.append("pdf", pdfFile);
-      await companyProfilePdfService.uploadCompanyProfilePdf(formData);
-
-      Swal.fire({
-        icon: "success",
-        title: "PDF berhasil diupload",
-        toast: true,
-        position: "top-right",
-        showConfirmButton: false,
-        timer: 2000,
-      });
-      setPdfFile(null);
-    } catch (e) {
-      if (axios.isAxiosError(e)) {
-        const message = e.response?.data?.message ?? "";
-        Swal.fire({
-          icon: "error",
-          title: `Error: ${JSON.stringify(message)}`,
-          toast: true,
-          position: "top-right",
-        });
-      }
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleDownloadPdf = () => {
-    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL as string | undefined;
-    if (!baseUrl) {
-      Swal.fire({
-        icon: "error",
-        title: "Base URL belum diset",
-        toast: true,
-        position: "top-right",
-        showConfirmButton: false,
-        timer: 2000,
-      });
-      return;
-    }
-    window.open(`${baseUrl}/company-profile/pdf`, "_blank");
-  };
+  const previewSrc = featuredPreview || featuredBase64 || "";
 
   return (
     <div className="w-full h-full flex flex-col gap-4">
-      <Card>
-        <CardContent className="flex flex-col gap-4 p-5">
-          <div className="font-semibold">
-            {dictionary?.pdf_section?.title ?? "Company Profile PDF"}
-          </div>
-          <div className="text-xs text-gray-500">
-            {dictionary?.pdf_section?.description ??
-              "Upload file PDF untuk Company Profile dan download file terbaru."}
-          </div>
-
-          <div className="flex flex-col md:flex-row gap-3 items-start md:items-center">
-            <Input
-              type="file"
-              accept=".pdf"
-              className="file-input file-input-bordered file-input-primary w-full"
-              onChange={handlePdfChange}
-            />
-            <div className="flex gap-2 w-full md:w-auto">
-              <Button
-                onClick={handleUploadPdf}
-                className="bg-iprimary-blue hover:bg-iprimary-blue-tertiary text-white w-full md:w-auto"
-              >
-                {dictionary?.pdf_section?.button_upload ?? "Upload PDF"}
-              </Button>
-              <Button
-                variant="outline"
-                onClick={handleDownloadPdf}
-                className="w-full md:w-auto"
-              >
-                {dictionary?.pdf_section?.button_download ?? "Download PDF"}
-              </Button>
-            </div>
-          </div>
-          {pdfFile && (
-            <div className="text-xs text-gray-600">
-              {dictionary?.pdf_section?.selected_file ?? "File terpilih"}:{" "}
-              {pdfFile.name}
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
       <Modal
         isOpen={isModalOpen}
         onClose={clearInput}
@@ -531,6 +440,22 @@ export default function SettingsProductsMain({
             )}
           </div>
 
+          <div className="flex flex-col gap-2">
+            <span>{dictionary?.field?.catalog_pdf ?? "Catalog PDF"}</span>
+            <Input
+              type="file"
+              accept=".pdf"
+              className="file-input file-input-bordered file-input-primary w-full"
+              onChange={handleCatalogChange}
+            />
+            {catalogFile && (
+              <div className="text-xs text-gray-600">
+                {dictionary?.field?.selected_file ?? "File terpilih"}:{" "}
+                {catalogFile.name}
+              </div>
+            )}
+          </div>
+
           <div>
             <span>{dictionary?.field?.content ?? "Konten"}</span>
             <Textarea
@@ -569,3 +494,4 @@ export default function SettingsProductsMain({
     </div>
   );
 }
+

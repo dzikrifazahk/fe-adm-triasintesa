@@ -20,7 +20,6 @@ import { TanksService } from "./tank.service";
 import { PublicationCategoryService } from "./publication-category.service";
 import { PublicationService } from "./publication.service";
 import { CatalogService } from "./catalog.service";
-import { CompanyProfilePdfService } from "./company-profile-pdf.service";
 import { ProductService } from "./product.service";
 import { ProductionPlanService } from "./production.service";
 
@@ -46,6 +45,5 @@ export const tanksService = new TanksService();
 export const publicationCategoryService = new PublicationCategoryService();
 export const publicationService = new PublicationService();
 export const catalogService = new CatalogService();
-export const companyProfilePdfService = new CompanyProfilePdfService();
 export const productService = new ProductService();
 export const productionPlanService = new ProductionPlanService();
