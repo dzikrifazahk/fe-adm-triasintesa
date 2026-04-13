@@ -66,6 +66,17 @@
       "default_page_description": "Please select one of the tabs above for seeing details."
     }
   },
+  "quality_control_page_dic": {
+    "title": "Quality Control",
+    "description": "Manage quality control data efficiently and accurately.",
+    "page_greetings": "Welcome to Quality Control",
+    "page_description": "Please select one of the menus above to start managing quality control data.",
+    "quality_control": {
+      "title_tab_1": "Quality Control",
+      "default_page_title": "Please Select Tab",
+      "default_page_description": "Please select one of the tabs above for seeing details."
+    }
+  },
   "inventory_page_dic": {
     "title": "Inventory",
     "description": "Manage inventory data efficiently and accurately.",

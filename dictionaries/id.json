@@ -66,6 +66,12 @@
       "default_page_description": "Silahkan pilih salah satu tab di atas untuk melihat detail."
     }
   },
+  "quality_control_page_dic": {
+    "title": "Kontrol Kualitas",
+    "description": "Kelola kontrol kualitas dengan mudah dan efisien, mulai dari perencanaan hingga pelaporan.",
+    "page_greetings": "Selamat datang di Halaman Kontrol Kualitas",
+    "page_description": "Silakan pilih salah satu menu di atas untuk mulai mengelola kontrol kualitas, memantau progres, atau membuat laporan kontrol kualitas."
+  },
   "inventory_page_dic": {
     "title": "Stok Barang",
     "description": "Kelola data persediaan secara efisien dan akurat.",
