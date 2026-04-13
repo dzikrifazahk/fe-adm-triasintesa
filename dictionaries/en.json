@@ -1,4 +1,60 @@
 {
+   "tanks_refill_page_dic": {
+    "title": "Tanks Refill",
+    "description": "Manage tank logging, volume increases, and volume decreases visually and accurately.",
+    "page_greetings": "Welcome to Tanks Refill",
+    "page_description": "Monitor tank volume, review refill status, and adjust volume based on operational needs.",
+    "search_placeholder": "Search tank...",
+    "button_refresh": "Refresh",
+    "button_logs": "Logs",
+    "button_increase": "Increase",
+    "button_decrease": "Decrease",
+    "volume_status": "Volume Status",
+    "last_refill": "Last Refill",
+    "current_volume": "Current Volume",
+    "total_capacity": "Total Capacity",
+    "projected_volume": "Projected Volume",
+    "modal": {
+      "logs_title": "Tank Logs",
+      "increase_title": "Increase Tank Volume",
+      "decrease_title": "Decrease Tank Volume",
+      "logs_description": "View the current tank activity and status summary.",
+      "adjust_description": "Adjust the tank volume based on operational needs.",
+      "amount_label": "Volume Amount (Liters)",
+      "notes_label": "Notes",
+      "notes_increase_placeholder": "Full refill",
+      "notes_decrease_placeholder": "Production usage",
+      "submit": "Save Volume Change",
+      "close": "Close",
+      "snapshot_title": "Tank Activity Snapshot",
+      "last_updated": "Last Updated",
+      "empty_logs": "There are no additional tank log notes yet."
+    },
+    "toast": {
+      "fetch_error_title": "An Error Occurred",
+      "fetch_error_text": "Failed to fetch tank data",
+      "amount_warning": "Volume amount must be greater than 0",
+      "increase_confirm": "Increase this tank volume?",
+      "decrease_confirm": "Decrease this tank volume?",
+      "confirm_button": "Yes",
+      "cancel_button": "Cancel",
+      "success_title": "Tank volume updated successfully",
+      "error_title": "Failed to update tank volume",
+      "error_text": "Make sure the backend endpoint accepts current volume updates."
+    },
+    "empty_state": "No tanks match the current search.",
+    "column": {
+      "tank_name": "Tank Name",
+      "tank_code": "Tank Code",
+      "description": "Description",
+      "total_capacity": "Capacity",
+      "current_volume": "Current Volume",
+      "location": "Location",
+      "status": "Status",
+      "lastRefillDate": "Last Refill Date",
+      "lastUpdated": "Last Updated"
+    }
+  },
   "production_page_dic": {
     "title": "Production Input",
     "description": "Manage production input data efficiently and accurately.",
@@ -89,6 +145,7 @@
   },
   "primary_sidebar": {
     "home": "Home",
+    "tank_refill": "Tank Refill",
     "production": "Production Input",
     "qc": "Quality Control",
     "inventory": "Inventory",

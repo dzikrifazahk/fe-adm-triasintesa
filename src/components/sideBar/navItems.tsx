@@ -18,7 +18,7 @@ import InputProductionIcon from "../icons/inputProductionIC";
 import InventoryIC from "../icons/inventoryIC";
 import SalesOrderIC from "../icons/salesOrderIC";
 import ShippingIC from "../icons/shippingIC";
-import { GitPullRequestDraft } from "lucide-react";
+import { GitPullRequestDraft, Refrigerator } from "lucide-react";
 
 interface NavItem {
   header?: string;
@@ -52,6 +52,11 @@ export function NavItems({ isOpen, dictionary }: SideBarDashboardProps) {
       // icon: <FaHouseChimney className="hover:text-white" size={18} />,
       icon: <DashboardIcon className="w-5 h-5  hover:text-white transition" />,
       to: `/${locale}/dashboard`,
+    },
+    {
+      title: `${dictionary.tank_refill}`,
+      icon: <Refrigerator className="w-5 h-5 hover:text-white transition" />,
+      to: `/${locale}/dashboard/tanks-refill`,
     },
     {
       title: `${dictionary.production}`,

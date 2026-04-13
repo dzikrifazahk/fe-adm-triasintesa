@@ -1,17 +1,17 @@
 import { Locale } from "../../../../../../../i18n-config";
 import { getDictionary } from "../../../../../../../get-dictionary";
-import ShippingMain from "@/components/shipping/shippingMain";
+import TanksRefillMain from "@/components/tanks-refill/tankRefillMain";
 
 type Props = {
   params: Promise<{ lang: Locale }>;
 };
 
-export default async function ShippingPage({ params }: Props) {
+export default async function TankRefillPage({ params }: Props) {
   const { lang } = await params;
   const dictionary = await getDictionary(lang);
   return (
     <>
-      <ShippingMain dictionary={dictionary.shipping_page_dic ?? "-"} />
+      <TanksRefillMain dictionary={dictionary.tanks_refill_page_dic ?? "-"} />
     </>
   );
 }

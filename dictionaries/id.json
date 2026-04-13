@@ -1,4 +1,60 @@
 {
+  "tanks_refill_page_dic": {
+    "title": "Tanks Refill",
+    "description": "Kelola logging, penambahan, dan pengurangan volume tank secara visual dan akurat.",
+    "page_greetings": "Selamat datang di Halaman Refill Tangki",
+    "page_description": "Pantau volume tank, lihat status pengisian, lalu lakukan penambahan atau pengurangan volume sesuai kebutuhan operasional.",
+    "search_placeholder": "Cari tank...",
+    "button_refresh": "Refresh",
+    "button_logs": "Logs",
+    "button_increase": "Increase",
+    "button_decrease": "Decrease",
+    "volume_status": "Status Volume",
+    "last_refill": "Refill Terakhir",
+    "current_volume": "Volume Saat Ini",
+    "total_capacity": "Total Kapasitas",
+    "projected_volume": "Estimasi Volume",
+    "modal": {
+      "logs_title": "Log Tangki",
+      "increase_title": "Tambah Volume Tangki",
+      "decrease_title": "Kurangi Volume Tangki",
+      "logs_description": "Lihat ringkasan aktivitas dan kondisi tangki saat ini.",
+      "adjust_description": "Atur volume tank sesuai kebutuhan operasional.",
+      "amount_label": "Jumlah Volume (Liter)",
+      "notes_label": "Catatan",
+      "notes_increase_placeholder": "Pengisian penuh",
+      "notes_decrease_placeholder": "Pemakaian produksi",
+      "submit": "Simpan Perubahan Volume",
+      "close": "Tutup",
+      "snapshot_title": "Ringkasan Aktivitas Tangki",
+      "last_updated": "Pembaruan Terakhir",
+      "empty_logs": "Belum ada catatan log tambahan untuk tank ini."
+    },
+    "toast": {
+      "fetch_error_title": "Terjadi Kesalahan",
+      "fetch_error_text": "Gagal mengambil data tank",
+      "amount_warning": "Jumlah volume harus lebih dari 0",
+      "increase_confirm": "Tambah volume tangki ini?",
+      "decrease_confirm": "Kurangi volume tangki ini?",
+      "confirm_button": "Ya",
+      "cancel_button": "Batal",
+      "success_title": "Volume tank berhasil diperbarui",
+      "error_title": "Gagal memperbarui volume tank",
+      "error_text": "Pastikan endpoint backend menerima update current volume."
+    },
+    "empty_state": "Tidak ada tank yang cocok dengan pencarian.",
+    "column": {
+      "tank_name": "Nama Tangki",
+      "tank_code": "Kode Tangki",
+      "description": "Deskripsi",
+      "total_capacity": "Kapasitas",
+      "current_volume": "Volume Saat Ini",
+      "location": "Lokasi",
+      "status": "Status",
+      "lastRefillDate": "Tanggal Pengisian Terakhir",
+      "lastUpdated": "Tanggal Pembaruan Terakhir"
+    }
+  },
   "production_page_dic": {
     "title": "Produksi",
     "description": "Kelola produksi dengan mudah dan efisien, mulai dari perencanaan hingga pelaporan.",
@@ -89,6 +145,7 @@
   },
   "primary_sidebar": {
     "home": "Halaman Utama",
+    "tank_refill": "Isi Tangki",
     "production": "Input Produksi",
     "qc": "Pemeriksaan Kualitas",
     "inventory": "Stok Barang",
@@ -409,5 +466,4 @@
       "default_page_description": "Selamat Datang Di Halaman Sumber Daya Manusia"
     }
   }
-  
 }
