@@ -36,13 +36,6 @@ const initialForm: IAddOrUpdateProductionPlan = {
   // status: "planned",
 };
 
-const statusOptions = [
-  { value: "planned", label: "Planned" },
-  { value: "in_progress", label: "In Progress" },
-  { value: "completed", label: "Completed" },
-  { value: "cancel", label: "Cancel" },
-];
-
 function normalizeNumber(value?: string | number | null) {
   const parsed = Number(value ?? 0);
   return Number.isNaN(parsed) ? 0 : parsed;
@@ -57,6 +50,26 @@ export default function FormProductionPlanMain({
   lang,
   planId,
 }: Props) {
+  const productionPlanDictionary = dictionary.production_plan;
+  const formDictionary = productionPlanDictionary.form;
+  const statusOptions = [
+    {
+      value: "planned",
+      label: productionPlanDictionary.layout.status_planned,
+    },
+    {
+      value: "in_progress",
+      label: productionPlanDictionary.layout.status_in_progress,
+    },
+    {
+      value: "completed",
+      label: productionPlanDictionary.layout.status_completed,
+    },
+    {
+      value: "cancel",
+      label: productionPlanDictionary.layout.status_cancel,
+    },
+  ];
   const router = useRouter();
   const [form, setForm] = useState<IAddOrUpdateProductionPlan>(initialForm);
   const [tanks, setTanks] = useState<ITank[]>([]);
@@ -114,7 +127,7 @@ export default function FormProductionPlanMain({
         console.error(error);
         Swal.fire({
           icon: "error",
-          title: "Gagal memuat data production plan",
+          title: formDictionary.load_error,
           toast: true,
           position: "top-right",
           showConfirmButton: false,
@@ -141,7 +154,7 @@ export default function FormProductionPlanMain({
     if (!form.startDate || !form.endDate || !form.tankId) {
       Swal.fire({
         icon: "warning",
-        title: "Tanggal dan tank wajib dipilih",
+        title: formDictionary.required_warning,
         toast: true,
         position: "top-right",
         showConfirmButton: false,
@@ -163,11 +176,11 @@ export default function FormProductionPlanMain({
     const result = await Swal.fire({
       icon: "question",
       title: planId
-        ? "Simpan perubahan production plan?"
-        : "Tambahkan production plan baru?",
+        ? formDictionary.confirm_update
+        : formDictionary.confirm_create,
       showCancelButton: true,
-      confirmButtonText: "Ya",
-      cancelButtonText: "Batal",
+      confirmButtonText: formDictionary.confirm_yes,
+      cancelButtonText: formDictionary.confirm_cancel,
       confirmButtonColor: "#2B59FF",
     });
 
@@ -185,8 +198,8 @@ export default function FormProductionPlanMain({
       Swal.fire({
         icon: "success",
         title: planId
-          ? "Production plan berhasil diperbarui"
-          : "Production plan berhasil dibuat",
+          ? formDictionary.save_success_update
+          : formDictionary.save_success_create,
         toast: true,
         position: "top-right",
         showConfirmButton: false,
@@ -198,7 +211,7 @@ export default function FormProductionPlanMain({
       console.error(error);
       Swal.fire({
         icon: "error",
-        title: "Gagal menyimpan production plan",
+        title: formDictionary.save_error,
         toast: true,
         position: "top-right",
         showConfirmButton: false,
@@ -214,11 +227,11 @@ export default function FormProductionPlanMain({
 
     const result = await Swal.fire({
       icon: "warning",
-      title: "Hapus production plan ini?",
-      text: "Data yang dihapus tidak dapat dikembalikan.",
+      title: formDictionary.delete_confirm_title,
+      text: formDictionary.delete_confirm_text,
       showCancelButton: true,
-      confirmButtonText: "Hapus",
-      cancelButtonText: "Batal",
+      confirmButtonText: formDictionary.delete_confirm_button,
+      cancelButtonText: formDictionary.confirm_cancel,
       confirmButtonColor: "#DC2626",
     });
 
@@ -230,7 +243,7 @@ export default function FormProductionPlanMain({
 
       Swal.fire({
         icon: "success",
-        title: "Production plan berhasil dihapus",
+        title: formDictionary.delete_success,
         toast: true,
         position: "top-right",
         showConfirmButton: false,
@@ -242,7 +255,7 @@ export default function FormProductionPlanMain({
       console.error(error);
       Swal.fire({
         icon: "error",
-        title: "Gagal menghapus production plan",
+        title: formDictionary.delete_error,
         toast: true,
         position: "top-right",
         showConfirmButton: false,
@@ -258,7 +271,7 @@ export default function FormProductionPlanMain({
       <div className="flex h-full min-h-0 flex-col rounded-lg border bg-white shadow-sm">
         <div className="border-b px-4 py-3 sm:px-5">
           <div className="text-lg font-bold text-slate-900">
-            {planId ? "Update Production Plan" : "Create Production Plan"}
+            {planId ? formDictionary.update_title : formDictionary.create_title}
           </div>
           <div className="text-sm text-slate-500">
             {dictionary.description}
@@ -272,7 +285,7 @@ export default function FormProductionPlanMain({
           <div className="space-y-4">
             <div className="grid gap-4 md:grid-cols-2">
               <div className="space-y-2">
-                <Label htmlFor="startDate">Start Date</Label>
+                <Label htmlFor="startDate">{formDictionary.field_start_date}</Label>
                 <Input
                   id="startDate"
                   type="date"
@@ -285,7 +298,7 @@ export default function FormProductionPlanMain({
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="endDate">End Date</Label>
+                <Label htmlFor="endDate">{formDictionary.field_end_date}</Label>
                 <Input
                   id="endDate"
                   type="date"
@@ -299,14 +312,14 @@ export default function FormProductionPlanMain({
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="tankId">Tank</Label>
+              <Label htmlFor="tankId">{formDictionary.field_tank}</Label>
               <Select
                 value={form.tankId ? String(form.tankId) : undefined}
                 onValueChange={(value) => handleChange("tankId", Number(value))}
                 disabled={loading || submitting}
               >
                 <SelectTrigger id="tankId" className="w-full">
-                  <SelectValue placeholder="Pilih tank" />
+                  <SelectValue placeholder={formDictionary.field_tank_placeholder} />
                 </SelectTrigger>
                 <SelectContent>
                   {tanks.map((tank) => (
@@ -320,7 +333,7 @@ export default function FormProductionPlanMain({
 
             <div className="grid gap-4 md:grid-cols-2">
               <div className="space-y-2">
-                <Label htmlFor="targetBatches">Target Batches</Label>
+                <Label htmlFor="targetBatches">{formDictionary.field_target_batches}</Label>
                 <Input
                   id="targetBatches"
                   type="number"
@@ -335,7 +348,7 @@ export default function FormProductionPlanMain({
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="targetJirigenTotal">Target Jirigen Total</Label>
+                <Label htmlFor="targetJirigenTotal">{formDictionary.field_target_jirigen_total}</Label>
                 <Input
                   id="targetJirigenTotal"
                   type="number"
@@ -355,14 +368,14 @@ export default function FormProductionPlanMain({
 
             {planId && (
               <div className="space-y-2">
-                <Label htmlFor="status">Status</Label>
+                <Label htmlFor="status">{formDictionary.field_status}</Label>
                 <Select
                   value={form.status ?? "planned"}
                   onValueChange={(value) => handleChange("status", value)}
                   disabled={loading || submitting}
                 >
                   <SelectTrigger id="status" className="w-full">
-                    <SelectValue placeholder="Pilih status" />
+                    <SelectValue placeholder={formDictionary.field_status_placeholder} />
                   </SelectTrigger>
                   <SelectContent>
                     {statusOptions.map((status) => (
@@ -376,13 +389,13 @@ export default function FormProductionPlanMain({
             )}
 
             <div className="space-y-2">
-              <Label htmlFor="notes">Notes</Label>
+              <Label htmlFor="notes">{formDictionary.field_notes}</Label>
               <Textarea
                 id="notes"
                 value={form.notes}
                 onChange={(event) => handleChange("notes", event.target.value)}
                 disabled={loading || submitting}
-                placeholder="Produksi untuk minggu ini"
+                placeholder={formDictionary.notes_placeholder}
                 className="min-h-32"
               />
             </div>
@@ -394,7 +407,7 @@ export default function FormProductionPlanMain({
                 onClick={() => router.push(`/${lang}/dashboard/production`)}
                 disabled={submitting}
               >
-                Kembali
+                {formDictionary.button_back}
               </Button>
               {planId && (
                 <Button
@@ -404,7 +417,7 @@ export default function FormProductionPlanMain({
                   disabled={loading || submitting}
                   className="border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700"
                 >
-                  Hapus Production Plan
+                  {formDictionary.button_delete}
                 </Button>
               )}
               <Button
@@ -413,10 +426,10 @@ export default function FormProductionPlanMain({
                 disabled={loading || submitting}
               >
                 {submitting
-                  ? "Menyimpan..."
+                  ? formDictionary.button_submitting
                   : planId
-                    ? "Update Production Plan"
-                    : "Simpan Production Plan"}
+                    ? formDictionary.button_update
+                    : formDictionary.button_save}
               </Button>
             </div>
           </div>
@@ -424,10 +437,10 @@ export default function FormProductionPlanMain({
           <div className="rounded-2xl border bg-slate-50 p-4">
             <div className="mb-4">
               <div className="text-base font-semibold text-slate-900">
-                Tank Volume Overview
+                {formDictionary.overview_title}
               </div>
               <div className="text-sm text-slate-500">
-                Visualisasi kapasitas tank yang dipilih untuk production plan.
+                {formDictionary.overview_description}
               </div>
             </div>
 
@@ -467,7 +480,7 @@ export default function FormProductionPlanMain({
                     <div className="rounded-xl border bg-slate-50 p-3">
                       <div className="mb-1 flex items-center gap-2 text-sm text-slate-500">
                         <Droplets className="h-4 w-4" />
-                        Current Volume
+                        {formDictionary.current_volume}
                       </div>
                       <div className="text-lg font-semibold text-slate-900">
                         {formatNumber(selectedTank.currentVolume)} L
@@ -477,7 +490,7 @@ export default function FormProductionPlanMain({
                     <div className="rounded-xl border bg-slate-50 p-3">
                       <div className="mb-1 flex items-center gap-2 text-sm text-slate-500">
                         <Beaker className="h-4 w-4" />
-                        Total Capacity
+                        {formDictionary.total_capacity}
                       </div>
                       <div className="text-lg font-semibold text-slate-900">
                         {formatNumber(selectedTank.totalCapacity)} L
@@ -487,7 +500,7 @@ export default function FormProductionPlanMain({
                     <div className="rounded-xl border bg-slate-50 p-3">
                       <div className="mb-1 flex items-center gap-2 text-sm text-slate-500">
                         <Package2 className="h-4 w-4" />
-                        Target Batches
+                        {formDictionary.target_batches}
                       </div>
                       <div className="text-lg font-semibold text-slate-900">
                         {formatNumber(form.targetBatches)}
@@ -497,7 +510,7 @@ export default function FormProductionPlanMain({
                     <div className="rounded-xl border bg-slate-50 p-3">
                       <div className="mb-1 flex items-center gap-2 text-sm text-slate-500">
                         <CalendarRange className="h-4 w-4" />
-                        Target Jirigen
+                        {formDictionary.target_jirigen}
                       </div>
                       <div className="text-lg font-semibold text-slate-900">
                         {formatNumber(form.targetJirigenTotal)}
@@ -508,8 +521,7 @@ export default function FormProductionPlanMain({
               </div>
             ) : (
               <div className="grid min-h-72 place-items-center rounded-2xl border border-dashed bg-white p-6 text-center text-sm text-slate-500">
-                Pilih tank terlebih dahulu untuk melihat visual volume dan
-                kapasitasnya.
+                {formDictionary.empty_selected_tank}
               </div>
             )}
           </div>

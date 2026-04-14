@@ -30,6 +30,7 @@ export default function ProductionLayoutMain({
   children: React.ReactNode;
   dictionary: Awaited<ReturnType<typeof getDictionary>>["production_page_dic"];
 }) {
+  const productionPlanDictionary = dictionary.production_plan;
   /* ---------- mobile detection ---------- */
   const { isMobile } = useContext(MobileContext);
 
@@ -165,11 +166,11 @@ export default function ProductionLayoutMain({
   const handleDeleteProject = async (id: string) => {
     const confirm = await Swal.fire({
       icon: "warning",
-      text: "Apakah anda ingin menghapus Production Plan ini?",
+      text: productionPlanDictionary.layout.delete_confirm_text,
       showDenyButton: true,
-      confirmButtonText: "Ya",
+      confirmButtonText: productionPlanDictionary.layout.confirm_yes,
       confirmButtonColor: "#493628",
-      denyButtonText: "Tidak",
+      denyButtonText: productionPlanDictionary.layout.confirm_no,
       position: "center",
     });
 
@@ -180,7 +181,7 @@ export default function ProductionLayoutMain({
 
         Swal.fire({
           icon: "success",
-          title: "Production Plan berhasil dihapus",
+          title: productionPlanDictionary.layout.delete_success,
           position: "top-right",
           toast: true,
           showConfirmButton: false,
@@ -191,7 +192,7 @@ export default function ProductionLayoutMain({
       } catch {
         Swal.fire({
           icon: "error",
-          title: "Terjadi Kesalahan Saat Menghapus Production Plan",
+          title: productionPlanDictionary.layout.delete_error,
           position: "top-right",
           toast: true,
           showConfirmButton: false,
@@ -245,10 +246,10 @@ export default function ProductionLayoutMain({
             {!isCollapsed && !isMobile && (
               <>
                 {[
-                  ["#D1E0FF", "Planned"],
-                  ["#FFBE58", "In Progress"],
-                  ["#21EB21", "Completed"],
-                  ["#FF0000", "Cancel"],
+                  ["#D1E0FF", productionPlanDictionary.layout.status_planned],
+                  ["#FFBE58", productionPlanDictionary.layout.status_in_progress],
+                  ["#21EB21", productionPlanDictionary.layout.status_completed],
+                  ["#FF0000", productionPlanDictionary.layout.status_cancel],
                 ].map(([clr, lbl]) => (
                   <div key={lbl} className="flex items-center gap-2">
                     <Badge
@@ -267,7 +268,7 @@ export default function ProductionLayoutMain({
                 onClick={handleCreateProductionPlan}
               >
                 {!isCollapsed || isMobile ? (
-                  "Tambah Production Plan"
+                  productionPlanDictionary.layout.add_button
                 ) : (
                   <FaPlus />
                 )}
@@ -282,7 +283,7 @@ export default function ProductionLayoutMain({
                     variant="outline"
                     type="button"
                   >
-                    <span>Filter Berdasarkan</span>
+                    <span>{productionPlanDictionary.layout.filter_label}</span>
                     <FaArrowDownWideShort className="text-iprimary-blue" />
                   </Button>
 
@@ -291,7 +292,7 @@ export default function ProductionLayoutMain({
                     onChange={setSelectedDateRange}
                     widthButton="w-full"
                     borderColor="border border-iprimary-blue"
-                    placeHolder="Silahkan Pilih Tanggal"
+                    placeHolder={productionPlanDictionary.layout.date_placeholder}
                     className="cursor-pointer"
                   />
                 </>
@@ -300,6 +301,7 @@ export default function ProductionLayoutMain({
             {!isCollapsed && (
               <DataTable
                 data={data}
+                dictionary={productionPlanDictionary.table}
                 onPageChange={handlePageChange}
                 onPageSizeChange={handlePageSizeChange}
                 metadata={metadata}

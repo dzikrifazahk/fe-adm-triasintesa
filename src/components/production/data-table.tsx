@@ -13,6 +13,7 @@ import { IProductionPlan } from "@/types/production";
 import { Table } from "@tanstack/react-table";
 import { format } from "date-fns";
 import { MoreHorizontal } from "lucide-react";
+import { getDictionary } from "../../../get-dictionary";
 
 type DataTableProps = {
   data: IProductionPlan[];
@@ -23,6 +24,7 @@ type DataTableProps = {
   editData?: (id: string) => void;
   deleteData?: (id: string) => void;
   viewData?: (id: string) => void;
+  dictionary: Awaited<ReturnType<typeof getDictionary>>["production_page_dic"]["production_plan"]["table"];
 };
 
 const tablePlaceholder = {} as Table<IProductionPlan>;
@@ -55,21 +57,22 @@ export function DataTable({
   editData,
   deleteData,
   viewData,
+  dictionary,
 }: DataTableProps) {
   return (
     <div className="mt-4 flex h-full min-h-0 flex-col w-full">
       <div className="rounded-xl border border-[#E5E7EB] dark:border-[#3A3D44] p-2 sm:p-3 w-full">
         {/* Header desktop */}
         <div className="flex justify-between gap-3 rounded-xl border border-[#E5E7EB] bg-[#F9FAFB] dark:border-[#3A3D44] dark:bg-[#2E3138] px-4 py-3 text-sm font-semibold text-[#6B7280] dark:text-slate-300">
-          <div className="w-28 shrink-0">Plan</div>
-          <div className="w-fit shrink-0 text-center ">Actions</div>
+          <div className="w-28 shrink-0">{dictionary.header_plan}</div>
+          <div className="w-fit shrink-0 text-center ">{dictionary.header_actions}</div>
         </div>
 
         {/* Body */}
         <div className="mt-2 flex min-h-0 flex-col gap-2 overflow-y-auto">
           {loadingTable ? (
             <div className="rounded-xl border border-dashed border-[#D1D5DB] dark:border-[#4B5563] px-4 py-8 text-center text-sm text-muted-foreground dark:text-slate-400">
-              Loading...
+              {dictionary.loading}
             </div>
           ) : data.length ? (
             data.map((plan) => {
@@ -92,10 +95,10 @@ export function DataTable({
                           <div className="truncate text-sm font-semibold text-[#111827] dark:text-slate-100">
                             {plan.tank?.tankName ||
                               plan.tank?.tankCode ||
-                              "Production Plan"}
+                              dictionary.fallback_name}
                           </div>
                           <div className="mt-0.5 text-xs text-[#6B7280] dark:text-slate-400">
-                            Tank
+                            {dictionary.tank_label}
                           </div>
                         </div>
                       </div>
@@ -108,7 +111,7 @@ export function DataTable({
                             onClick={(event) => event.stopPropagation()}
                           >
                             <MoreHorizontal className="h-4 w-4" />
-                            <span className="sr-only">Open actions</span>
+                            <span className="sr-only">{dictionary.open_actions}</span>
                           </Button>
                         </DropdownMenuTrigger>
 
@@ -120,7 +123,7 @@ export function DataTable({
                             }}
                             disabled={!editData}
                           >
-                            Edit
+                            {dictionary.edit}
                           </DropdownMenuItem>
                           <DropdownMenuItem
                             onClick={(event) => {
@@ -130,7 +133,7 @@ export function DataTable({
                             disabled={!deleteData}
                             className="text-red-600 focus:text-red-600"
                           >
-                            Delete
+                            {dictionary.delete}
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
@@ -139,7 +142,7 @@ export function DataTable({
                     <div className="flex items-center justify-between gap-4 rounded-lg bg-[#F9FAFB] dark:bg-[#2E3138] px-3 py-2">
                       <div className="min-w-0">
                         <div className="text-[11px] font-medium uppercase tracking-wide text-[#6B7280] dark:text-slate-400">
-                          Target
+                          {dictionary.target}
                         </div>
                         <div className="truncate text-sm font-semibold text-[#111827] dark:text-slate-100">
                           {plan.targetJirigenTotal?.toLocaleString("id-ID") ??
@@ -149,7 +152,7 @@ export function DataTable({
 
                       <div className="min-w-0 text-right">
                         <div className="text-[11px] font-medium uppercase tracking-wide text-[#6B7280] dark:text-slate-400">
-                          Periode
+                          {dictionary.period}
                         </div>
                         <div className="truncate text-sm font-medium text-[#111827] dark:text-slate-100">
                           {formatPlanDate(plan.startDate, plan.endDate)}
@@ -162,13 +165,13 @@ export function DataTable({
                   <div className="hidden sm:flex items-center gap-3">
                     <div className="min-w-28 flex-1">
                       <div className="truncate text-sm font-medium text-[#111827] dark:text-slate-100">
-                        {formatPlanDate(plan.startDate)}
+                        {formatPlanDate(plan.startDate)} - {formatPlanDate(plan.endDate)}
                       </div>
+                      {/* <div className="truncate text-xs text-[#6B7280] dark:text-slate-400"> */}
+                        {/* {plan.} */}
+                      {/* </div> */}
                       <div className="truncate text-xs text-[#6B7280] dark:text-slate-400">
-                        {formatPlanDate(plan.endDate)}
-                      </div>
-                      <div className="truncate text-xs text-[#6B7280] dark:text-slate-400">
-                        {plan?.targetJirigenTotal || 0} Jirigen
+                        {plan?.targetJirigenTotal || 0} {dictionary.jirigen_unit}
                       </div>
                     </div>
 
@@ -181,7 +184,7 @@ export function DataTable({
                             onClick={(event) => event.stopPropagation()}
                           >
                             <MoreHorizontal className="h-4 w-4" />
-                            <span className="sr-only">Open actions</span>
+                            <span className="sr-only">{dictionary.open_actions}</span>
                           </Button>
                         </DropdownMenuTrigger>
 
@@ -193,7 +196,7 @@ export function DataTable({
                             }}
                             disabled={!editData}
                           >
-                            Edit
+                            {dictionary.edit}
                           </DropdownMenuItem>
                           <DropdownMenuItem
                             onClick={(event) => {
@@ -203,7 +206,7 @@ export function DataTable({
                             disabled={!deleteData}
                             className="text-red-600 focus:text-red-600"
                           >
-                            Delete
+                            {dictionary.delete}
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
@@ -214,7 +217,7 @@ export function DataTable({
             })
           ) : (
             <div className="rounded-xl border border-dashed border-[#D1D5DB] dark:border-[#4B5563] px-4 py-8 text-center text-sm text-muted-foreground dark:text-slate-400">
-              No data
+              {dictionary.empty}
             </div>
           )}
         </div>
