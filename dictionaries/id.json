@@ -346,9 +346,59 @@
   },
   "report_page_dic": {
     "title": "Laporan",
-    "description": "Kelola pinjaman, penggajian, absensi, dan lembur karyawan dengan mudah.",
-    "page_greetings": "Selamat datang di Halaman Sumber Daya Manusia",
-    "page_description": "Silakan pilih salah satu menu di atas untuk mulai mengelola pinjaman, penggajian, absensi, atau lembur karyawan."
+    "description": "Generate laporan operasional dan keuangan dari satu workspace yang rapi.",
+    "page_greetings": "Generate Report",
+    "page_description": "Pilih tipe laporan, periode, dan format export untuk menyiapkan ringkasan data yang siap dibagikan.",
+    "hero_badge": "Reporting workspace",
+    "button_generate": "Generate Report",
+    "button_download": "Download",
+    "button_schedule": "Jadwalkan",
+    "button_reset": "Reset",
+    "stats": {
+      "templates": "Template siap pakai",
+      "templates_hint": "Format report paling sering dipakai tim",
+      "exports": "Export bulan ini",
+      "exports_hint": "Riwayat report yang sudah diunduh",
+      "scheduled": "Jadwal aktif",
+      "scheduled_hint": "Report otomatis yang masih berjalan"
+    },
+    "form": {
+      "title": "Generate report",
+      "description": "Tentukan parameter utama sebelum membuat preview atau export file report.",
+      "report_type": "Tipe report",
+      "report_type_placeholder": "Pilih tipe report",
+      "date_from": "Tanggal mulai",
+      "date_to": "Tanggal akhir",
+      "format": "Format file",
+      "format_placeholder": "Pilih format",
+      "department": "Departemen",
+      "department_placeholder": "Pilih departemen",
+      "keyword": "Kata kunci",
+      "keyword_placeholder": "Cari project, vendor, atau nomor dokumen",
+      "notes": "Catatan",
+      "notes_placeholder": "Tambahkan catatan untuk kebutuhan export atau distribusi report"
+    },
+    "preview": {
+      "title": "Preview report",
+      "description": "Ringkasan awal sebelum report di-generate penuh.",
+      "empty_title": "Belum ada preview report",
+      "empty_description": "Lengkapi filter di samping lalu klik generate report untuk melihat ringkasan hasil.",
+      "summary_title": "Ringkasan",
+      "range": "Periode",
+      "type": "Tipe",
+      "format": "Format",
+      "department": "Departemen",
+      "items": "Data terhitung",
+      "totals": "Total nilai",
+      "status_ready": "Siap diexport"
+    },
+    "templates": {
+      "title": "Quick templates",
+      "description": "Mulai lebih cepat dengan template laporan yang paling sering digunakan.",
+      "financial": "Laporan keuangan bulanan",
+      "production": "Laporan produksi mingguan",
+      "inventory": "Laporan stok harian"
+    }
   },
   "signin": {
     "greetings": "Selamat Datang Kembali",

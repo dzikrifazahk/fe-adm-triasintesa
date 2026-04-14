@@ -351,9 +351,59 @@
   },
   "report_page_dic": {
     "title": "Report",
-    "description": "Report Description",
-    "page_greetings": "Welcome to Report",
-    "page_description": "Please select one of the menus above to start managing loan, payroll, attendance, or overtime employees."
+    "description": "Generate operational and financial reports from one clean workspace.",
+    "page_greetings": "Generate Report",
+    "page_description": "Choose the report type, period, and export format to prepare a summary that is ready to share.",
+    "hero_badge": "Reporting workspace",
+    "button_generate": "Generate Report",
+    "button_download": "Download",
+    "button_schedule": "Schedule",
+    "button_reset": "Reset",
+    "stats": {
+      "templates": "Ready templates",
+      "templates_hint": "Most-used report formats by the team",
+      "exports": "Exports this month",
+      "exports_hint": "Reports that have already been downloaded",
+      "scheduled": "Active schedules",
+      "scheduled_hint": "Automated reports still running"
+    },
+    "form": {
+      "title": "Generate report",
+      "description": "Set the main parameters before creating a preview or exporting the report file.",
+      "report_type": "Report type",
+      "report_type_placeholder": "Select report type",
+      "date_from": "Start date",
+      "date_to": "End date",
+      "format": "File format",
+      "format_placeholder": "Select format",
+      "department": "Department",
+      "department_placeholder": "Select department",
+      "keyword": "Keyword",
+      "keyword_placeholder": "Search project, vendor, or document number",
+      "notes": "Notes",
+      "notes_placeholder": "Add notes for report export or distribution needs"
+    },
+    "preview": {
+      "title": "Report preview",
+      "description": "Initial summary before the full report is generated.",
+      "empty_title": "No report preview yet",
+      "empty_description": "Complete the filters on the left and click generate report to see the result summary.",
+      "summary_title": "Summary",
+      "range": "Period",
+      "type": "Type",
+      "format": "Format",
+      "department": "Department",
+      "items": "Counted items",
+      "totals": "Total amount",
+      "status_ready": "Ready to export"
+    },
+    "templates": {
+      "title": "Quick templates",
+      "description": "Start faster with the most frequently used report templates.",
+      "financial": "Monthly financial report",
+      "production": "Weekly production report",
+      "inventory": "Daily inventory report"
+    }
   },
   "signin": {
     "greetings": "Welcome Back",

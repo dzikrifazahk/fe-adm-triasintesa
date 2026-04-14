@@ -12,10 +12,8 @@ export default async function ReportLayout({
   const { lang } = await params;
   const dictionary = await getDictionary(lang);
   return (
-    <>
-      <ReportLayoutMain dictionary={dictionary?.report_page_dic ?? "-"}>
-        {children}
-      </ReportLayoutMain>
-    </>
+    <ReportLayoutMain dictionary={dictionary.report_page_dic}>
+      {children}
+    </ReportLayoutMain>
   );
 }
