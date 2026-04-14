@@ -91,6 +91,7 @@ export default function ProductionPlanDetailMain({
   dictionary,
   planId,
 }: Props) {
+  const detailDictionary = dictionary.production_plan.detail;
   const [loadingPlan, setLoadingPlan] = useState(true);
   const [loadingBatches, setLoadingBatches] = useState(false);
   const [loadingJirigens, setLoadingJirigens] = useState(false);
@@ -139,7 +140,7 @@ export default function ProductionPlanDetailMain({
       console.error(error);
       Swal.fire({
         icon: "error",
-        title: "Gagal memuat detail production plan",
+        title: detailDictionary.load_detail_error,
         toast: true,
         position: "top-right",
         showConfirmButton: false,
@@ -171,7 +172,7 @@ export default function ProductionPlanDetailMain({
       console.error(error);
       Swal.fire({
         icon: "error",
-        title: "Gagal memuat production batches",
+        title: detailDictionary.load_batches_error,
         toast: true,
         position: "top-right",
         showConfirmButton: false,
@@ -195,7 +196,7 @@ export default function ProductionPlanDetailMain({
       console.error(error);
       Swal.fire({
         icon: "error",
-        title: "Gagal memuat production jirigen",
+        title: detailDictionary.load_jirigens_error,
         toast: true,
         position: "top-right",
         showConfirmButton: false,
@@ -251,7 +252,7 @@ export default function ProductionPlanDetailMain({
 
       Swal.fire({
         icon: "success",
-        title: "Batch produksi berhasil dibuat",
+        title: detailDictionary.batch_create_success,
         toast: true,
         position: "top-right",
         showConfirmButton: false,
@@ -272,7 +273,7 @@ export default function ProductionPlanDetailMain({
       console.error(error);
       Swal.fire({
         icon: "error",
-        title: "Gagal membuat batch produksi",
+        title: detailDictionary.batch_create_error,
         toast: true,
         position: "top-right",
         showConfirmButton: false,
@@ -303,7 +304,7 @@ export default function ProductionPlanDetailMain({
 
       Swal.fire({
         icon: "success",
-        title: "Production jirigen berhasil dibuat",
+        title: detailDictionary.jirigen_create_success,
         toast: true,
         position: "top-right",
         showConfirmButton: false,
@@ -322,7 +323,7 @@ export default function ProductionPlanDetailMain({
       console.error(error);
       Swal.fire({
         icon: "error",
-        title: "Gagal membuat production jirigen",
+        title: detailDictionary.jirigen_create_error,
         toast: true,
         position: "top-right",
         showConfirmButton: false,
@@ -336,24 +337,24 @@ export default function ProductionPlanDetailMain({
   return (
     <div className="h-full w-full rounded-lg border bg-white p-4 dark:border-[#34363B] dark:bg-[#26282D]">
       {loadingPlan ? (
-        <SectionEmpty text="Loading production detail..." />
+        <SectionEmpty text={detailDictionary.loading} />
       ) : !plan ? (
-        <SectionEmpty text="Production plan tidak ditemukan." />
+        <SectionEmpty text={detailDictionary.not_found} />
       ) : (
         <div className="flex h-full min-h-0 flex-col gap-4">
           <div className="rounded-2xl border bg-slate-50 p-4 dark:border-[#34363B] dark:bg-[#1F2023]">
             <div className="text-2xl font-bold text-slate-900 dark:text-slate-100">
-              {dictionary.title} Detail
+              {dictionary.title} {detailDictionary.title_suffix}
             </div>
             <div className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-              Plan {formatDate(plan.startDate)} - {formatDate(plan.endDate)} •{" "}
-              {plan.targetJirigenTotal.toLocaleString("id-ID")} jirigen
+              {detailDictionary.summary_prefix} {formatDate(plan.startDate)} - {formatDate(plan.endDate)} •{" "}
+              {plan.targetJirigenTotal.toLocaleString("id-ID")} {detailDictionary.summary_jirigen_suffix}
             </div>
 
             <div className="mt-4 grid gap-3 md:grid-cols-4">
               <div className="rounded-xl border bg-white p-3 dark:border-[#34363B] dark:bg-[#26282D]">
                 <div className="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400">
-                  Tank
+                  {detailDictionary.tank}
                 </div>
                 <div className="mt-1 text-sm font-semibold text-slate-900 dark:text-slate-100">
                   {plan.tank?.tankName || plan.tank?.tankCode || "-"}
@@ -361,7 +362,7 @@ export default function ProductionPlanDetailMain({
               </div>
               <div className="rounded-xl border bg-white p-3 dark:border-[#34363B] dark:bg-[#26282D]">
                 <div className="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400">
-                  Target Batch
+                  {detailDictionary.target_batch}
                 </div>
                 <div className="mt-1 text-sm font-semibold text-slate-900 dark:text-slate-100">
                   {plan.targetBatches}
@@ -369,7 +370,7 @@ export default function ProductionPlanDetailMain({
               </div>
               <div className="rounded-xl border bg-white p-3 dark:border-[#34363B] dark:bg-[#26282D]">
                 <div className="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400">
-                  Target Jirigen
+                  {detailDictionary.target_jirigen}
                 </div>
                 <div className="mt-1 text-sm font-semibold text-slate-900 dark:text-slate-100">
                   {plan.targetJirigenTotal.toLocaleString("id-ID")}
@@ -377,7 +378,7 @@ export default function ProductionPlanDetailMain({
               </div>
               <div className="rounded-xl border bg-white p-3 dark:border-[#34363B] dark:bg-[#26282D]">
                 <div className="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400">
-                  Status
+                  {detailDictionary.status}
                 </div>
                 <div className="mt-1 text-sm font-semibold capitalize text-slate-900 dark:text-slate-100">
                   {plan.status?.replaceAll("_", " ") || "-"}
@@ -396,10 +397,10 @@ export default function ProductionPlanDetailMain({
                 >
                   <div>
                     <div className="text-lg font-semibold text-slate-900 dark:text-slate-100">
-                      Production Batches
+                      {detailDictionary.batch_section_title}
                     </div>
                     <div className="text-sm text-slate-500 dark:text-slate-400">
-                      Lihat detail batch produksi untuk plan ini
+                      {detailDictionary.batch_section_description}
                     </div>
                   </div>
                   <ChevronDown
@@ -415,14 +416,14 @@ export default function ProductionPlanDetailMain({
                   className="bg-iprimary-blue text-white hover:bg-iprimary-blue/90"
                 >
                   <Plus className="mr-2 h-4 w-4" />
-                  Batch
+                  {detailDictionary.batch_button}
                 </Button>
               </div>
 
               {isBatchOpen ? (
                 <div className="mt-4 space-y-3">
                   {loadingBatches ? (
-                    <SectionEmpty text="Loading production batches..." />
+                    <SectionEmpty text={detailDictionary.batch_loading} />
                   ) : batches.length ? (
                     batches.map((batch) => (
                       <div
@@ -444,13 +445,13 @@ export default function ProductionPlanDetailMain({
                         </div>
                         <div className="mt-3 grid gap-3 sm:grid-cols-2">
                           <div className="text-sm text-slate-600 dark:text-slate-300">
-                            Raw material:{" "}
+                            {detailDictionary.raw_material}:{" "}
                             <span className="font-semibold">
                               {Number(batch.rawMaterialVolume).toLocaleString("id-ID")} L
                             </span>
                           </div>
                           <div className="text-sm text-slate-600 dark:text-slate-300">
-                            Target quantity:{" "}
+                            {detailDictionary.target_quantity}:{" "}
                             <span className="font-semibold">
                               {Number(batch.targetQuantityJirigen).toLocaleString("id-ID")}
                             </span>
@@ -464,7 +465,7 @@ export default function ProductionPlanDetailMain({
                       </div>
                     ))
                   ) : (
-                    <SectionEmpty text="Belum ada batch produksi untuk plan ini." />
+                    <SectionEmpty text={detailDictionary.batch_empty} />
                   )}
                 </div>
               ) : null}
@@ -479,10 +480,10 @@ export default function ProductionPlanDetailMain({
                 >
                   <div>
                     <div className="text-lg font-semibold text-slate-900 dark:text-slate-100">
-                      Production Jirigen
+                      {detailDictionary.jirigen_section_title}
                     </div>
                     <div className="text-sm text-slate-500 dark:text-slate-400">
-                      Lihat hasil produksi jirigen dari batch yang tersedia
+                      {detailDictionary.jirigen_section_description}
                     </div>
                   </div>
                   <ChevronDown
@@ -499,14 +500,14 @@ export default function ProductionPlanDetailMain({
                   disabled={hasLoadedBatches ? batches.length === 0 : false}
                 >
                   <Plus className="mr-2 h-4 w-4" />
-                  Jirigen
+                  {detailDictionary.jirigen_button}
                 </Button>
               </div>
 
               {isJirigenOpen ? (
                 <div className="mt-4 space-y-2">
                   {loadingJirigens ? (
-                    <SectionEmpty text="Loading production jirigen..." />
+                    <SectionEmpty text={detailDictionary.jirigen_loading} />
                   ) : jirigens.length ? (
                     jirigens.map((jirigen) => (
                       <div
@@ -518,7 +519,7 @@ export default function ProductionPlanDetailMain({
                             Jirigen #{jirigen.jirigenNumber}
                           </div>
                           <div className="text-xs text-slate-500 dark:text-slate-400">
-                            Batch ID {jirigen.batchId} •{" "}
+                            {detailDictionary.batch_id} {jirigen.batchId} •{" "}
                             {formatDate(jirigen.productionDatetime)}
                           </div>
                         </div>
@@ -528,7 +529,7 @@ export default function ProductionPlanDetailMain({
                       </div>
                     ))
                   ) : (
-                    <SectionEmpty text="Belum ada data hasil produksi jirigen." />
+                    <SectionEmpty text={detailDictionary.jirigen_empty} />
                   )}
                 </div>
               ) : null}
@@ -540,15 +541,15 @@ export default function ProductionPlanDetailMain({
       <Dialog open={isBatchModalOpen} onOpenChange={setIsBatchModalOpen}>
         <DialogContent className="sm:max-w-xl">
           <DialogHeader>
-            <DialogTitle>Create Production Batch</DialogTitle>
+            <DialogTitle>{detailDictionary.batch_modal_title}</DialogTitle>
             <DialogDescription>
-              Tambahkan batch produksi baru untuk production plan ini.
+              {detailDictionary.batch_modal_description}
             </DialogDescription>
           </DialogHeader>
 
           <form onSubmit={handleBatchSubmit} className="space-y-3">
             <div className="space-y-2">
-              <Label htmlFor="batchNumber">Batch Number</Label>
+              <Label htmlFor="batchNumber">{detailDictionary.batch_number}</Label>
               <Input
                 id="batchNumber"
                 value={batchForm.batchNumber}
@@ -563,7 +564,7 @@ export default function ProductionPlanDetailMain({
             </div>
             <div className="grid gap-3 sm:grid-cols-2">
               <div className="space-y-2">
-                <Label htmlFor="batchStartDate">Start Date</Label>
+                <Label htmlFor="batchStartDate">{detailDictionary.batch_start_date}</Label>
                 <Input
                   id="batchStartDate"
                   type="date"
@@ -577,7 +578,7 @@ export default function ProductionPlanDetailMain({
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="batchEndDate">End Date</Label>
+                <Label htmlFor="batchEndDate">{detailDictionary.batch_end_date}</Label>
                 <Input
                   id="batchEndDate"
                   type="date"
@@ -593,7 +594,7 @@ export default function ProductionPlanDetailMain({
             </div>
             <div className="grid gap-3 sm:grid-cols-2">
               <div className="space-y-2">
-                <Label htmlFor="rawMaterialVolume">Raw Material Volume</Label>
+                <Label htmlFor="rawMaterialVolume">{detailDictionary.batch_raw_material_volume}</Label>
                 <Input
                   id="rawMaterialVolume"
                   type="number"
@@ -609,7 +610,7 @@ export default function ProductionPlanDetailMain({
               </div>
               <div className="space-y-2">
                 <Label htmlFor="targetQuantityJirigen">
-                  Target Quantity Jirigen
+                  {detailDictionary.batch_target_quantity_jirigen}
                 </Label>
                 <Input
                   id="targetQuantityJirigen"
@@ -626,7 +627,7 @@ export default function ProductionPlanDetailMain({
               </div>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="batchNotes">Notes</Label>
+              <Label htmlFor="batchNotes">{detailDictionary.batch_notes}</Label>
               <Textarea
                 id="batchNotes"
                 value={batchForm.notes}
@@ -636,7 +637,7 @@ export default function ProductionPlanDetailMain({
                     notes: event.target.value,
                   }))
                 }
-                placeholder="Batch produksi awal"
+                placeholder={detailDictionary.batch_notes_placeholder}
               />
             </div>
             <Button
@@ -644,7 +645,7 @@ export default function ProductionPlanDetailMain({
               className="w-full bg-iprimary-blue text-white hover:bg-iprimary-blue/90"
               disabled={submittingBatch}
             >
-              {submittingBatch ? "Menyimpan batch..." : "Simpan Batch"}
+              {submittingBatch ? detailDictionary.batch_submit_loading : detailDictionary.batch_submit}
             </Button>
           </form>
         </DialogContent>
@@ -653,15 +654,15 @@ export default function ProductionPlanDetailMain({
       <Dialog open={isJirigenModalOpen} onOpenChange={setIsJirigenModalOpen}>
         <DialogContent className="sm:max-w-xl">
           <DialogHeader>
-            <DialogTitle>Create Production Jirigen</DialogTitle>
+            <DialogTitle>{detailDictionary.jirigen_modal_title}</DialogTitle>
             <DialogDescription>
-              Tambahkan hasil produksi jirigen berdasarkan batch yang dipilih.
+              {detailDictionary.jirigen_modal_description}
             </DialogDescription>
           </DialogHeader>
 
           <form onSubmit={handleJirigenSubmit} className="space-y-3">
             <div className="space-y-2">
-              <Label htmlFor="batchId">Batch</Label>
+              <Label htmlFor="batchId">{detailDictionary.jirigen_batch}</Label>
               <Select
                 value={jirigenForm.batchId ? String(jirigenForm.batchId) : undefined}
                 onValueChange={(value) =>
@@ -672,7 +673,7 @@ export default function ProductionPlanDetailMain({
                 }
               >
                 <SelectTrigger id="batchId" className="w-full">
-                  <SelectValue placeholder="Pilih batch" />
+                  <SelectValue placeholder={detailDictionary.jirigen_batch_placeholder} />
                 </SelectTrigger>
                 <SelectContent>
                   {batches.map((batch) => (
@@ -685,7 +686,7 @@ export default function ProductionPlanDetailMain({
             </div>
             <div className="grid gap-3 sm:grid-cols-2">
               <div className="space-y-2">
-                <Label htmlFor="jirigenNumber">Jirigen Number</Label>
+                <Label htmlFor="jirigenNumber">{detailDictionary.jirigen_number}</Label>
                 <Input
                   id="jirigenNumber"
                   type="number"
@@ -700,7 +701,7 @@ export default function ProductionPlanDetailMain({
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="volumeLiter">Volume Liter</Label>
+                <Label htmlFor="volumeLiter">{detailDictionary.jirigen_volume_liter}</Label>
                 <Input
                   id="volumeLiter"
                   type="number"
@@ -716,7 +717,7 @@ export default function ProductionPlanDetailMain({
               </div>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="productionDatetime">Production Datetime</Label>
+              <Label htmlFor="productionDatetime">{detailDictionary.jirigen_production_datetime}</Label>
               <Input
                 id="productionDatetime"
                 type="datetime-local"
@@ -730,7 +731,7 @@ export default function ProductionPlanDetailMain({
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="jirigenNotes">Notes</Label>
+              <Label htmlFor="jirigenNotes">{detailDictionary.jirigen_notes}</Label>
               <Textarea
                 id="jirigenNotes"
                 value={jirigenForm.notes}
@@ -740,7 +741,7 @@ export default function ProductionPlanDetailMain({
                     notes: event.target.value,
                   }))
                 }
-                placeholder="Produksi normal"
+                placeholder={detailDictionary.jirigen_notes_placeholder}
               />
             </div>
             <Button
@@ -748,7 +749,7 @@ export default function ProductionPlanDetailMain({
               className="w-full bg-iprimary-blue text-white hover:bg-iprimary-blue/90"
               disabled={submittingJirigen || batches.length === 0}
             >
-              {submittingJirigen ? "Menyimpan jirigen..." : "Simpan Jirigen"}
+              {submittingJirigen ? detailDictionary.jirigen_submit_loading : detailDictionary.jirigen_submit}
             </Button>
           </form>
         </DialogContent>
