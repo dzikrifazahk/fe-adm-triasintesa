@@ -1,4 +1,25 @@
 {
+  "inventory_location_page_dic": {
+    "title": "Inventory Locations",
+    "description": "Kelola master lokasi inventory untuk kebutuhan penyimpanan dan pelacakan stok.",
+    "search_tank_placeholder": "Cari kode atau nama lokasi...",
+    "column_filter": "Filter Kolom",
+    "button_add_tank": "Tambah Lokasi",
+    "column": {
+      "location_code": "Kode Lokasi",
+      "location_name": "Nama Lokasi",
+      "status": "Status",
+      "notes": "Catatan",
+      "created_at": "Dibuat",
+      "updated_at": "Diperbarui",
+      "actions": "Aksi"
+    },
+    "modal": {
+      "create_title": "Tambah Inventory Location",
+      "edit_title": "Ubah Inventory Location",
+      "detail_title": "Detail Inventory Location"
+    }
+  },
   "financial_record_page_dic": {
     "title": "Financial Record",
     "description": "Kelola pengajuan expense, permintaan pembayaran, dan histori pembayaran dalam satu workspace yang rapi.",
@@ -473,7 +494,8 @@
     "default_page_description": "Silahkan pilih menu terlebih dahulu untuk melihat data detail",
     "landing_publication_category": "Kategori Publikasi",
     "landing_publication": "Publikasi",
-    "landing_products": "Produk"
+    "landing_products": "Produk",
+    "inventory_location": "Lokasi Stok"
   },
   "settings_projects": {
     "title": "Proyek",

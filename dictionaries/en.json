@@ -1,4 +1,25 @@
 {
+  "inventory_location_page_dic": {
+    "title": "Inventory Locations",
+    "description": "Manage inventory location masters for storage and stock tracking needs.",
+    "search_tank_placeholder": "Search location code or name...",
+    "column_filter": "Column Filter",
+    "button_add_tank": "Add Location",
+    "column": {
+      "location_code": "Location Code",
+      "location_name": "Location Name",
+      "status": "Status",
+      "notes": "Notes",
+      "created_at": "Created At",
+      "updated_at": "Updated At",
+      "actions": "Actions"
+    },
+    "modal": {
+      "create_title": "Create Inventory Location",
+      "edit_title": "Update Inventory Location",
+      "detail_title": "Inventory Location Detail"
+    }
+  },
   "financial_record_page_dic": {
     "title": "Financial Record",
     "description": "Manage expense submissions, payment requests, and payment history in one clean workspace.",
@@ -478,7 +499,8 @@
     "default_page_description": "Please select one of the menus above for seeing details.",
     "landing_publication_category": "Publication Category",
     "landing_publication": "Publication",
-    "landing_products": "Products"
+    "landing_products": "Products",
+    "inventory_location": "Inventory Location"
   },
   "settings_projects": {
     "title": "Projects",

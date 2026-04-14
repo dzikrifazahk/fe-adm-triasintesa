@@ -7,6 +7,7 @@ import {
   ChevronRight,
   ChevronDown,
   ChevronUp,
+  ArchiveRestore,
 } from "lucide-react";
 import Image from "next/image";
 import SearchIc from "@/assets/ic/search-ic.svg";
@@ -128,6 +129,12 @@ export function MenuBar({ dictionary, children }: Props) {
       title: dictionary.tanks,
       icon: <FaBottleWater size={20} />,
       to: "/dashboard/settings/tanks",
+    },
+    {
+      kind: "item",
+      title: dictionary.inventory_location,
+      icon: <ArchiveRestore size={20} />,
+      to: "/dashboard/settings/inventory-locations",
     },
     // {
     //   kind: "item",
