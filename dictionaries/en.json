@@ -1,5 +1,118 @@
 {
-   "tanks_refill_page_dic": {
+  "financial_record_page_dic": {
+    "title": "Financial Record",
+    "description": "Manage expense submissions, payment requests, and payment history in one clean workspace.",
+    "hero_badge": "Financial record workspace",
+    "hero_description": "Manage expense submissions, move them into payment requests, and keep payment history in one workspace that stays organized and easy to review.",
+    "button_add_expense": "Add Expense",
+    "button_refetch": "Re-fetch Data",
+    "button_reset": "Reset",
+    "button_filter": "Filters",
+    "button_edit": "Edit",
+    "button_update_stage": "Move",
+    "button_mark_paid": "Pay",
+    "button_cancel": "Cancel",
+    "button_save": "Save Expense",
+    "button_save_changes": "Save Changes",
+    "button_refetch_secondary": "Sync data again",
+    "button_clear_filter": "Clear filters",
+    "stats": {
+      "active_total": "Active expenses",
+      "active_total_hint": "Combined submission and payment request amounts",
+      "need_review": "Need review",
+      "need_review_hint": "Today's finance team priority",
+      "paid_total": "Already paid",
+      "paid_total_hint_suffix": "completed transactions"
+    },
+    "tabs": {
+      "submission": "Submission",
+      "payment_request": "Payment Request",
+      "paid": "Paid",
+      "submission_description": "New expenses that have just come in and are waiting for initial review.",
+      "payment_request_description": "Expenses that are ready to enter the payment process.",
+      "paid_description": "Payment history that has already been completed.",
+      "transactions_suffix": "transactions",
+      "review_suffix": "review",
+      "done": "Done"
+    },
+    "toolbar": {
+      "search_placeholder": "Search title, vendor, ID, category...",
+      "status_placeholder": "Filter status",
+      "category_placeholder": "Filter category",
+      "all_status": "All statuses",
+      "all_category": "All categories",
+      "last_refetch": "Last re-fetch"
+    },
+    "summary": {
+      "visible_items": "Visible items",
+      "tab_amount": "Active tab amount",
+      "total_transactions": "Total transactions"
+    },
+    "sections": {
+      "quick_actions_title": "Quick Actions",
+      "quick_actions_description": "Shortcuts for the actions the finance team uses most often.",
+      "review_queue_title": "Review Queue",
+      "review_queue_description": "How many items still need attention in each stage.",
+      "tab_summary_title": "Tab Summary",
+      "tab_summary_description": "Working focus for the currently selected tab."
+    },
+    "review_queue": {
+      "submission_hint": "Items that still need initial review.",
+      "payment_request_hint": "Items that still need payment approval."
+    },
+    "table": {
+      "expense": "Expense",
+      "category": "Category",
+      "amount": "Amount",
+      "status": "Status",
+      "date": "Date",
+      "actions": "Actions",
+      "created_by_prefix": "By",
+      "empty_title": "No matching data found",
+      "empty_description": "Try changing the search keyword or reset the filters to see other data in this tab."
+    },
+    "statuses": {
+      "need_review": "Need Review",
+      "waiting_budget": "Waiting Budget",
+      "ready_to_pay": "Ready to Pay",
+      "paid": "Paid"
+    },
+    "priorities": {
+      "high": "High",
+      "medium": "Medium",
+      "low": "Low"
+    },
+    "actions": {
+      "submission": "Send to payment request",
+      "payment_request": "Mark as paid",
+      "paid": "Completed",
+      "highlight_prefix": "Today's highlight",
+      "highlight_suffix": "items after filters",
+      "action_prefix": "Main action"
+    },
+    "form": {
+      "create_title": "Add Expense",
+      "edit_title": "Edit Expense",
+      "description": "Complete the expense data so it stays easy to search, review, and move across financial stages.",
+      "title_label": "Expense Title",
+      "title_placeholder": "Example: Additional raw material procurement",
+      "vendor_label": "Vendor",
+      "vendor_placeholder": "Vendor name",
+      "requester_label": "Requester",
+      "requester_placeholder": "Requester name",
+      "category_label": "Category",
+      "amount_label": "Amount",
+      "amount_placeholder": "0",
+      "date_label": "Date",
+      "stage_label": "Stage",
+      "status_label": "Status",
+      "priority_label": "Priority",
+      "notes_label": "Notes",
+      "notes_placeholder": "Add review notes, invoice notes, or payment context",
+      "validation": "Complete the title, vendor, requester, date, and an amount greater than 0 before saving."
+    }
+  },
+  "tanks_refill_page_dic": {
     "title": "Tanks Refill",
     "description": "Manage tank logging, volume increases, and volume decreases visually and accurately.",
     "page_greetings": "Welcome to Tanks Refill",

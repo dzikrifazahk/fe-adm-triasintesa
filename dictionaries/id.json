@@ -1,4 +1,117 @@
 {
+  "financial_record_page_dic": {
+    "title": "Financial Record",
+    "description": "Kelola pengajuan expense, permintaan pembayaran, dan histori pembayaran dalam satu workspace yang rapi.",
+    "hero_badge": "Financial record workspace",
+    "hero_description": "Kelola pengajuan expense, lanjutkan ke permintaan pembayaran, lalu simpan histori pembayaran dalam satu workspace yang rapi dan mudah direview.",
+    "button_add_expense": "Tambah Expense",
+    "button_refetch": "Re-fetch Data",
+    "button_reset": "Reset",
+    "button_filter": "Filter",
+    "button_edit": "Edit",
+    "button_update_stage": "Ubah",
+    "button_mark_paid": "Bayar",
+    "button_cancel": "Batal",
+    "button_save": "Simpan Expense",
+    "button_save_changes": "Simpan Perubahan",
+    "button_refetch_secondary": "Sinkron ulang data",
+    "button_clear_filter": "Bersihkan filter",
+    "stats": {
+      "active_total": "Total expense aktif",
+      "active_total_hint": "Akumulasi pengajuan dan permintaan pembayaran",
+      "need_review": "Perlu review",
+      "need_review_hint": "Prioritas untuk tim finance hari ini",
+      "paid_total": "Sudah dibayar",
+      "paid_total_hint_suffix": "transaksi terselesaikan"
+    },
+    "tabs": {
+      "submission": "Pengajuan",
+      "payment_request": "Permintaan Pembayaran",
+      "paid": "Telah Dibayar",
+      "submission_description": "Expense baru masuk dan menunggu pengecekan awal.",
+      "payment_request_description": "Expense yang siap masuk proses pembayaran.",
+      "paid_description": "Riwayat pembayaran yang sudah selesai diproses.",
+      "transactions_suffix": "transaksi",
+      "review_suffix": "review",
+      "done": "Selesai"
+    },
+    "toolbar": {
+      "search_placeholder": "Cari judul, vendor, ID, kategori...",
+      "status_placeholder": "Filter status",
+      "category_placeholder": "Filter kategori",
+      "all_status": "Semua status",
+      "all_category": "Semua kategori",
+      "last_refetch": "Re-fetch terakhir"
+    },
+    "summary": {
+      "visible_items": "Item tampil",
+      "tab_amount": "Nominal tab aktif",
+      "total_transactions": "Total transaksi"
+    },
+    "sections": {
+      "quick_actions_title": "Quick Actions",
+      "quick_actions_description": "Shortcut untuk aksi yang paling sering dipakai tim finance.",
+      "review_queue_title": "Review Queue",
+      "review_queue_description": "Jumlah item yang masih perlu perhatian per tahap.",
+      "tab_summary_title": "Ringkasan Tab",
+      "tab_summary_description": "Fokus kerja untuk tab yang sedang dipilih."
+    },
+    "review_queue": {
+      "submission_hint": "Item yang perlu review awal.",
+      "payment_request_hint": "Item yang perlu approval pembayaran."
+    },
+    "table": {
+      "expense": "Expense",
+      "category": "Kategori",
+      "amount": "Nominal",
+      "status": "Status",
+      "date": "Tanggal",
+      "actions": "Aksi",
+      "created_by_prefix": "By",
+      "empty_title": "Tidak ada data yang cocok",
+      "empty_description": "Coba ubah kata kunci pencarian atau reset filter untuk melihat data lain di tab ini."
+    },
+    "statuses": {
+      "need_review": "Perlu Review",
+      "waiting_budget": "Menunggu Budget",
+      "ready_to_pay": "Siap Dibayar",
+      "paid": "Paid"
+    },
+    "priorities": {
+      "high": "High",
+      "medium": "Medium",
+      "low": "Low"
+    },
+    "actions": {
+      "submission": "Kirim ke permintaan pembayaran",
+      "payment_request": "Tandai sudah dibayar",
+      "paid": "Sudah selesai",
+      "highlight_prefix": "Highlight hari ini",
+      "highlight_suffix": "item setelah filter",
+      "action_prefix": "Action utama"
+    },
+    "form": {
+      "create_title": "Tambah Expense",
+      "edit_title": "Edit Expense",
+      "description": "Lengkapi data expense agar mudah dicari, direview, dan dipindahkan antar tahapan proses keuangan.",
+      "title_label": "Judul Expense",
+      "title_placeholder": "Contoh: Pengadaan bahan baku tambahan",
+      "vendor_label": "Vendor",
+      "vendor_placeholder": "Nama vendor",
+      "requester_label": "Requester",
+      "requester_placeholder": "Nama pengaju",
+      "category_label": "Kategori",
+      "amount_label": "Nominal",
+      "amount_placeholder": "0",
+      "date_label": "Tanggal",
+      "stage_label": "Tahap",
+      "status_label": "Status",
+      "priority_label": "Prioritas",
+      "notes_label": "Catatan",
+      "notes_placeholder": "Tambahkan catatan review, invoice, atau konteks pembayaran",
+      "validation": "Lengkapi judul, vendor, requester, tanggal, dan nominal lebih dari 0 sebelum menyimpan."
+    }
+  },
   "tanks_refill_page_dic": {
     "title": "Tanks Refill",
     "description": "Kelola logging, penambahan, dan pengurangan volume tank secara visual dan akurat.",

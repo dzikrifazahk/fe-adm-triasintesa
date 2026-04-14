@@ -88,7 +88,7 @@ export function NavItems({ isOpen, dictionary }: SideBarDashboardProps) {
     {
       title: `${dictionary.financial_note}`,
       icon: <FaMoneyBills className="hover:text-white" size={18} />,
-      to: `/${locale}/dashboard/finance-record`,
+      to: `/${locale}/dashboard/financial-record`,
     },
     { header: `${dictionary.report}` },
     {
