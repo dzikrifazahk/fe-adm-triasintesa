@@ -22,6 +22,7 @@ import { PublicationService } from "./publication.service";
 import { CatalogService } from "./catalog.service";
 import { ProductService } from "./product.service";
 import { ProductionPlanService } from "./production.service";
+import { QcCoaService } from "./qc-coa.service";
 
 export const authService = new AuthService();
 export const taxService = new TaxsService();
@@ -47,3 +48,4 @@ export const publicationService = new PublicationService();
 export const catalogService = new CatalogService();
 export const productService = new ProductService();
 export const productionPlanService = new ProductionPlanService();
+export const qcCoaService = new QcCoaService();

@@ -2,7 +2,7 @@ import { Locale } from "../../../../../../../i18n-config";
 import { getDictionary } from "../../../../../../../get-dictionary";
 import { QCLayoutMain } from "@/components/qc/qcLayoutMain";
 
-export default async function ShippingLayout({
+export default async function QcLayout({
   children,
   params,
 }: {
