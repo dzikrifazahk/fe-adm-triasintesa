@@ -1,0 +1,267 @@
+"use client";
+
+import { useEffect, useMemo, useState } from "react";
+import Swal from "sweetalert2";
+import { getDictionary } from "../../../../get-dictionary";
+import { useLoading } from "@/context/loadingContext";
+import { qcCoaService } from "@/services";
+import { ICoaCertificate } from "@/types/qc-coa";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Modal } from "@/components/custom/modal";
+
+type Dictionary = Awaited<
+  ReturnType<typeof getDictionary>
+>["quality_control_page_dic"];
+
+function formatDate(value?: string) {
+  if (!value) return "-";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+  return date.toLocaleDateString("id-ID", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  });
+}
+
+export default function QcCoaDetail({
+  coaId,
+  dictionary,
+}: {
+  coaId: string;
+  dictionary: Dictionary;
+}) {
+  const { setIsLoading } = useLoading();
+  const [coa, setCoa] = useState<ICoaCertificate | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [approveModalOpen, setApproveModalOpen] = useState(false);
+  const [digitalSignature, setDigitalSignature] = useState("");
+
+  const pageTitle = useMemo(
+    () => dictionary?.title ?? "Kontrol Kualitas",
+    [dictionary]
+  );
+
+  const loadCoa = async () => {
+    setLoading(true);
+    try {
+      const response = await qcCoaService.getCoaCertificate(coaId);
+      setCoa(response?.data ?? response);
+    } catch (error) {
+      Swal.fire({
+        icon: "error",
+        title: "Gagal memuat COA",
+        toast: true,
+        position: "top-right",
+        timer: 2000,
+        showConfirmButton: false,
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadCoa();
+  }, [coaId]);
+
+  useEffect(() => {
+    setIsLoading(false);
+  }, []);
+
+  const handleApprove = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    try {
+      setIsLoading(true);
+      await qcCoaService.approveCoaCertificate(coaId, {
+        digitalSignature: digitalSignature || undefined,
+      });
+      setApproveModalOpen(false);
+      setDigitalSignature("");
+      await loadCoa();
+      Swal.fire({
+        icon: "success",
+        title: "COA approved",
+        toast: true,
+        position: "top-right",
+        timer: 2000,
+        showConfirmButton: false,
+      });
+    } catch (error) {
+      Swal.fire({
+        icon: "error",
+        title: "Gagal approve COA",
+        toast: true,
+        position: "top-right",
+        timer: 2000,
+        showConfirmButton: false,
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleGeneratePdf = async () => {
+    try {
+      setIsLoading(true);
+      await qcCoaService.generateCoaPdf(coaId);
+      await loadCoa();
+      Swal.fire({
+        icon: "success",
+        title: "PDF COA dibuat",
+        toast: true,
+        position: "top-right",
+        timer: 2000,
+        showConfirmButton: false,
+      });
+    } catch (error) {
+      Swal.fire({
+        icon: "error",
+        title: "Gagal generate PDF",
+        toast: true,
+        position: "top-right",
+        timer: 2000,
+        showConfirmButton: false,
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handlePrint = () => {
+    const url = qcCoaService.getCoaPrintUrl(coaId);
+    window.open(url, "_blank");
+  };
+
+  if (loading) {
+    return <p className="text-sm text-slate-500">Memuat COA...</p>;
+  }
+
+  if (!coa) {
+    return <p className="text-sm text-slate-500">Data COA tidak ditemukan.</p>;
+  }
+
+  return (
+    <div className="flex w-full flex-col gap-6">
+      <div>
+        <h1 className="text-2xl font-semibold text-slate-900 dark:text-slate-100">
+          {pageTitle} - COA Detail
+        </h1>
+        <p className="text-sm text-slate-500">{coa.coaNumber}</p>
+      </div>
+
+      <Card>
+        <CardHeader className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+          <CardTitle>Ringkasan COA</CardTitle>
+          <div className="flex flex-wrap gap-2">
+            {!coa.approvedAt && (
+              <Button onClick={() => setApproveModalOpen(true)}>
+                Approve COA
+              </Button>
+            )}
+            <Button variant="outline" onClick={handleGeneratePdf}>
+              Generate PDF
+            </Button>
+            <Button variant="outline" onClick={handlePrint}>
+              Print Preview
+            </Button>
+          </div>
+        </CardHeader>
+        <CardContent className="grid gap-4 md:grid-cols-2">
+          <div>
+            <p className="text-xs text-slate-500">Product</p>
+            <p className="font-medium">{coa.productName}</p>
+          </div>
+          <div>
+            <p className="text-xs text-slate-500">Batch</p>
+            <p className="font-medium">{coa.batchNumber}</p>
+          </div>
+          <div>
+            <p className="text-xs text-slate-500">Issue Date</p>
+            <p className="font-medium">{formatDate(coa.issueDate)}</p>
+          </div>
+          <div>
+            <p className="text-xs text-slate-500">Expiry Date</p>
+            <p className="font-medium">{formatDate(coa.expiryDate)}</p>
+          </div>
+          <div>
+            <p className="text-xs text-slate-500">Conclusion</p>
+            <p className="font-medium">{coa.conclusion}</p>
+          </div>
+          <div>
+            <p className="text-xs text-slate-500">Approved At</p>
+            <p className="font-medium">{formatDate(coa.approvedAt)}</p>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Items</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="rounded-lg border">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>No</TableHead>
+                  <TableHead>Parameter</TableHead>
+                  <TableHead>Metode</TableHead>
+                  <TableHead>Spesifikasi</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {coa.items?.length ? (
+                  coa.items.map((item, index) => (
+                    <TableRow key={`${item.parameter}-${index}`}>
+                      <TableCell>{item.orderNo ?? index + 1}</TableCell>
+                      <TableCell>{item.parameter}</TableCell>
+                      <TableCell>{item.testMethod ?? "-"}</TableCell>
+                      <TableCell>{item.specification ?? "-"}</TableCell>
+                    </TableRow>
+                  ))
+                ) : (
+                  <TableRow>
+                    <TableCell colSpan={4} className="text-center">
+                      Belum ada item.
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Modal
+        isOpen={approveModalOpen}
+        onClose={() => setApproveModalOpen(false)}
+        title="Approve COA"
+        width="w-[90vw] md:w-[40vw]"
+        onSubmit={handleApprove}
+        onCancel={() => setApproveModalOpen(false)}
+      >
+        <div className="flex flex-col gap-4 p-5">
+          <div>
+            <span className="text-sm font-medium">Digital Signature (optional)</span>
+            <Input
+              value={digitalSignature}
+              onChange={(e) => setDigitalSignature(e.target.value)}
+              placeholder="base64 signature"
+            />
+          </div>
+        </div>
+      </Modal>
+    </div>
+  );
+}

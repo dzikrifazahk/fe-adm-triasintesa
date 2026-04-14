@@ -1,4 +1,5 @@
 import { getDictionary } from "../../../get-dictionary";
+import { QcMenuBar } from "./qcMenuBar";
 
 interface Props {
   dictionary: Awaited<ReturnType<typeof getDictionary>>["quality_control_page_dic"];
@@ -6,9 +7,5 @@ interface Props {
 }
 
 export function QCLayoutMain({ dictionary, children }: Props) {
-  return (
-    <div className="bg-card flex h-full w-full shadow min-h-0 min-w-0 rounded-lg border p-6">
-      {children}
-    </div>
-  );
+  return <QcMenuBar dictionary={dictionary}>{children}</QcMenuBar>;
 }
