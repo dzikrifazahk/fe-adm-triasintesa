@@ -1,7 +1,18 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { getDictionary } from "../../../get-dictionary";
+import { reportService } from "@/services";
+import {
+  IReportFilterPayload,
+  IReportPreview,
+  IReportStats,
+  ReportDepartment,
+  ReportFormat,
+  ReportType,
+} from "@/types/report";
+import axios from "axios";
+import Swal from "sweetalert2";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -22,12 +33,10 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import {
-  CalendarRange,
   ChartColumnBig,
   Download,
   FileBarChart2,
   FileSpreadsheet,
-  Layers3,
   RefreshCcw,
 } from "lucide-react";
 
@@ -37,44 +46,59 @@ type Props = {
   dictionary: Dictionary;
 };
 
-type ReportType = "financial" | "production" | "inventory";
-type ReportFormat = "pdf" | "xlsx" | "csv";
-type Department = "all" | "finance" | "operations" | "warehouse";
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null;
+}
+
+function unwrapData<T>(value: unknown): T {
+  if (isRecord(value) && "data" in value) {
+    return value.data as T;
+  }
+  return value as T;
+}
+
+function getErrorMessage(error: unknown): string {
+  if (axios.isAxiosError(error)) {
+    const message = error.response?.data?.message;
+    if (typeof message === "string") return message;
+    if (Array.isArray(message)) return message.join(", ");
+    if (isRecord(message)) return JSON.stringify(message);
+  }
+  if (error instanceof Error) return error.message;
+  return "Terjadi kesalahan";
+}
+
+function formatCurrency(value: number): string {
+  return new Intl.NumberFormat("id-ID", {
+    style: "currency",
+    currency: "IDR",
+    maximumFractionDigits: 0,
+  }).format(Number(value || 0));
+}
+
+function getFilenameFromDisposition(disposition?: string): string | null {
+  if (!disposition) return null;
+  const fileNameMatch = disposition.match(/filename\*?=(?:UTF-8'')?\"?([^\";]+)/i);
+  if (!fileNameMatch?.[1]) return null;
+  return decodeURIComponent(fileNameMatch[1]);
+}
 
 export default function ReportMain({ dictionary }: Props) {
   const [reportType, setReportType] = useState<ReportType>("financial");
   const [reportFormat, setReportFormat] = useState<ReportFormat>("pdf");
-  const [department, setDepartment] = useState<Department>("all");
+  const [department, setDepartment] = useState<ReportDepartment>("all");
   const [dateFrom, setDateFrom] = useState("2026-04-01");
   const [dateTo, setDateTo] = useState("2026-04-15");
   const [keyword, setKeyword] = useState("");
   const [notes, setNotes] = useState("");
-
-  const stats = [
-    {
-      label: dictionary?.stats?.templates ?? "Ready templates",
-      value: "03",
-      hint:
-        dictionary?.stats?.templates_hint ??
-        "Most-used report formats by the team",
-      icon: Layers3,
-    },
-    {
-      label: dictionary?.stats?.exports ?? "Exports this month",
-      value: "18",
-      hint:
-        dictionary?.stats?.exports_hint ??
-        "Reports that have already been downloaded",
-      icon: Download,
-    },
-    {
-      label: dictionary?.stats?.scheduled ?? "Active schedules",
-      value: "04",
-      hint:
-        dictionary?.stats?.scheduled_hint ?? "Automated reports still running",
-      icon: RefreshCcw,
-    },
-  ];
+  const [stats, setStats] = useState<IReportStats>({
+    template_count: 3,
+    exports_month_count: 0,
+    active_schedule_count: 0,
+  });
+  const [preview, setPreview] = useState<IReportPreview | null>(null);
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [isDownloading, setIsDownloading] = useState(false);
 
   const reportTypeLabel = {
     financial: dictionary?.templates?.financial ?? "Monthly financial report",
@@ -93,6 +117,97 @@ export default function ReportMain({ dictionary }: Props) {
     finance: "Finance",
     operations: "Operations",
     warehouse: "Warehouse",
+  };
+
+  const buildPayload = (): IReportFilterPayload => ({
+    reportType,
+    reportFormat,
+    dateFrom,
+    dateTo,
+    department,
+    keyword: keyword.trim() || undefined,
+    notes: notes.trim() || undefined,
+  });
+
+  const fetchStats = async () => {
+    try {
+      const response = await reportService.getReportStats();
+      const payload = unwrapData<IReportStats>(response);
+      setStats(payload);
+    } catch (error) {
+      Swal.fire({
+        icon: "error",
+        title: "Gagal memuat statistik report",
+        text: getErrorMessage(error),
+      });
+    }
+  };
+
+  useEffect(() => {
+    fetchStats();
+  }, []);
+
+  const handleGeneratePreview = async () => {
+    try {
+      setIsGenerating(true);
+      const response = await reportService.getReportPreview(buildPayload());
+      const payload = unwrapData<IReportPreview>(response);
+      setPreview(payload);
+    } catch (error) {
+      Swal.fire({
+        icon: "error",
+        title: "Gagal generate preview",
+        text: getErrorMessage(error),
+      });
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
+  const handleDownload = async () => {
+    try {
+      setIsDownloading(true);
+      const response = await reportService.exportReport(buildPayload());
+      const disposition = response.headers?.["content-disposition"];
+      const fileName =
+        getFilenameFromDisposition(disposition) ||
+        `report-${reportType}.${reportFormat}`;
+      const blob = new Blob([response.data], {
+        type: response.headers?.["content-type"] || "application/octet-stream",
+      });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = fileName;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+      await fetchStats();
+    } catch (error) {
+      Swal.fire({
+        icon: "error",
+        title: "Gagal download report",
+        text: getErrorMessage(error),
+      });
+    } finally {
+      setIsDownloading(false);
+    }
+  };
+
+  const handleReset = () => {
+    setReportType("financial");
+    setReportFormat("pdf");
+    setDepartment("all");
+    setDateFrom("2026-04-01");
+    setDateTo("2026-04-15");
+    setKeyword("");
+    setNotes("");
+    setPreview(null);
+  };
+
+  const applyTemplate = (nextType: ReportType) => {
+    setReportType(nextType);
   };
 
   return (
@@ -128,11 +243,40 @@ export default function ReportMain({ dictionary }: Props) {
                 <Button
                   variant="outline"
                   className="h-11 rounded-xl border-white/20 bg-white/10 px-5 text-white hover:bg-white/15 hover:text-white"
+                  onClick={handleGeneratePreview}
+                  disabled={isGenerating}
                 >
                   <FileBarChart2 className="size-4" />
-                  {dictionary?.button_generate ?? "Generate Report"}
+                  {isGenerating
+                    ? "Generating..."
+                    : dictionary?.button_generate ?? "Generate Report"}
                 </Button>
               </div>
+            </div>
+          </div>
+
+          <div className="grid gap-4 sm:grid-cols-3">
+            <div className="rounded-2xl border border-white/10 bg-white/10 p-4 backdrop-blur">
+              <p className="text-sm text-slate-200">
+                {dictionary?.stats?.templates ?? "Ready templates"}
+              </p>
+              <p className="mt-1 text-2xl font-semibold">{stats.template_count}</p>
+            </div>
+            <div className="rounded-2xl border border-white/10 bg-white/10 p-4 backdrop-blur">
+              <p className="text-sm text-slate-200">
+                {dictionary?.stats?.exports ?? "Exports this month"}
+              </p>
+              <p className="mt-1 text-2xl font-semibold">
+                {stats.exports_month_count}
+              </p>
+            </div>
+            <div className="rounded-2xl border border-white/10 bg-white/10 p-4 backdrop-blur">
+              <p className="text-sm text-slate-200">
+                {dictionary?.stats?.scheduled ?? "Active schedules"}
+              </p>
+              <p className="mt-1 text-2xl font-semibold">
+                {stats.active_schedule_count}
+              </p>
             </div>
           </div>
         </div>
@@ -227,7 +371,7 @@ export default function ReportMain({ dictionary }: Props) {
                 <Label>{dictionary?.form?.department ?? "Department"}</Label>
                 <Select
                   value={department}
-                  onValueChange={(value) => setDepartment(value as Department)}
+                  onValueChange={(value) => setDepartment(value as ReportDepartment)}
                 >
                   <SelectTrigger className="w-full rounded-xl border-slate-200">
                     <SelectValue
@@ -280,15 +424,32 @@ export default function ReportMain({ dictionary }: Props) {
             </div>
 
             <div className="flex flex-wrap gap-3">
-              <Button className="rounded-xl bg-slate-900 text-white hover:bg-slate-800">
+              <Button
+                className="rounded-xl bg-slate-900 text-white hover:bg-slate-800"
+                onClick={handleGeneratePreview}
+                disabled={isGenerating}
+              >
                 <ChartColumnBig className="size-4" />
-                {dictionary?.button_generate ?? "Generate Report"}
+                {isGenerating
+                  ? "Generating..."
+                  : dictionary?.button_generate ?? "Generate Report"}
               </Button>
-              <Button variant="outline" className="rounded-xl border-slate-200">
+              <Button
+                variant="outline"
+                className="rounded-xl border-slate-200"
+                onClick={handleDownload}
+                disabled={isDownloading}
+              >
                 <Download className="size-4" />
-                {dictionary?.button_download ?? "Download"}
+                {isDownloading
+                  ? "Downloading..."
+                  : dictionary?.button_download ?? "Download"}
               </Button>
-              <Button variant="outline" className="rounded-xl border-slate-200">
+              <Button
+                variant="outline"
+                className="rounded-xl border-slate-200"
+                onClick={handleReset}
+              >
                 <RefreshCcw className="size-4" />
                 {dictionary?.button_reset ?? "Reset"}
               </Button>
@@ -316,11 +477,13 @@ export default function ReportMain({ dictionary }: Props) {
                       {dictionary?.preview?.summary_title ?? "Summary"}
                     </p>
                     <p className="text-lg font-semibold text-slate-900">
-                      {reportTypeLabel[reportType]}
+                      {preview?.summaryTitle || reportTypeLabel[reportType]}
                     </p>
                   </div>
                   <Badge className="border-emerald-200 bg-emerald-50 text-emerald-700">
-                    {dictionary?.preview?.status_ready ?? "Ready to export"}
+                    {preview?.status
+                      ? dictionary?.preview?.status_ready ?? "Ready to export"
+                      : "Draft"}
                   </Badge>
                 </div>
 
@@ -330,7 +493,8 @@ export default function ReportMain({ dictionary }: Props) {
                       {dictionary?.preview?.range ?? "Period"}
                     </p>
                     <p className="mt-1 font-semibold text-slate-900">
-                      {dateFrom} - {dateTo}
+                      {preview?.period.from || dateFrom} -{" "}
+                      {preview?.period.to || dateTo}
                     </p>
                   </div>
                   <div className="rounded-2xl bg-white p-4">
@@ -338,7 +502,7 @@ export default function ReportMain({ dictionary }: Props) {
                       {dictionary?.preview?.format ?? "Format"}
                     </p>
                     <p className="mt-1 font-semibold text-slate-900">
-                      {formatLabel[reportFormat]}
+                      {preview?.format || formatLabel[reportFormat]}
                     </p>
                   </div>
                   <div className="rounded-2xl bg-white p-4">
@@ -346,7 +510,7 @@ export default function ReportMain({ dictionary }: Props) {
                       {dictionary?.preview?.department ?? "Department"}
                     </p>
                     <p className="mt-1 font-semibold text-slate-900">
-                      {departmentLabel[department]}
+                      {preview?.departmentLabel || departmentLabel[department]}
                     </p>
                   </div>
                   <div className="rounded-2xl bg-white p-4">
@@ -354,7 +518,7 @@ export default function ReportMain({ dictionary }: Props) {
                       {dictionary?.preview?.items ?? "Counted items"}
                     </p>
                     <p className="mt-1 font-semibold text-slate-900">
-                      248 rows
+                      {preview?.countedItems ?? 0} rows
                     </p>
                   </div>
                 </div>
@@ -363,8 +527,33 @@ export default function ReportMain({ dictionary }: Props) {
                   <p className="text-sm text-slate-300">
                     {dictionary?.preview?.totals ?? "Total amount"}
                   </p>
-                  <p className="mt-1 text-2xl font-semibold">Rp 184.250.000</p>
+                  <p className="mt-1 text-2xl font-semibold">
+                    {formatCurrency(preview?.totalAmount ?? 0)}
+                  </p>
                 </div>
+
+                {reportType === "financial" && preview?.metrics ? (
+                  <div className="mt-4 grid gap-3 md:grid-cols-3">
+                    <div className="rounded-2xl bg-white p-4">
+                      <p className="text-xs text-slate-500">Invoiced</p>
+                      <p className="mt-1 font-semibold text-slate-900">
+                        {formatCurrency(preview.metrics.invoiced)}
+                      </p>
+                    </div>
+                    <div className="rounded-2xl bg-white p-4">
+                      <p className="text-xs text-slate-500">Paid</p>
+                      <p className="mt-1 font-semibold text-slate-900">
+                        {formatCurrency(preview.metrics.paid)}
+                      </p>
+                    </div>
+                    <div className="rounded-2xl bg-white p-4">
+                      <p className="text-xs text-slate-500">Cash Net</p>
+                      <p className="mt-1 font-semibold text-slate-900">
+                        {formatCurrency(preview.metrics.net)}
+                      </p>
+                    </div>
+                  </div>
+                ) : null}
               </div>
             </CardContent>
           </Card>
@@ -380,7 +569,11 @@ export default function ReportMain({ dictionary }: Props) {
               </CardDescription>
             </CardHeader>
             <CardContent className="grid gap-3">
-              <button className="flex items-center justify-between rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4 text-left transition hover:border-slate-300 hover:bg-white">
+              <button
+                type="button"
+                className="flex items-center justify-between rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4 text-left transition hover:border-slate-300 hover:bg-white"
+                onClick={() => applyTemplate("financial")}
+              >
                 <div>
                   <p className="font-medium text-slate-900">
                     {dictionary?.templates?.financial ??
@@ -391,7 +584,11 @@ export default function ReportMain({ dictionary }: Props) {
                 <FileBarChart2 className="size-5 text-slate-500" />
               </button>
 
-              <button className="flex items-center justify-between rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4 text-left transition hover:border-slate-300 hover:bg-white">
+              <button
+                type="button"
+                className="flex items-center justify-between rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4 text-left transition hover:border-slate-300 hover:bg-white"
+                onClick={() => applyTemplate("production")}
+              >
                 <div>
                   <p className="font-medium text-slate-900">
                     {dictionary?.templates?.production ??
@@ -402,7 +599,11 @@ export default function ReportMain({ dictionary }: Props) {
                 <ChartColumnBig className="size-5 text-slate-500" />
               </button>
 
-              <button className="flex items-center justify-between rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4 text-left transition hover:border-slate-300 hover:bg-white">
+              <button
+                type="button"
+                className="flex items-center justify-between rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4 text-left transition hover:border-slate-300 hover:bg-white"
+                onClick={() => applyTemplate("inventory")}
+              >
                 <div>
                   <p className="font-medium text-slate-900">
                     {dictionary?.templates?.inventory ??

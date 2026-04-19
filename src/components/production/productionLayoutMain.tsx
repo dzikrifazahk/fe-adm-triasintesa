@@ -83,10 +83,8 @@ export default function ProductionLayoutMain({
       queryParams.search = search;
 
       if (selectedDate?.from && selectedDate?.to) {
-        queryParams.date = `[${format(
-          selectedDate.from,
-          "yyyy-MM-dd",
-        )}, ${format(selectedDate.to, "yyyy-MM-dd")}]`;
+        queryParams.dateFrom = format(selectedDate.from, "yyyy-MM-dd");
+        queryParams.dateTo = format(selectedDate.to, "yyyy-MM-dd");
       }
 
       if (payload) {
@@ -218,6 +216,53 @@ export default function ProductionLayoutMain({
     }
   };
 
+  const handleResetPlanLink = async (id: string) => {
+    const confirm = await Swal.fire({
+      icon: "warning",
+      title: "Reset plan link?",
+      text: "Plan akan ditutup dan batch kosong pada plan ini akan dilepas.",
+      showDenyButton: true,
+      confirmButtonText: "Ya",
+      confirmButtonColor: "#493628",
+      denyButtonText: "Tidak",
+      position: "center",
+    });
+
+    if (!confirm.isConfirmed) return;
+
+    try {
+      setLoading(true);
+      await productionPlanService.resetProductionPlanTankLink(id);
+
+      Swal.fire({
+        icon: "success",
+        title: "Plan link berhasil di-reset",
+        position: "top-right",
+        toast: true,
+        showConfirmButton: false,
+        timer: 2200,
+      });
+
+      getData("", page, pageSize, search, selectedDateRange, filterPayload);
+    } catch (error: any) {
+      const message =
+        error?.response?.data?.message ??
+        "Gagal reset plan link. Pastikan batch belum memiliki produksi jirigen.";
+
+      Swal.fire({
+        icon: "error",
+        title: "Reset plan link gagal",
+        text: Array.isArray(message) ? message.join(", ") : String(message),
+        position: "top-right",
+        toast: true,
+        showConfirmButton: false,
+        timer: 3500,
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
   /* ---------- filter handlers ---------- */
   /* ---------- layout classes ---------- */
   const layoutWrapper = `flex h-full min-h-0 w-full flex-col gap-3 overflow-x-hidden ${
@@ -329,6 +374,7 @@ export default function ProductionLayoutMain({
                 loadingTable={loading}
                 editData={handleEditProject}
                 deleteData={handleDeleteProject}
+                resetData={handleResetPlanLink}
                 viewData={handleViewProductionPlan}
               />
             )}

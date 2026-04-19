@@ -374,6 +374,10 @@
       "default_page_description": "Please select one of the tabs above for seeing details."
     }
   },
+  "customer_page_dic": {
+    "title": "Customer",
+    "description": "Manage customer data for sales order, shipping, and invoicing flow."
+  },
   "shipping_page_dic": {
     "title": "Shipping",
     "description": "Manage shipping data efficiently and accurately.",
@@ -487,6 +491,7 @@
     "inventory": "Inventory",
     "sales_title": "Sales",
     "sales_order": "Sales Order",
+    "customer": "Customer",
     "shipping": "Shipping",
     "report": "Report",
     "settings": "Settings",

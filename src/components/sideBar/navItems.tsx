@@ -5,6 +5,7 @@ import {
   FaGears,
   FaChartPie,
   FaMoneyBills,
+  FaUsers,
 } from "react-icons/fa6";
 import { useState, useEffect } from "react";
 import { useSidebar } from "../ui/sidebar";
@@ -78,6 +79,11 @@ export function NavItems({ isOpen, dictionary }: SideBarDashboardProps) {
       title: `${dictionary.sales_order}`,
       icon: <SalesOrderIC className="w-5 h-5 hover:text-white transition" />,
       to: `/${locale}/dashboard/sales-order`,
+    },
+    {
+      title: `${dictionary.customer}`,
+      icon: <FaUsers className="hover:text-white" size={18} />,
+      to: `/${locale}/dashboard/customer`,
     },
     {
       title: `${dictionary.shipping}`,
