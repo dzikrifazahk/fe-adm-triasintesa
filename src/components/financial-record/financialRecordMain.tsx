@@ -3,13 +3,13 @@
 import { useDeferredValue, useEffect, useState } from "react";
 import { getDictionary } from "../../../get-dictionary";
 import { financialRecordService } from "@/services";
+import { FinancialRecordTableSection } from "@/components/financial-record/financialRecordTableSection";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
-  CardDescription,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
@@ -23,37 +23,19 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import { Textarea } from "@/components/ui/textarea";
 import {
-  ArrowRightLeft,
   BanknoteArrowDown,
   CheckCircle2,
   CircleDollarSign,
   CreditCard,
   FileClock,
-  FilePenLine,
-  Filter,
   Plus,
   ReceiptText,
   RefreshCcw,
-  Search,
   WalletCards,
 } from "lucide-react";
 import Swal from "sweetalert2";
@@ -785,7 +767,7 @@ export default function FinancialRecordMain({ dictionary }: Props) {
   return (
     <>
       <div className="flex min-h-0 w-full flex-1 flex-col gap-6 overflow-auto">
-        <section className="relative overflow-hidden rounded-[28px] border border-slate-200 bg-[radial-gradient(circle_at_top_left,_rgba(59,130,246,0.2),_transparent_35%),linear-gradient(135deg,_#0f172a_0%,_#132144_42%,_#1d4ed8_100%)] p-6 text-white shadow-sm lg:p-8">
+        <section className="relative overflow-hidden rounded-[28px] bg-[radial-gradient(circle_at_top_left,_rgba(59,130,246,0.2),_transparent_35%),linear-gradient(135deg,_#0f172a_0%,_#132144_42%,_#1d4ed8_100%)] p-6 text-white shadow-sm lg:p-8">
           <div className="absolute inset-y-0 right-0 hidden w-1/3 bg-[radial-gradient(circle_at_center,_rgba(255,255,255,0.18),_transparent_60%)] lg:block" />
           <div className="relative flex flex-col gap-8">
             <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
@@ -857,7 +839,7 @@ export default function FinancialRecordMain({ dictionary }: Props) {
           onValueChange={(value) => setActiveTab(value as FinancialStage)}
           className="gap-5"
         >
-          <TabsList className="grid h-auto w-full grid-cols-1 items-stretch gap-2 rounded-[24px] bg-slate-100 p-2 overflow-visible lg:grid-cols-3">
+          <TabsList className="grid h-auto w-full grid-cols-1 items-stretch gap-2 overflow-visible rounded-[24px] bg-slate-100 p-2 dark:bg-[#1F2023] lg:grid-cols-3">
             {(
               [
                 "submission",
@@ -871,7 +853,7 @@ export default function FinancialRecordMain({ dictionary }: Props) {
                 <TabsTrigger
                   key={stage}
                   value={stage}
-                  className="flex min-h-[76px] min-w-0 flex-col items-start justify-between gap-3 rounded-[18px] border-0 px-5 py-4 text-left data-[state=active]:bg-white data-[state=active]:shadow-md sm:flex-row sm:items-center"
+                  className="flex min-h-[76px] min-w-0 flex-col items-start justify-between gap-3 rounded-[18px] border border-transparent px-5 py-4 text-left text-slate-700 transition-colors data-[state=active]:border-slate-200 data-[state=active]:bg-white data-[state=active]:shadow-md dark:text-slate-300 dark:data-[state=active]:border-[#34363B] dark:data-[state=active]:bg-[#26282D] dark:data-[state=active]:shadow-none sm:flex-row sm:items-center"
                 >
                   <div className="flex min-w-0 items-center gap-3">
                     <div
@@ -883,10 +865,10 @@ export default function FinancialRecordMain({ dictionary }: Props) {
                       <Icon className="size-5" />
                     </div>
                     <div className="min-w-0">
-                      <p className="truncate text-base font-semibold text-slate-900">
+                      <p className="truncate text-base font-semibold text-slate-900 dark:text-slate-100">
                         {stageLabels[stage]}
                       </p>
-                      <p className="text-xs text-slate-500">
+                      <p className="text-xs text-slate-500 dark:text-slate-400">
                         {tabCounts[stage]}{" "}
                         {copy?.tabs?.transactions_suffix ?? "transaksi"}
                       </p>
@@ -894,7 +876,7 @@ export default function FinancialRecordMain({ dictionary }: Props) {
                   </div>
 
                   {stage !== "paid" ? (
-                    <div className="shrink-0 rounded-full bg-slate-900 px-2.5 py-1 text-xs font-semibold text-white">
+                    <div className="shrink-0 rounded-full bg-slate-900 px-2.5 py-1 text-xs font-semibold text-white dark:bg-slate-800">
                       {stage === "submission"
                         ? `${reviewCounts.submission} ${
                             copy?.tabs?.review_suffix ?? "review"
@@ -904,7 +886,7 @@ export default function FinancialRecordMain({ dictionary }: Props) {
                           }`}
                     </div>
                   ) : (
-                    <div className="shrink-0 rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700">
+                    <div className="shrink-0 rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300">
                       {copy?.tabs?.done ?? "Selesai"}
                     </div>
                   )}
@@ -919,210 +901,39 @@ export default function FinancialRecordMain({ dictionary }: Props) {
             <TabsContent key={stage} value={stage} className="w-full">
               <Card className="overflow-hidden border-0 bg-transparent p-0 shadow-none w-full">
                 <div className="w-full">
-                  <Card className="gap-0 rounded-[24px] border-slate-200 shadow-sm">
-                    <CardHeader className="border-b border-slate-100 pb-5">
-                      <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-                        <div>
-                          <CardTitle className="text-xl text-slate-900">
-                            {stageLabels[stage]}
-                          </CardTitle>
-                          <CardDescription className="mt-2 max-w-2xl text-sm leading-6">
-                            {stageDescriptions[stage]}
-                          </CardDescription>
-                        </div>
-                      </div>
-                    </CardHeader>
-
-                    <CardContent className="space-y-5 pt-6">
-                      <div className="grid gap-3 lg:grid-cols-[1.2fr_0.6fr_0.6fr_auto]">
-                        <div className="relative">
-                          <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-slate-400" />
-                          <Input
-                            value={searchQuery}
-                            onChange={(event) =>
-                              setSearchQuery(event.target.value)
-                            }
-                            placeholder={
-                              copy?.toolbar?.search_placeholder ??
-                              "Cari judul, vendor, ID, kategori..."
-                            }
-                            className="h-11 rounded-xl border-slate-200 pl-9"
-                          />
-                        </div>
-
-                        <Select
-                          value={categoryFilter}
-                          onValueChange={(value) =>
-                            setCategoryFilter(value as FilterCategory)
-                          }
-                        >
-                          <SelectTrigger className="h-11 w-full rounded-xl border-slate-200">
-                            <SelectValue
-                              placeholder={
-                                copy?.toolbar?.category_placeholder ??
-                                "Filter kategori"
-                              }
-                            />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="all">
-                              {copy?.toolbar?.all_category ?? "Semua kategori"}
-                            </SelectItem>
-                            {categories.map((category) => (
-                              <SelectItem key={category} value={category}>
-                                {category}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-
-                        <Button
-                          variant="outline"
-                          className="h-11 rounded-xl border-slate-200"
-                          onClick={clearFilters}
-                        >
-                          <Filter className="size-4" />
-                          {copy?.button_filter ?? "Filters"}
-                        </Button>
-                      </div>
-
-                      <div className="overflow-hidden rounded-[22px] border border-slate-200">
-                        <Table>
-                          <TableHeader className="bg-slate-50">
-                            <TableRow className="hover:bg-slate-50">
-                              <TableHead className="px-4">
-                                {copy?.table?.expense ?? "Expense"}
-                              </TableHead>
-                              <TableHead>
-                                {copy?.table?.category ?? "Kategori"}
-                              </TableHead>
-                              <TableHead>
-                                {copy?.table?.amount ?? "Nominal"}
-                              </TableHead>
-                              <TableHead>
-                                {copy?.table?.status ?? "Status"}
-                              </TableHead>
-                              <TableHead>
-                                {copy?.table?.date ?? "Tanggal"}
-                              </TableHead>
-                              <TableHead className="px-4 text-right">
-                                {copy?.table?.actions ?? "Aksi"}
-                              </TableHead>
-                            </TableRow>
-                          </TableHeader>
-                          <TableBody>
-                            {filteredRecords.length > 0 ? (
-                              filteredRecords.map((record) => (
-                                <TableRow key={record.id}>
-                                  <TableCell className="px-4 py-4">
-                                    <div className="space-y-1">
-                                      <p className="font-semibold text-slate-900">
-                                        {record.title}
-                                      </p>
-                                      <div className="flex flex-wrap items-center gap-2 text-xs text-slate-500">
-                                        <span>{record.id}</span>
-                                        <span className="text-slate-300">
-                                          •
-                                        </span>
-                                        <span>{record.vendor}</span>
-                                        <span className="text-slate-300">
-                                          •
-                                        </span>
-                                        <span>
-                                          {copy?.table?.created_by_prefix ??
-                                            "By"}{" "}
-                                          {record.createdBy}
-                                        </span>
-                                      </div>
-                                    </div>
-                                  </TableCell>
-                                  <TableCell>
-                                    <div className="space-y-2">
-                                      <p className="font-medium text-slate-800">
-                                        {record.category}
-                                      </p>
-                                      <Badge
-                                        className={cn(
-                                          "rounded-full border-0",
-                                          priorityMeta[record.priority]
-                                            .className,
-                                        )}
-                                      >
-                                        {copy?.priorities?.[record.priority] ??
-                                          priorityMeta[record.priority].label}
-                                      </Badge>
-                                    </div>
-                                  </TableCell>
-                                  <TableCell className="font-semibold text-slate-900">
-                                    {formatCurrency(record.amount)}
-                                  </TableCell>
-                                  <TableCell>
-                                    <Badge
-                                      className={cn(
-                                        "rounded-full border",
-                                        statusMeta[record.status].className,
-                                      )}
-                                    >
-                                      {copy?.statuses?.[record.status] ??
-                                        statusMeta[record.status].label}
-                                    </Badge>
-                                  </TableCell>
-                                  <TableCell className="text-slate-600">
-                                    {formatDate(record.date)}
-                                  </TableCell>
-                                  <TableCell className="px-4">
-                                    <div className="flex justify-end gap-2">
-                                      <Button
-                                        variant="outline"
-                                        className="rounded-xl"
-                                        onClick={() => openEditDialog(record)}
-                                      >
-                                        <FilePenLine className="size-4" />
-                                        {copy?.button_edit ?? "Edit"}
-                                      </Button>
-                                      {record.stage !== "paid" ? (
-                                        <Button
-                                          className="rounded-xl bg-slate-900 text-white hover:bg-slate-800"
-                                          onClick={() =>
-                                            handleAdvanceStage(record.id)
-                                          }
-                                        >
-                                          <ArrowRightLeft className="size-4" />
-                                          {record.stage === "submission"
-                                            ? (copy?.button_update_stage ??
-                                              "Ubah")
-                                            : (copy?.button_mark_paid ??
-                                              "Bayar")}
-                                        </Button>
-                                      ) : null}
-                                    </div>
-                                  </TableCell>
-                                </TableRow>
-                              ))
-                            ) : (
-                              <TableRow>
-                                <TableCell
-                                  colSpan={6}
-                                  className="px-4 py-12 text-center"
-                                >
-                                  <div className="mx-auto max-w-md space-y-2">
-                                    <p className="text-base font-semibold text-slate-900">
-                                      {copy?.table?.empty_title ??
-                                        "Tidak ada data yang cocok"}
-                                    </p>
-                                    <p className="text-sm leading-6 text-slate-500">
-                                      {copy?.table?.empty_description ??
-                                        "Coba ubah kata kunci pencarian atau reset filter untuk melihat data lain di tab ini."}
-                                    </p>
-                                  </div>
-                                </TableCell>
-                              </TableRow>
-                            )}
-                          </TableBody>
-                        </Table>
-                      </div>
-                    </CardContent>
-                  </Card>
+                  <FinancialRecordTableSection
+                    dictionary={copy}
+                    title={stageLabels[stage]}
+                    description={stageDescriptions[stage]}
+                    searchQuery={searchQuery}
+                    categoryFilter={categoryFilter}
+                    categories={categories}
+                    rows={filteredRecords}
+                    onSearchChange={setSearchQuery}
+                    onCategoryFilterChange={(value) =>
+                      setCategoryFilter(value as FilterCategory)
+                    }
+                    onClearFilters={clearFilters}
+                    onEdit={(recordId) => {
+                      const record = records.find((item) => item.id === recordId);
+                      if (record) openEditDialog(record);
+                    }}
+                    onAdvanceStage={handleAdvanceStage}
+                    formatCurrency={formatCurrency}
+                    formatDate={formatDate}
+                    priorityLabel={(priority) =>
+                      copy?.priorities?.[priority] ?? priorityMeta[priority].label
+                    }
+                    priorityClassName={(priority) =>
+                      priorityMeta[priority].className
+                    }
+                    statusLabel={(status) =>
+                      copy?.statuses?.[status] ?? statusMeta[status].label
+                    }
+                    statusClassName={(status) =>
+                      statusMeta[status].className
+                    }
+                  />
                 </div>
               </Card>
             </TabsContent>
