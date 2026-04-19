@@ -6,7 +6,11 @@ export type InvoiceStatus =
   | "paid"
   | "overdue"
   | "cancelled";
-export type ReimbursementStatus = "pending" | "approved" | "rejected";
+export type ReimbursementStatus =
+  | "pending_staff_approval"
+  | "pending_director_approval"
+  | "approved"
+  | "rejected";
 export type ManPowerStatus = "pending" | "approved" | "rejected" | "paid";
 
 export interface IFlashCashRecord {
@@ -16,7 +20,6 @@ export interface IFlashCashRecord {
   category: string;
   amount: number;
   description: string;
-  referenceType: string;
   referenceId?: number;
   requiresApproval?: boolean;
   approvedBy?: string;
@@ -34,6 +37,10 @@ export interface IReimbursementRecord {
   requestedBy?: string;
   approvedBy?: string;
   approvedAt?: string;
+  approvedByStaff?: string;
+  approvedAtStaff?: string;
+  approvedByDirector?: string;
+  approvedAtDirector?: string;
   rejectionReason?: string;
 }
 
@@ -67,4 +74,3 @@ export interface IManPowerRecord {
   paidAt?: string;
   rejectionReason?: string;
 }
-

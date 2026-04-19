@@ -50,8 +50,13 @@ export class FinancialRecordService extends BaseHttpService {
     return response.data;
   }
 
-  async approveReimbursement(id: number) {
-    const response = await this.httpClient.post(`/expenses/${id}/approve`);
+  async approveReimbursementByStaff(id: number) {
+    const response = await this.httpClient.post(`/expenses/${id}/approve-staff`);
+    return response.data;
+  }
+
+  async approveReimbursementByDirector(id: number) {
+    const response = await this.httpClient.post(`/expenses/${id}/approve-director`);
     return response.data;
   }
 
@@ -175,4 +180,3 @@ export class FinancialRecordService extends BaseHttpService {
     return response.data;
   }
 }
-

@@ -93,7 +93,6 @@ type FormState = {
   dueDate: string;
   paymentMethod: "cash" | "termin";
   flashType: "in" | "out";
-  referenceType: string;
   recordType: string;
   category: string;
   amount: string;
@@ -117,7 +116,6 @@ const defaultFormState: FormState = {
   dueDate: "2026-04-15",
   paymentMethod: "cash",
   flashType: "out",
-  referenceType: "manual",
   recordType: "man_power",
   category: "Operational",
   amount: "",
@@ -283,8 +281,11 @@ function mapManPowerStatusToWorkflow(
 function mapReimbursementStatusToWorkflow(
   status: IReimbursementRecord["status"],
 ): { stage: FinancialStage; financialStatus: FinancialStatus } {
-  if (status === "approved") {
+  if (status === "pending_director_approval") {
     return { stage: "payment_request", financialStatus: "ready_to_pay" };
+  }
+  if (status === "approved") {
+    return { stage: "paid", financialStatus: "paid" };
   }
   if (status === "rejected") {
     return { stage: "submission", financialStatus: "waiting_budget" };
@@ -329,7 +330,7 @@ export default function FinancialRecordMain({ dictionary }: Props) {
         source: "flash_cash" as const,
         sourceId: row.id,
         title: row.description || `Flash Cash ${row.category}`,
-        vendor: row.referenceType || "Flash Cash",
+        vendor: "Flash Cash",
         category: `Flash Cash / ${row.category}`,
         amount: Number(row.amount || 0),
         date: row.transactionDate,
@@ -546,7 +547,6 @@ export default function FinancialRecordMain({ dictionary }: Props) {
       dueDate: record.date,
       paymentMethod: "cash",
       flashType: "out",
-      referenceType: "manual",
       recordType: record.source === "man_power" ? "man_power" : "man_power",
       category: record.category,
       amount: String(record.amount),
@@ -598,7 +598,6 @@ export default function FinancialRecordMain({ dictionary }: Props) {
           category: trimmedCategory,
           amount: parsedAmount,
           description: trimmedTitle,
-          referenceType: form.referenceType || "manual",
         };
         if (sourceId) {
           await financialRecordService.updateFlashCash(sourceId, payload);
@@ -707,8 +706,12 @@ export default function FinancialRecordMain({ dictionary }: Props) {
         }
       }
 
-      if (record.source === "reimbursement" && record.stage === "submission") {
-        await financialRecordService.approveReimbursement(record.sourceId);
+      if (record.source === "reimbursement") {
+        if (record.stage === "submission") {
+          await financialRecordService.approveReimbursementByStaff(record.sourceId);
+        } else if (record.stage === "payment_request") {
+          await financialRecordService.approveReimbursementByDirector(record.sourceId);
+        }
       }
 
       if (record.source === "flash_cash" && record.stage === "submission") {
@@ -1179,20 +1182,6 @@ export default function FinancialRecordMain({ dictionary }: Props) {
               </>
             ) : null}
 
-            {form.source === "flash_cash" ? (
-              <div className="space-y-2">
-                <Label htmlFor="reference-type">Reference Type</Label>
-                <Input
-                  id="reference-type"
-                  value={form.referenceType}
-                  onChange={(event) =>
-                    handleFormChange("referenceType", event.target.value)
-                  }
-                  placeholder="manual / sales_order / payment"
-                />
-              </div>
-            ) : null}
-
             {form.source === "man_power" ? (
               <div className="space-y-2">
                 <Label htmlFor="record-type">Record Type</Label>
@@ -1230,33 +1219,35 @@ export default function FinancialRecordMain({ dictionary }: Props) {
               </Select>
             </div>
 
-            <div className="space-y-2">
-              <Label>{copy?.form?.status_label ?? "Status"}</Label>
-              <Select
-                value={form.status}
-                onValueChange={(value) =>
-                  handleFormChange("status", value as FinancialStatus)
-                }
-              >
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Pilih status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="need_review">
-                    {copy?.statuses?.need_review ?? "Perlu Review"}
-                  </SelectItem>
-                  <SelectItem value="waiting_budget">
-                    {copy?.statuses?.waiting_budget ?? "Menunggu Budget"}
-                  </SelectItem>
-                  <SelectItem value="ready_to_pay">
-                    {copy?.statuses?.ready_to_pay ?? "Siap Dibayar"}
-                  </SelectItem>
-                  <SelectItem value="paid">
-                    {copy?.statuses?.paid ?? "Paid"}
-                  </SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+            {form.source !== "reimbursement" ? (
+              <div className="space-y-2">
+                <Label>{copy?.form?.status_label ?? "Status"}</Label>
+                <Select
+                  value={form.status}
+                  onValueChange={(value) =>
+                    handleFormChange("status", value as FinancialStatus)
+                  }
+                >
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Pilih status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="need_review">
+                      {copy?.statuses?.need_review ?? "Perlu Review"}
+                    </SelectItem>
+                    <SelectItem value="waiting_budget">
+                      {copy?.statuses?.waiting_budget ?? "Menunggu Budget"}
+                    </SelectItem>
+                    <SelectItem value="ready_to_pay">
+                      {copy?.statuses?.ready_to_pay ?? "Siap Dibayar"}
+                    </SelectItem>
+                    <SelectItem value="paid">
+                      {copy?.statuses?.paid ?? "Paid"}
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            ) : null}
 
             <div className="space-y-2 md:col-span-2">
               <Label>{copy?.form?.priority_label ?? "Prioritas"}</Label>
