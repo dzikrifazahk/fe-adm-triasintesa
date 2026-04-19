@@ -6,11 +6,12 @@ import Swal from "sweetalert2";
 import { getDictionary } from "../../../get-dictionary";
 import { useLoading } from "@/context/loadingContext";
 import { inventoryService } from "@/services";
+import { InventoryBarcodeScanner } from "@/components/inventory/inventoryBarcodeScanner";
+import { InventoryRecentTable } from "@/components/inventory/inventoryRecentTable";
 import {
   IInvJirigen,
   IInvMovement,
   IInventoryLocation,
-  InventoryStatus,
   IScanInPayload,
 } from "@/types/inventory";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -18,27 +19,17 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import { Label } from "@/components/ui/label";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+  CalendarRange,
+  Loader2,
+  MapPin,
+  PackageCheck,
+  ScanLine,
+  ShieldCheck,
+  Warehouse,
+} from "lucide-react";
 
 type Dictionary = Awaited<ReturnType<typeof getDictionary>>["inventory_page_dic"];
 
-type Envelope<T> = { data: T };
 type ListPayload<T> = { data: T[]; meta?: unknown };
 
 type ScanInForm = {
@@ -48,20 +39,14 @@ type ScanInForm = {
   expiryDate: string;
 };
 
+const qcStatusOptions = ["PASS", "HOLD", "REJECT"] as const;
+
 const emptyScanInForm: ScanInForm = {
   barcode: "",
   locationId: "",
   qcStatus: "PASS",
   expiryDate: "",
 };
-
-const statusOptions: InventoryStatus[] = [
-  "available",
-  "reserved",
-  "shipped",
-  "sold",
-  "returned",
-];
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null;
@@ -97,45 +82,78 @@ function formatDate(value?: string | null): string {
   return date.toLocaleString("id-ID");
 }
 
-function statusClassName(status: InventoryStatus): string {
-  if (status === "available") return "bg-emerald-600 text-white";
-  if (status === "reserved") return "bg-amber-600 text-white";
-  if (status === "shipped") return "bg-blue-600 text-white";
-  if (status === "sold") return "bg-violet-600 text-white";
-  return "bg-slate-600 text-white";
+function statusClassName(status?: string): string {
+  switch (status) {
+    case "available":
+      return "bg-emerald-600 text-white";
+    case "reserved":
+      return "bg-amber-600 text-white";
+    case "shipped":
+      return "bg-blue-600 text-white";
+    case "sold":
+      return "bg-violet-600 text-white";
+    case "returned":
+      return "bg-slate-600 text-white";
+    default:
+      return "bg-slate-500 text-white";
+  }
+}
+
+function StatCard({
+  icon,
+  label,
+  value,
+  tone,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  value: string | number;
+  tone: string;
+}) {
+  return (
+    <div className="rounded-2xl border bg-white p-4 shadow-sm dark:border-[#34363B] dark:bg-[#26282D]">
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <div className="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400">
+            {label}
+          </div>
+          <div className="mt-2 text-2xl font-bold text-slate-900 dark:text-slate-100">
+            {value}
+          </div>
+        </div>
+        <div className={`rounded-2xl p-3 ${tone}`}>{icon}</div>
+      </div>
+    </div>
+  );
 }
 
 export default function InventoryMain({ dictionary }: { dictionary: Dictionary }) {
   const { setIsLoading } = useLoading();
-  const [activeTab, setActiveTab] = useState("stock");
+
   const [stocks, setStocks] = useState<IInvJirigen[]>([]);
   const [movements, setMovements] = useState<IInvMovement[]>([]);
   const [locations, setLocations] = useState<IInventoryLocation[]>([]);
-
-  const [searchBarcode, setSearchBarcode] = useState("");
-  const [statusFilter, setStatusFilter] = useState("");
-
-  const [isScanInOpen, setIsScanInOpen] = useState(false);
   const [scanInForm, setScanInForm] = useState<ScanInForm>(emptyScanInForm);
+  const [submittingScan, setSubmittingScan] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+  const [searchBarcode, setSearchBarcode] = useState("");
+  const [scannerRestartKey, setScannerRestartKey] = useState(0);
 
   const title = dictionary?.title ?? "Inventory";
-  const description =
-    dictionary?.description ??
-    "Kelola stok inventory jirigen, scan-in barang, dan monitor pergerakan inventory.";
+  const description = dictionary?.hero_description ?? dictionary?.description ?? "";
 
-  const fetchStocks = async () => {
+  const fetchStocks = async (barcode?: string) => {
     const response = await inventoryService.getInvJirigen({
       page: 1,
       limit: 100,
-      barcode: searchBarcode || undefined,
-      status: statusFilter || undefined,
+      barcode: barcode || undefined,
     });
     const payload = unwrapData<ListPayload<IInvJirigen>>(response);
     setStocks(Array.isArray(payload?.data) ? payload.data : []);
   };
 
   const fetchMovements = async () => {
-    const response = await inventoryService.getRecentInvMovements(30);
+    const response = await inventoryService.getRecentInvMovements(10);
     const payload = unwrapData<IInvMovement[] | ListPayload<IInvMovement>>(response);
     if (Array.isArray(payload)) {
       setMovements(payload);
@@ -154,53 +172,76 @@ export default function InventoryMain({ dictionary }: { dictionary: Dictionary }
     setLocations(Array.isArray(payload?.data) ? payload.data : []);
   };
 
-  const loadAll = async () => {
+  const loadAll = async (barcode?: string) => {
     try {
+      setRefreshing(true);
       setIsLoading(true);
-      await Promise.all([fetchStocks(), fetchMovements(), fetchLocations()]);
+      await Promise.all([fetchStocks(barcode), fetchMovements(), fetchLocations()]);
     } catch (error) {
       Swal.fire({
         icon: "error",
-        title: "Gagal memuat data inventory",
+        title: dictionary.toast.load_error_title,
         text: getErrorMessage(error),
       });
     } finally {
+      setRefreshing(false);
       setIsLoading(false);
     }
   };
 
   useEffect(() => {
-    loadAll();
+    void loadAll();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const filteredStockCount = useMemo(
+  const availableCount = useMemo(
     () => stocks.filter((item) => item.status === "available").length,
     [stocks],
   );
 
-  const submitScanIn = async () => {
+  const passCount = useMemo(
+    () => stocks.filter((item) => item.qcStatus === "PASS").length,
+    [stocks],
+  );
+
+  const recentStocks = useMemo(() => {
+    return [...stocks]
+      .sort((a, b) => {
+        const first = new Date(b.entryDate || b.lastUpdated || 0).getTime();
+        const second = new Date(a.entryDate || a.lastUpdated || 0).getTime();
+        return first - second;
+      })
+      .slice(0, 12);
+  }, [stocks]);
+
+  const submitScanIn = async (event?: React.FormEvent) => {
+    event?.preventDefault();
+
     if (!scanInForm.barcode || !scanInForm.locationId || !scanInForm.qcStatus) {
-      Swal.fire({ icon: "warning", title: "Lengkapi barcode, lokasi, dan QC status." });
+      Swal.fire({
+        icon: "warning",
+        title: dictionary.toast.validation_warning,
+      });
       return;
     }
 
     const payload: IScanInPayload = {
       barcode: scanInForm.barcode.trim(),
       locationId: toNumber(scanInForm.locationId),
-      qcStatus: scanInForm.qcStatus.trim(),
+      qcStatus: scanInForm.qcStatus,
       expiryDate: scanInForm.expiryDate || undefined,
     };
 
     try {
-      setIsLoading(true);
+      setSubmittingScan(true);
       await inventoryService.scanIn(payload);
-      setIsScanInOpen(false);
       setScanInForm(emptyScanInForm);
-      await loadAll();
+      await loadAll(searchBarcode);
+      setScannerRestartKey((prev) => prev + 1);
+
       Swal.fire({
         icon: "success",
-        title: "Scan-in berhasil",
+        title: dictionary.toast.scan_success_title,
         toast: true,
         position: "top-right",
         timer: 1800,
@@ -209,466 +250,297 @@ export default function InventoryMain({ dictionary }: { dictionary: Dictionary }
     } catch (error) {
       Swal.fire({
         icon: "error",
-        title: "Scan-in gagal",
+        title: dictionary.toast.scan_error_title,
         text: getErrorMessage(error),
       });
     } finally {
-      setIsLoading(false);
+      setSubmittingScan(false);
     }
   };
 
-  const runReserve = async (row: IInvJirigen) => {
-    const salesOrderResult = await Swal.fire({
-      title: "Masukkan Sales Order ID",
-      input: "text",
-      showCancelButton: true,
-      inputValidator: (value) => {
-        if (!value) return "Sales Order ID wajib diisi";
-        if (!/^\d+$/.test(value)) return "Sales Order ID harus angka";
-        return null;
-      },
-    });
-    if (!salesOrderResult.isConfirmed || !salesOrderResult.value) return;
-
-    const notesResult = await Swal.fire({
-      title: "Catatan reservasi (opsional)",
-      input: "text",
-      inputValue: "",
-      showCancelButton: true,
-    });
-    if (!notesResult.isConfirmed) return;
-
-    try {
-      setIsLoading(true);
-      await inventoryService.reserveInvJirigen(row.id, {
-        salesOrderId: toNumber(salesOrderResult.value),
-        notes: notesResult.value || undefined,
-      });
-      await loadAll();
-    } catch (error) {
-      Swal.fire({
-        icon: "error",
-        title: "Reservasi gagal",
-        text: getErrorMessage(error),
-      });
-    } finally {
-      setIsLoading(false);
-    }
+  const handleRefresh = async () => {
+    await loadAll(searchBarcode);
   };
 
-  const runShipOut = async (row: IInvJirigen) => {
-    const deliveryOrderResult = await Swal.fire({
-      title: "Masukkan Delivery Order ID",
-      input: "text",
-      showCancelButton: true,
-      inputValidator: (value) => {
-        if (!value) return "Delivery Order ID wajib diisi";
-        if (!/^\d+$/.test(value)) return "Delivery Order ID harus angka";
-        return null;
-      },
-    });
-    if (!deliveryOrderResult.isConfirmed || !deliveryOrderResult.value) return;
-
-    try {
-      setIsLoading(true);
-      await inventoryService.shipOutInvJirigen(
-        row.id,
-        toNumber(deliveryOrderResult.value),
-      );
-      await loadAll();
-    } catch (error) {
-      Swal.fire({
-        icon: "error",
-        title: "Ship out gagal",
-        text: getErrorMessage(error),
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const runMarkSold = async (row: IInvJirigen) => {
-    try {
-      const confirm = await Swal.fire({
-        icon: "question",
-        title: `Tandai barcode ${row.barcode} sebagai sold?`,
-        showCancelButton: true,
-        confirmButtonText: "Ya",
-        cancelButtonText: "Batal",
-      });
-      if (!confirm.isConfirmed) return;
-
-      setIsLoading(true);
-      await inventoryService.markInvJirigenAsSold(row.id);
-      await loadAll();
-    } catch (error) {
-      Swal.fire({
-        icon: "error",
-        title: "Mark sold gagal",
-        text: getErrorMessage(error),
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const runReturn = async (row: IInvJirigen) => {
-    const locationResult = await Swal.fire({
-      title: "Masukkan return Location ID",
-      input: "text",
-      showCancelButton: true,
-      inputValidator: (value) => {
-        if (!value) return "Return Location ID wajib diisi";
-        if (!/^\d+$/.test(value)) return "Return Location ID harus angka";
-        return null;
-      },
-    });
-    if (!locationResult.isConfirmed || !locationResult.value) return;
-
-    try {
-      setIsLoading(true);
-      await inventoryService.returnInvJirigen(row.id, toNumber(locationResult.value));
-      await loadAll();
-    } catch (error) {
-      Swal.fire({
-        icon: "error",
-        title: "Return gagal",
-        text: getErrorMessage(error),
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const runUpdateStatus = async (row: IInvJirigen) => {
-    const nextStatusResult = await Swal.fire({
-      title: "Pilih status baru",
-      input: "select",
-      inputOptions: statusOptions.reduce<Record<string, string>>((acc, status) => {
-        acc[status] = status;
-        return acc;
-      }, {}),
-      inputValue: row.status,
-      showCancelButton: true,
-    });
-    if (!nextStatusResult.isConfirmed || !nextStatusResult.value) return;
-    const nextStatus = nextStatusResult.value as InventoryStatus;
-
-    try {
-      setIsLoading(true);
-      await inventoryService.updateInvJirigenStatus(row.id, nextStatus);
-      await loadAll();
-    } catch (error) {
-      Swal.fire({
-        icon: "error",
-        title: "Update status gagal",
-        text: getErrorMessage(error),
-      });
-    } finally {
-      setIsLoading(false);
-    }
+  const handleSearch = async () => {
+    await loadAll(searchBarcode);
   };
 
   return (
-    <div className="h-full w-full space-y-4">
-      <Card>
-        <CardHeader className="space-y-2">
-          <CardTitle>{title}</CardTitle>
-          <p className="text-sm text-slate-600">{description}</p>
-          <div className="flex flex-wrap gap-2">
-            <Badge className="bg-emerald-600 text-white">
-              Available: {filteredStockCount}
-            </Badge>
-            <Badge className="bg-slate-700 text-white">Total Stock: {stocks.length}</Badge>
-            <Badge className="bg-blue-600 text-white">
-              Movement Today: {movements.length}
-            </Badge>
+    <div className="flex h-full min-h-0 w-full flex-col gap-6 overflow-y-auto">
+      <section className="rounded-[28px] border border-[#D9E1F2] bg-[linear-gradient(135deg,#F8FBFF_0%,#EEF5FF_50%,#FFFFFF_100%)] p-6 shadow-sm dark:border-[#34363B] dark:bg-[linear-gradient(135deg,#1F2430_0%,#202B3C_50%,#26282D_100%)]">
+        <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
+          <div className="max-w-2xl">
+            <div className="inline-flex rounded-full border border-[#CFE0FF] bg-white/80 px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] text-[#2B59FF] dark:border-[#3C4D72] dark:bg-[#26282D]/80 dark:text-[#8FB0FF]">
+              {dictionary.hero_badge}
+            </div>
+            <h1 className="mt-4 text-3xl font-bold tracking-tight text-slate-900 dark:text-slate-100">
+              {title}
+            </h1>
+            <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600 dark:text-slate-300">
+              {description}
+            </p>
           </div>
-        </CardHeader>
-      </Card>
 
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-        <TabsList className="grid w-full grid-cols-3">
-          <TabsTrigger value="stock">Stock</TabsTrigger>
-          <TabsTrigger value="movement">Movement</TabsTrigger>
-          <TabsTrigger value="location">Location</TabsTrigger>
-        </TabsList>
+          <div className="grid w-full gap-3 sm:grid-cols-3 lg:max-w-xl">
+            <StatCard
+              label={dictionary.stats.available}
+              value={availableCount}
+              tone="bg-emerald-50 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300"
+              icon={<PackageCheck className="h-5 w-5" />}
+            />
+            <StatCard
+              label={dictionary.stats.qc_pass}
+              value={passCount}
+              tone="bg-blue-50 text-blue-700 dark:bg-blue-500/15 dark:text-blue-300"
+              icon={<ShieldCheck className="h-5 w-5" />}
+            />
+            <StatCard
+              label={dictionary.stats.locations}
+              value={locations.length}
+              tone="bg-amber-50 text-amber-700 dark:bg-amber-500/15 dark:text-amber-300"
+              icon={<Warehouse className="h-5 w-5" />}
+            />
+          </div>
+        </div>
+      </section>
 
-        <TabsContent value="stock">
-          <Card>
-            <CardHeader className="space-y-3">
-              <div className="flex flex-wrap items-center justify-between gap-2">
-                <CardTitle>Inventory Stock</CardTitle>
-                <div className="flex flex-wrap gap-2">
-                  <Button variant="outline" onClick={() => loadAll()}>
-                    Refresh
-                  </Button>
-                  <Button
-                    className="bg-iprimary-blue text-white hover:bg-iprimary-blue-tertiary"
-                    onClick={() => setIsScanInOpen(true)}
-                  >
-                    Scan In
-                  </Button>
-                </div>
+      <section className="grid gap-6 xl:grid-cols-[minmax(0,1.1fr)_420px]">
+        <Card className="overflow-hidden border-[#DCE3F1] shadow-sm dark:border-[#34363B] dark:bg-[#26282D]">
+          <CardHeader className="border-b bg-white/80 dark:border-[#34363B] dark:bg-[#26282D]">
+            <div className="flex items-center gap-3">
+              <div className="rounded-2xl bg-[#EAF2FF] p-3 text-[#2B59FF] dark:bg-[#22304A] dark:text-[#8FB0FF]">
+                <ScanLine className="h-5 w-5" />
+              </div>
+              <div>
+                <CardTitle>{dictionary.scanner.title}</CardTitle>
+                <p className="text-sm text-slate-500 dark:text-slate-400">
+                  {dictionary.scanner.description}
+                </p>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent className="p-6">
+            <form onSubmit={submitScanIn} className="grid gap-4 md:grid-cols-2">
+              <div className="md:col-span-2">
+                <InventoryBarcodeScanner
+                  dictionary={dictionary}
+                  value={scanInForm.barcode}
+                  autoRestartKey={scannerRestartKey}
+                  onChange={(barcode) =>
+                    setScanInForm((prev) => ({
+                      ...prev,
+                      barcode,
+                    }))
+                  }
+                />
               </div>
 
-              <div className="grid grid-cols-1 gap-2 md:grid-cols-3">
-                <Input
-                  placeholder="Cari barcode..."
-                  value={searchBarcode}
-                  onChange={(event) => setSearchBarcode(event.target.value)}
-                />
+              <div>
+                <label className="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-200">
+                  {dictionary.form.location_label}
+                </label>
                 <select
-                  className="h-10 rounded-md border border-slate-200 px-3 text-sm"
-                  value={statusFilter}
-                  onChange={(event) => setStatusFilter(event.target.value)}
+                  className="h-12 w-full rounded-md border border-slate-200 bg-white px-3 text-sm dark:border-[#34363B] dark:bg-[#1F2023]"
+                  value={scanInForm.locationId}
+                  onChange={(event) =>
+                    setScanInForm((prev) => ({
+                      ...prev,
+                      locationId: event.target.value,
+                    }))
+                  }
                 >
-                  <option value="">Semua Status</option>
-                  {statusOptions.map((status) => (
+                  <option value="">{dictionary.form.location_placeholder}</option>
+                  {locations.map((location) => (
+                    <option key={location.id} value={location.id}>
+                      {location.locationCode} - {location.locationName}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-200">
+                  {dictionary.form.qc_status_label}
+                </label>
+                <select
+                  className="h-12 w-full rounded-md border border-slate-200 bg-white px-3 text-sm dark:border-[#34363B] dark:bg-[#1F2023]"
+                  value={scanInForm.qcStatus}
+                  onChange={(event) =>
+                    setScanInForm((prev) => ({
+                      ...prev,
+                      qcStatus: event.target.value,
+                    }))
+                  }
+                >
+                  {qcStatusOptions.map((status) => (
                     <option key={status} value={status}>
                       {status}
                     </option>
                   ))}
                 </select>
-                <Button onClick={() => fetchStocks()}>Apply Filter</Button>
               </div>
-            </CardHeader>
-            <CardContent>
-              <div className="rounded-md border">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Barcode</TableHead>
-                      <TableHead>Batch</TableHead>
-                      <TableHead>Location</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead>QC</TableHead>
-                      <TableHead>Entry</TableHead>
-                      <TableHead>Expiry</TableHead>
-                      <TableHead className="text-right">Aksi</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {stocks.length === 0 ? (
-                      <TableRow>
-                        <TableCell colSpan={8} className="h-20 text-center">
-                          Tidak ada data inventory.
-                        </TableCell>
-                      </TableRow>
-                    ) : (
-                      stocks.map((row) => (
-                        <TableRow key={row.id}>
-                          <TableCell className="font-medium">{row.barcode}</TableCell>
-                          <TableCell>{row.batch?.batchNumber || row.batchId}</TableCell>
-                          <TableCell>
-                            {row.location?.locationName || `Location #${row.locationId}`}
-                          </TableCell>
-                          <TableCell>
-                            <Badge className={statusClassName(row.status)}>{row.status}</Badge>
-                          </TableCell>
-                          <TableCell>{row.qcStatus}</TableCell>
-                          <TableCell>{formatDate(row.entryDate)}</TableCell>
-                          <TableCell>{formatDate(row.expiryDate)}</TableCell>
-                          <TableCell className="text-right">
-                            <div className="flex flex-wrap justify-end gap-1">
-                              {row.status === "available" ? (
-                                <Button size="sm" variant="outline" onClick={() => runReserve(row)}>
-                                  Reserve
-                                </Button>
-                              ) : null}
-                              {row.status === "reserved" ? (
-                                <Button size="sm" onClick={() => runShipOut(row)}>
-                                  Ship Out
-                                </Button>
-                              ) : null}
-                              {row.status === "shipped" ? (
-                                <Button size="sm" onClick={() => runMarkSold(row)}>
-                                  Sold
-                                </Button>
-                              ) : null}
-                              <Button size="sm" variant="outline" onClick={() => runReturn(row)}>
-                                Return
-                              </Button>
-                              <Button size="sm" variant="secondary" onClick={() => runUpdateStatus(row)}>
-                                Set Status
-                              </Button>
-                            </div>
-                          </TableCell>
-                        </TableRow>
-                      ))
-                    )}
-                  </TableBody>
-                </Table>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
 
-        <TabsContent value="movement">
-          <Card>
+              <div className="md:col-span-2">
+                <label className="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-200">
+                  {dictionary.form.expiry_date_label}
+                </label>
+                <div className="relative">
+                  <CalendarRange className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                  <Input
+                    type="date"
+                    value={scanInForm.expiryDate}
+                    onChange={(event) =>
+                      setScanInForm((prev) => ({
+                        ...prev,
+                        expiryDate: event.target.value,
+                      }))
+                    }
+                    className="h-12 pl-10"
+                  />
+                </div>
+              </div>
+
+              <div className="md:col-span-2 flex flex-col gap-3 pt-2 sm:flex-row">
+                <Button
+                  type="submit"
+                  disabled={submittingScan}
+                  className="h-12 flex-1 bg-iprimary-blue text-white hover:bg-iprimary-blue-tertiary"
+                >
+                  {submittingScan ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      {dictionary.form.submit_loading}
+                    </>
+                  ) : (
+                    <>
+                      <ScanLine className="mr-2 h-4 w-4" />
+                      {dictionary.form.submit_button}
+                    </>
+                  )}
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="h-12 sm:w-auto"
+                  onClick={() => {
+                    setScanInForm(emptyScanInForm);
+                    setScannerRestartKey((prev) => prev + 1);
+                  }}
+                >
+                  {dictionary.form.reset_button}
+                </Button>
+              </div>
+            </form>
+          </CardContent>
+        </Card>
+
+        <div className="space-y-6">
+          <Card className="border-[#DCE3F1] shadow-sm dark:border-[#34363B] dark:bg-[#26282D]">
             <CardHeader>
-              <CardTitle>Inventory Movement</CardTitle>
+              <CardTitle>{dictionary.instructions.title}</CardTitle>
             </CardHeader>
-            <CardContent>
-              <div className="rounded-md border">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Waktu</TableHead>
-                      <TableHead>Type</TableHead>
-                      <TableHead>From</TableHead>
-                      <TableHead>To</TableHead>
-                      <TableHead>Reference</TableHead>
-                      <TableHead>Notes</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {movements.length === 0 ? (
-                      <TableRow>
-                        <TableCell colSpan={6} className="h-20 text-center">
-                          Belum ada movement.
-                        </TableCell>
-                      </TableRow>
-                    ) : (
-                      movements.map((row) => (
-                        <TableRow key={row.id}>
-                          <TableCell>{formatDate(row.movementDatetime)}</TableCell>
-                          <TableCell>{row.movementType}</TableCell>
-                          <TableCell>{row.fromStatus}</TableCell>
-                          <TableCell>{row.toStatus}</TableCell>
-                          <TableCell>
-                            {row.referenceType}
-                            {row.referenceId ? ` #${row.referenceId}` : ""}
-                          </TableCell>
-                          <TableCell>{row.notes || "-"}</TableCell>
-                        </TableRow>
-                      ))
-                    )}
-                  </TableBody>
-                </Table>
+            <CardContent className="space-y-3 text-sm text-slate-600 dark:text-slate-300">
+              <div className="rounded-2xl border bg-slate-50 p-3 dark:border-[#34363B] dark:bg-[#1F2023]">
+                1. {dictionary.instructions.step_1}
+              </div>
+              <div className="rounded-2xl border bg-slate-50 p-3 dark:border-[#34363B] dark:bg-[#1F2023]">
+                2. {dictionary.instructions.step_2}
+              </div>
+              <div className="rounded-2xl border bg-slate-50 p-3 dark:border-[#34363B] dark:bg-[#1F2023]">
+                3. {dictionary.instructions.step_3}
               </div>
             </CardContent>
           </Card>
-        </TabsContent>
 
-        <TabsContent value="location">
-          <Card>
+          <Card className="border-[#DCE3F1] shadow-sm dark:border-[#34363B] dark:bg-[#26282D]">
             <CardHeader>
-              <CardTitle>Inventory Locations (Active)</CardTitle>
+              <CardTitle>{dictionary.locations.title}</CardTitle>
             </CardHeader>
-            <CardContent>
-              <div className="rounded-md border">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>ID</TableHead>
-                      <TableHead>Code</TableHead>
-                      <TableHead>Name</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead>Notes</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {locations.length === 0 ? (
-                      <TableRow>
-                        <TableCell colSpan={5} className="h-20 text-center">
-                          Tidak ada lokasi aktif.
-                        </TableCell>
-                      </TableRow>
-                    ) : (
-                      locations.map((location) => (
-                        <TableRow key={location.id}>
-                          <TableCell>{location.id}</TableCell>
-                          <TableCell>{location.locationCode}</TableCell>
-                          <TableCell>{location.locationName}</TableCell>
-                          <TableCell>{location.status}</TableCell>
-                          <TableCell>{location.notes || "-"}</TableCell>
-                        </TableRow>
-                      ))
-                    )}
-                  </TableBody>
-                </Table>
-              </div>
+            <CardContent className="space-y-2">
+              {locations.length === 0 ? (
+                <div className="rounded-2xl border border-dashed p-4 text-sm text-slate-500 dark:border-[#34363B] dark:text-slate-400">
+                  {dictionary.locations.empty}
+                </div>
+              ) : (
+                locations.slice(0, 8).map((location) => (
+                  <div
+                    key={location.id}
+                    className="flex items-start gap-3 rounded-2xl border bg-slate-50 p-3 dark:border-[#34363B] dark:bg-[#1F2023]"
+                  >
+                    <div className="mt-0.5 rounded-xl bg-[#EAF2FF] p-2 text-[#2B59FF] dark:bg-[#22304A] dark:text-[#8FB0FF]">
+                      <MapPin className="h-4 w-4" />
+                    </div>
+                    <div className="min-w-0">
+                      <div className="font-medium text-slate-900 dark:text-slate-100">
+                        {location.locationName}
+                      </div>
+                      <div className="text-xs text-slate-500 dark:text-slate-400">
+                        {location.locationCode} • {location.status}
+                      </div>
+                    </div>
+                  </div>
+                ))
+              )}
             </CardContent>
           </Card>
-        </TabsContent>
-      </Tabs>
+        </div>
+      </section>
 
-      <Dialog open={isScanInOpen} onOpenChange={setIsScanInOpen}>
-        <DialogContent className="sm:max-w-lg">
-          <DialogHeader>
-            <DialogTitle>Scan In Inventory</DialogTitle>
-            <DialogDescription>
-              Scan barcode hasil produksi untuk masuk ke inventory.
-            </DialogDescription>
-          </DialogHeader>
+      <section className="grid gap-6 xl:grid-cols-[minmax(0,1.15fr)_0.85fr]">
+        <InventoryRecentTable
+          dictionary={dictionary}
+          rows={recentStocks}
+          searchBarcode={searchBarcode}
+          refreshing={refreshing}
+          onSearchBarcodeChange={setSearchBarcode}
+          onSearch={handleSearch}
+          onRefresh={handleRefresh}
+          formatDate={formatDate}
+          getStatusClassName={statusClassName}
+        />
 
-          <div className="grid grid-cols-1 gap-3">
-            <div className="space-y-2">
-              <Label>Barcode</Label>
-              <Input
-                value={scanInForm.barcode}
-                onChange={(event) =>
-                  setScanInForm((prev) => ({ ...prev, barcode: event.target.value }))
-                }
-                placeholder="P202603001001"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label>Location</Label>
-              <select
-                className="h-10 w-full rounded-md border border-slate-200 px-3 text-sm"
-                value={scanInForm.locationId}
-                onChange={(event) =>
-                  setScanInForm((prev) => ({ ...prev, locationId: event.target.value }))
-                }
-              >
-                <option value="">Pilih lokasi</option>
-                {locations.map((location) => (
-                  <option key={location.id} value={location.id}>
-                    {location.locationCode} - {location.locationName}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div className="space-y-2">
-              <Label>QC Status</Label>
-              <Input
-                value={scanInForm.qcStatus}
-                onChange={(event) =>
-                  setScanInForm((prev) => ({ ...prev, qcStatus: event.target.value }))
-                }
-                placeholder="PASS"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label>Expiry Date (opsional)</Label>
-              <Input
-                type="date"
-                value={scanInForm.expiryDate}
-                onChange={(event) =>
-                  setScanInForm((prev) => ({ ...prev, expiryDate: event.target.value }))
-                }
-              />
-            </div>
-          </div>
-
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsScanInOpen(false)}>
-              Batal
-            </Button>
-            <Button
-              className="bg-iprimary-blue text-white hover:bg-iprimary-blue-tertiary"
-              onClick={submitScanIn}
-            >
-              Simpan
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+        <Card className="border-[#DCE3F1] shadow-sm dark:border-[#34363B] dark:bg-[#26282D]">
+          <CardHeader>
+            <CardTitle>{dictionary.movements.title}</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {movements.length === 0 ? (
+              <div className="rounded-2xl border border-dashed p-4 text-sm text-slate-500 dark:border-[#34363B] dark:text-slate-400">
+                {dictionary.movements.empty}
+              </div>
+            ) : (
+              movements.map((movement) => (
+                <div
+                  key={movement.id}
+                  className="rounded-2xl border bg-slate-50 p-4 dark:border-[#34363B] dark:bg-[#1F2023]"
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <div className="font-medium text-slate-900 dark:text-slate-100">
+                        {movement.movementType}
+                      </div>
+                      <div className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                        {formatDate(movement.movementDatetime)}
+                      </div>
+                    </div>
+                    <Badge className="bg-slate-800 text-white dark:bg-slate-200 dark:text-slate-900">
+                      {movement.quantity}
+                    </Badge>
+                  </div>
+                  <div className="mt-3 text-sm text-slate-600 dark:text-slate-300">
+                    {movement.fromStatus} → {movement.toStatus}
+                  </div>
+                  <div className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                    {movement.referenceType}
+                    {movement.referenceId ? ` #${movement.referenceId}` : ""}
+                  </div>
+                </div>
+              ))
+            )}
+          </CardContent>
+        </Card>
+      </section>
     </div>
   );
 }

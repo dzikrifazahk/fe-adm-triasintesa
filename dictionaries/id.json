@@ -350,8 +350,78 @@
   "inventory_page_dic": {
     "title": "Stok Barang",
     "description": "Kelola data persediaan secara efisien dan akurat.",
-    "page_greetings": "Selamat datang di Halaman Stok Barang",
-    "page_description": "Silakan pilih salah satu menu di atas untuk mulai mengelola data persediaan.",
+    "hero_badge": "Inventory Jirigen",
+    "hero_description": "Scan jirigen hasil produksi ke inventory dengan cepat, pilih lokasi penyimpanan, lalu monitor hasil scan terbaru.",
+    "stats": {
+      "available": "Available",
+      "qc_pass": "QC Pass",
+      "locations": "Locations"
+    },
+    "scanner": {
+      "title": "Scan Inventory Jirigen",
+      "description": "Input inventory dilakukan langsung dari barcode produk hasil produksi.",
+      "barcode_label": "Scan Barcode",
+      "barcode_placeholder": "P202603001001",
+      "camera_on_button": "Aktifkan Webcam",
+      "camera_off_button": "Hentikan Webcam",
+      "webcam_badge": "Webcam scan aktif untuk operasional",
+      "camera_denied_badge": "Browser tidak mengizinkan akses webcam",
+      "detector_unsupported_badge": "Barcode detector tidak didukung browser ini",
+      "camera_active_badge": "Kamera aktif",
+      "camera_hint": "Arahkan barcode ke area frame agar terdeteksi otomatis.",
+      "camera_idle_prefix": "Webcam siap dipakai. Tekan",
+      "camera_idle_suffix": "untuk mulai scan barcode.",
+      "last_detected_label": "Barcode terakhir terdeteksi:",
+      "helper_text": "Input manual tetap tersedia bila barcode belum berhasil terbaca dari webcam."
+    },
+    "form": {
+      "location_label": "Master Location",
+      "location_placeholder": "Pilih lokasi",
+      "qc_status_label": "QC Status",
+      "expiry_date_label": "Expiry Date",
+      "submit_button": "Scan In Jirigen",
+      "submit_loading": "Memproses scan...",
+      "reset_button": "Reset"
+    },
+    "instructions": {
+      "title": "Petunjuk Operasi",
+      "step_1": "Gunakan webcam untuk scan barcode jirigen hasil produksi.",
+      "step_2": "Pilih master location penyimpanan.",
+      "step_3": "Tentukan QC status dan expiry date sebelum simpan."
+    },
+    "locations": {
+      "title": "Master Location Aktif",
+      "empty": "Belum ada location aktif."
+    },
+    "table": {
+      "title": "Hasil Scan Inventory Terbaru",
+      "description": "Verifikasi barcode yang sudah masuk ke inventory jirigen.",
+      "search_placeholder": "Cari barcode...",
+      "search_button": "Cari",
+      "empty": "Belum ada data inventory jirigen.",
+      "location_fallback_prefix": "Location",
+      "columns": {
+        "barcode": "Barcode",
+        "batch": "Batch",
+        "location": "Location",
+        "status": "Status",
+        "qc_status": "QC",
+        "entry_date": "Entry",
+        "expiry_date": "Expiry"
+      }
+    },
+    "movements": {
+      "title": "Pergerakan Inventory Terbaru",
+      "empty": "Belum ada movement inventory."
+    },
+    "toast": {
+      "load_error_title": "Gagal memuat data inventory",
+      "validation_warning": "Lengkapi barcode, lokasi, dan QC status.",
+      "barcode_detected_title": "Barcode berhasil terdeteksi",
+      "camera_access_error": "Kamera tidak bisa diakses. Gunakan input manual.",
+      "scan_success_title": "Scan-in berhasil",
+      "scan_error_title": "Scan-in gagal"
+    },
     "inventory": {
       "title_tab_1": "Manajemen Stok",
       "default_page_title": "Silahkan Pilih Tab",
