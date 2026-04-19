@@ -1,0 +1,645 @@
+"use client";
+
+import { useEffect, useMemo, useState } from "react";
+import { getDictionary } from "../../../get-dictionary";
+import { financialRecordService } from "@/services";
+import Swal from "sweetalert2";
+import axios from "axios";
+import {
+  IFlashCashRecord,
+  IInvoiceRecord,
+  IManPowerRecord,
+  IReimbursementRecord,
+} from "@/types/financial-record";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
+
+type Dictionary = Awaited<ReturnType<typeof getDictionary>>["financial_record_page_dic"];
+type TabKey = "flash_cash" | "invoice" | "man_power" | "reimbursement";
+
+type FormState = {
+  date: string;
+  type: string;
+  category: string;
+  amount: string;
+  title: string;
+  description: string;
+  notes: string;
+  referenceType: string;
+  invoiceNumber: string;
+  salesOrderId: string;
+  customerId: string;
+  dueDate: string;
+  paymentMethod: string;
+};
+
+const initialForm: FormState = {
+  date: new Date().toISOString().slice(0, 10),
+  type: "out",
+  category: "",
+  amount: "",
+  title: "",
+  description: "",
+  notes: "",
+  referenceType: "manual",
+  invoiceNumber: "",
+  salesOrderId: "",
+  customerId: "",
+  dueDate: new Date().toISOString().slice(0, 10),
+  paymentMethod: "cash",
+};
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null;
+}
+
+function unwrapData<T>(value: unknown): T {
+  if (isRecord(value) && "data" in value) {
+    return value.data as T;
+  }
+  return value as T;
+}
+
+function unwrapList<T>(value: unknown): T[] {
+  const payload = unwrapData<{ data?: T[] } | T[]>(value);
+  if (Array.isArray(payload)) return payload;
+  return Array.isArray(payload?.data) ? payload.data : [];
+}
+
+function toNumber(value: string): number {
+  const number = Number(value);
+  return Number.isFinite(number) ? number : 0;
+}
+
+function formatCurrency(value: number): string {
+  return new Intl.NumberFormat("id-ID", {
+    style: "currency",
+    currency: "IDR",
+    maximumFractionDigits: 0,
+  }).format(Number(value || 0));
+}
+
+function getErrorMessage(error: unknown): string {
+  if (axios.isAxiosError(error)) {
+    const message = error.response?.data?.message;
+    if (typeof message === "string") return message;
+    if (Array.isArray(message)) return message.join(", ");
+    if (isRecord(message)) return JSON.stringify(message);
+  }
+  if (error instanceof Error) return error.message;
+  return "Terjadi kesalahan.";
+}
+
+export default function FinancialRecordMain({ dictionary }: { dictionary: Dictionary }) {
+  const [activeTab, setActiveTab] = useState<TabKey>("flash_cash");
+  const [search, setSearch] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isEditMode, setIsEditMode] = useState(false);
+  const [selectedId, setSelectedId] = useState<number | null>(null);
+  const [form, setForm] = useState<FormState>(initialForm);
+
+  const [flashCash, setFlashCash] = useState<IFlashCashRecord[]>([]);
+  const [invoices, setInvoices] = useState<IInvoiceRecord[]>([]);
+  const [manPower, setManPower] = useState<IManPowerRecord[]>([]);
+  const [reimbursements, setReimbursements] = useState<IReimbursementRecord[]>([]);
+
+  const filteredRows = useMemo(() => {
+    const keyword = search.toLowerCase();
+    if (activeTab === "flash_cash") {
+      return flashCash.filter((item) =>
+        [item.category, item.description, item.referenceType].join(" ").toLowerCase().includes(keyword),
+      );
+    }
+    if (activeTab === "invoice") {
+      return invoices.filter((item) =>
+        [item.invoiceNumber, item.status, String(item.customerId)].join(" ").toLowerCase().includes(keyword),
+      );
+    }
+    if (activeTab === "man_power") {
+      return manPower.filter((item) =>
+        [item.recordType, item.description, item.status].join(" ").toLowerCase().includes(keyword),
+      );
+    }
+    return reimbursements.filter((item) =>
+      [item.category, item.description, item.status].join(" ").toLowerCase().includes(keyword),
+    );
+  }, [activeTab, flashCash, invoices, manPower, reimbursements, search]);
+
+  const loadData = async (tab: TabKey) => {
+    try {
+      if (tab === "flash_cash") {
+        const response = await financialRecordService.getFlashCash({ page: 1, limit: 100 });
+        setFlashCash(unwrapList<IFlashCashRecord>(response));
+      }
+      if (tab === "invoice") {
+        const response = await financialRecordService.getInvoices({ page: 1, limit: 100 });
+        setInvoices(unwrapList<IInvoiceRecord>(response));
+      }
+      if (tab === "man_power") {
+        const response = await financialRecordService.getManPowerRecords({ page: 1, limit: 100 });
+        setManPower(unwrapList<IManPowerRecord>(response));
+      }
+      if (tab === "reimbursement") {
+        const response = await financialRecordService.getReimbursements({ page: 1, limit: 100 });
+        setReimbursements(unwrapList<IReimbursementRecord>(response));
+      }
+    } catch (error) {
+      Swal.fire({
+        icon: "error",
+        title: "Gagal memuat data",
+        text: getErrorMessage(error),
+      });
+    }
+  };
+
+  useEffect(() => {
+    loadData(activeTab);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeTab]);
+
+  const openCreateModal = () => {
+    setIsEditMode(false);
+    setSelectedId(null);
+    setForm(initialForm);
+    setIsModalOpen(true);
+  };
+
+  const openEditModal = (item: IFlashCashRecord | IInvoiceRecord | IManPowerRecord | IReimbursementRecord) => {
+    setIsEditMode(true);
+    setSelectedId(item.id);
+
+    if (activeTab === "flash_cash") {
+      const row = item as IFlashCashRecord;
+      setForm({
+        ...initialForm,
+        date: row.transactionDate?.slice(0, 10) || initialForm.date,
+        type: row.type,
+        category: row.category,
+        amount: String(row.amount),
+        description: row.description,
+        referenceType: row.referenceType || "manual",
+      });
+    }
+
+    if (activeTab === "invoice") {
+      const row = item as IInvoiceRecord;
+      setForm({
+        ...initialForm,
+        date: row.invoiceDate?.slice(0, 10) || initialForm.date,
+        dueDate: row.dueDate?.slice(0, 10) || initialForm.dueDate,
+        invoiceNumber: row.invoiceNumber,
+        salesOrderId: String(row.salesOrderId),
+        customerId: String(row.customerId),
+        paymentMethod: row.paymentMethod,
+        amount: String(row.grandTotal),
+        notes: row.notes || "",
+      });
+    }
+
+    if (activeTab === "man_power") {
+      const row = item as IManPowerRecord;
+      setForm({
+        ...initialForm,
+        date: row.recordDate?.slice(0, 10) || initialForm.date,
+        type: row.recordType,
+        amount: String(row.amount),
+        description: row.description,
+        notes: row.notes || "",
+      });
+    }
+
+    if (activeTab === "reimbursement") {
+      const row = item as IReimbursementRecord;
+      setForm({
+        ...initialForm,
+        date: row.expenseDate?.slice(0, 10) || initialForm.date,
+        category: row.category,
+        amount: String(row.amount),
+        description: row.description,
+      });
+    }
+
+    setIsModalOpen(true);
+  };
+
+  const submitForm = async () => {
+    try {
+      setIsSubmitting(true);
+
+      if (activeTab === "flash_cash") {
+        const payload = {
+          transactionDate: form.date,
+          type: form.type,
+          category: form.category,
+          amount: toNumber(form.amount),
+          description: form.description,
+          referenceType: form.referenceType || "manual",
+        };
+
+        if (isEditMode && selectedId) {
+          await financialRecordService.updateFlashCash(selectedId, payload);
+        } else {
+          await financialRecordService.createFlashCash(payload);
+        }
+      }
+
+      if (activeTab === "invoice") {
+        const payload = {
+          salesOrderId: toNumber(form.salesOrderId),
+          customerId: toNumber(form.customerId),
+          invoiceNumber: form.invoiceNumber,
+          invoiceDate: form.date,
+          dueDate: form.dueDate,
+          subtotal: toNumber(form.amount),
+          taxAmount: 0,
+          discountAmount: 0,
+          grandTotal: toNumber(form.amount),
+          paymentMethod: form.paymentMethod,
+          paymentTermDays: 30,
+          notes: form.notes || undefined,
+        };
+
+        if (isEditMode && selectedId) {
+          await financialRecordService.updateInvoice(selectedId, payload);
+        } else {
+          await financialRecordService.createInvoice(payload);
+        }
+      }
+
+      if (activeTab === "man_power") {
+        const payload = {
+          recordDate: form.date,
+          recordType: form.type,
+          amount: toNumber(form.amount),
+          description: form.description,
+          notes: form.notes || undefined,
+        };
+
+        if (isEditMode && selectedId) {
+          await financialRecordService.updateManPowerRecord(selectedId, payload);
+        } else {
+          await financialRecordService.createManPowerRecord(payload);
+        }
+      }
+
+      if (activeTab === "reimbursement") {
+        const payload = {
+          expenseDate: form.date,
+          category: form.category,
+          amount: toNumber(form.amount),
+          description: form.description,
+        };
+
+        if (isEditMode && selectedId) {
+          await financialRecordService.updateReimbursement(selectedId, payload);
+        } else {
+          await financialRecordService.createReimbursement(payload);
+        }
+      }
+
+      setIsModalOpen(false);
+      await loadData(activeTab);
+      Swal.fire({
+        icon: "success",
+        title: "Data berhasil disimpan",
+        toast: true,
+        position: "top-right",
+        showConfirmButton: false,
+        timer: 1800,
+      });
+    } catch (error) {
+      Swal.fire({
+        icon: "error",
+        title: "Gagal menyimpan data",
+        text: getErrorMessage(error),
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const removeRow = async (id: number) => {
+    const confirm = await Swal.fire({
+      icon: "warning",
+      title: "Hapus data ini?",
+      showCancelButton: true,
+      confirmButtonText: "Ya",
+      cancelButtonText: "Tidak",
+    });
+
+    if (!confirm.isConfirmed) return;
+
+    try {
+      if (activeTab === "flash_cash") await financialRecordService.deleteFlashCash(id);
+      if (activeTab === "invoice") await financialRecordService.deleteInvoice(id);
+      if (activeTab === "man_power") await financialRecordService.deleteManPowerRecord(id);
+      if (activeTab === "reimbursement") await financialRecordService.deleteReimbursement(id);
+
+      await loadData(activeTab);
+      Swal.fire({
+        icon: "success",
+        title: "Data dihapus",
+        toast: true,
+        position: "top-right",
+        showConfirmButton: false,
+        timer: 1600,
+      });
+    } catch (error) {
+      Swal.fire({
+        icon: "error",
+        title: "Gagal menghapus data",
+        text: getErrorMessage(error),
+      });
+    }
+  };
+
+  const runAction = async (id: number, action: string) => {
+    try {
+      if (action === "flash_approve") await financialRecordService.approveFlashCash(id);
+      if (action === "invoice_issue") await financialRecordService.issueInvoice(id);
+      if (action === "invoice_cancel") await financialRecordService.cancelInvoice(id);
+      if (action === "invoice_pdf") await financialRecordService.generateInvoicePdf(id);
+      if (action === "man_approve") await financialRecordService.approveManPowerRecord(id);
+      if (action === "man_reject") {
+        const reason = window.prompt("Alasan reject", "");
+        if (!reason) return;
+        await financialRecordService.rejectManPowerRecord(id, reason);
+      }
+      if (action === "man_paid") await financialRecordService.markManPowerPaid(id);
+      if (action === "reim_approve") await financialRecordService.approveReimbursement(id);
+      if (action === "reim_reject") {
+        const reason = window.prompt("Alasan reject", "");
+        if (!reason) return;
+        await financialRecordService.rejectReimbursement(id, reason);
+      }
+
+      await loadData(activeTab);
+      Swal.fire({
+        icon: "success",
+        title: "Aksi berhasil",
+        toast: true,
+        position: "top-right",
+        showConfirmButton: false,
+        timer: 1500,
+      });
+    } catch (error) {
+      Swal.fire({
+        icon: "error",
+        title: "Aksi gagal",
+        text: getErrorMessage(error),
+      });
+    }
+  };
+
+  return (
+    <div className="w-full h-full">
+      <Card className="h-full">
+        <CardHeader className="space-y-4">
+          <div className="flex items-center justify-between">
+            <CardTitle>{dictionary?.title ?? "Financial Record"}</CardTitle>
+            <div className="flex gap-2">
+              <Button variant="outline" onClick={() => loadData(activeTab)}>
+                Refresh
+              </Button>
+              <Button className="bg-iprimary-blue hover:bg-iprimary-blue-tertiary text-white" onClick={openCreateModal}>
+                Tambah
+              </Button>
+            </div>
+          </div>
+
+          <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as TabKey)}>
+            <TabsList className="grid grid-cols-4 w-full">
+              <TabsTrigger value="flash_cash">Flash Cash</TabsTrigger>
+              <TabsTrigger value="invoice">Invoice</TabsTrigger>
+              <TabsTrigger value="man_power">Man Power</TabsTrigger>
+              <TabsTrigger value="reimbursement">Reimbursement</TabsTrigger>
+            </TabsList>
+          </Tabs>
+
+          <Input
+            placeholder="Cari data..."
+            value={search}
+            onChange={(event) => setSearch(event.target.value)}
+          />
+        </CardHeader>
+
+        <CardContent>
+          <div className="rounded-md border">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Tanggal</TableHead>
+                  <TableHead>Info</TableHead>
+                  <TableHead>Amount</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead className="text-right">Aksi</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {filteredRows.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={5} className="h-20 text-center">
+                      Tidak ada data.
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  filteredRows.map((row) => {
+                    if (activeTab === "flash_cash") {
+                      const item = row as IFlashCashRecord;
+                      return (
+                        <TableRow key={`flash-${item.id}`}>
+                          <TableCell>{item.transactionDate?.slice(0, 10) ?? "-"}</TableCell>
+                          <TableCell>{item.category} - {item.description}</TableCell>
+                          <TableCell>{formatCurrency(Number(item.amount))}</TableCell>
+                          <TableCell>{item.approvedAt ? "approved" : item.requiresApproval ? "pending" : "posted"}</TableCell>
+                          <TableCell className="text-right space-x-2">
+                            <Button size="sm" variant="outline" onClick={() => openEditModal(item)}>Edit</Button>
+                            <Button size="sm" onClick={() => runAction(item.id, "flash_approve")}>Approve</Button>
+                            <Button size="sm" variant="destructive" onClick={() => removeRow(item.id)}>Delete</Button>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    }
+
+                    if (activeTab === "invoice") {
+                      const item = row as IInvoiceRecord;
+                      return (
+                        <TableRow key={`inv-${item.id}`}>
+                          <TableCell>{item.invoiceDate?.slice(0, 10) ?? "-"}</TableCell>
+                          <TableCell>{item.invoiceNumber}</TableCell>
+                          <TableCell>{formatCurrency(Number(item.grandTotal))}</TableCell>
+                          <TableCell>{item.status}</TableCell>
+                          <TableCell className="text-right space-x-2">
+                            <Button size="sm" variant="outline" onClick={() => openEditModal(item)}>Edit</Button>
+                            <Button size="sm" onClick={() => runAction(item.id, "invoice_issue")}>Issue</Button>
+                            <Button size="sm" variant="outline" onClick={() => runAction(item.id, "invoice_pdf")}>PDF</Button>
+                            <Button size="sm" variant="secondary" onClick={() => runAction(item.id, "invoice_cancel")}>Cancel</Button>
+                            <Button size="sm" variant="destructive" onClick={() => removeRow(item.id)}>Delete</Button>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    }
+
+                    if (activeTab === "man_power") {
+                      const item = row as IManPowerRecord;
+                      return (
+                        <TableRow key={`man-${item.id}`}>
+                          <TableCell>{item.recordDate?.slice(0, 10) ?? "-"}</TableCell>
+                          <TableCell>{item.recordType} - {item.description}</TableCell>
+                          <TableCell>{formatCurrency(Number(item.amount))}</TableCell>
+                          <TableCell>{item.status}</TableCell>
+                          <TableCell className="text-right space-x-2">
+                            <Button size="sm" variant="outline" onClick={() => openEditModal(item)}>Edit</Button>
+                            <Button size="sm" onClick={() => runAction(item.id, "man_approve")}>Approve</Button>
+                            <Button size="sm" variant="secondary" onClick={() => runAction(item.id, "man_reject")}>Reject</Button>
+                            <Button size="sm" onClick={() => runAction(item.id, "man_paid")}>Mark Paid</Button>
+                            <Button size="sm" variant="destructive" onClick={() => removeRow(item.id)}>Delete</Button>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    }
+
+                    const item = row as IReimbursementRecord;
+                    return (
+                      <TableRow key={`reim-${item.id}`}>
+                        <TableCell>{item.expenseDate?.slice(0, 10) ?? "-"}</TableCell>
+                        <TableCell>{item.category} - {item.description}</TableCell>
+                        <TableCell>{formatCurrency(Number(item.amount))}</TableCell>
+                        <TableCell>{item.status}</TableCell>
+                        <TableCell className="text-right space-x-2">
+                          <Button size="sm" variant="outline" onClick={() => openEditModal(item)}>Edit</Button>
+                          <Button size="sm" onClick={() => runAction(item.id, "reim_approve")}>Approve</Button>
+                          <Button size="sm" variant="secondary" onClick={() => runAction(item.id, "reim_reject")}>Reject</Button>
+                          <Button size="sm" variant="destructive" onClick={() => removeRow(item.id)}>Delete</Button>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })
+                )}
+              </TableBody>
+            </Table>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
+        <DialogContent className="sm:max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>{isEditMode ? "Edit Data" : "Tambah Data"}</DialogTitle>
+            <DialogDescription>Form data untuk {activeTab.replace("_", " ")}.</DialogDescription>
+          </DialogHeader>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div className="space-y-2">
+              <Label>Tanggal</Label>
+              <Input type="date" value={form.date} onChange={(event) => setForm((prev) => ({ ...prev, date: event.target.value }))} />
+            </div>
+
+            {(activeTab === "flash_cash" || activeTab === "man_power") && (
+              <div className="space-y-2">
+                <Label>{activeTab === "flash_cash" ? "Type" : "Record Type"}</Label>
+                <Input value={form.type} onChange={(event) => setForm((prev) => ({ ...prev, type: event.target.value }))} />
+              </div>
+            )}
+
+            {(activeTab === "flash_cash" || activeTab === "reimbursement") && (
+              <div className="space-y-2">
+                <Label>Category</Label>
+                <Input value={form.category} onChange={(event) => setForm((prev) => ({ ...prev, category: event.target.value }))} />
+              </div>
+            )}
+
+            <div className="space-y-2">
+              <Label>Amount</Label>
+              <Input type="number" value={form.amount} onChange={(event) => setForm((prev) => ({ ...prev, amount: event.target.value }))} />
+            </div>
+
+            {activeTab === "flash_cash" && (
+              <div className="space-y-2">
+                <Label>Reference Type</Label>
+                <Input value={form.referenceType} onChange={(event) => setForm((prev) => ({ ...prev, referenceType: event.target.value }))} />
+              </div>
+            )}
+
+            {activeTab === "invoice" && (
+              <>
+                <div className="space-y-2">
+                  <Label>Invoice Number</Label>
+                  <Input value={form.invoiceNumber} onChange={(event) => setForm((prev) => ({ ...prev, invoiceNumber: event.target.value }))} />
+                </div>
+                <div className="space-y-2">
+                  <Label>Sales Order ID</Label>
+                  <Input type="number" value={form.salesOrderId} onChange={(event) => setForm((prev) => ({ ...prev, salesOrderId: event.target.value }))} />
+                </div>
+                <div className="space-y-2">
+                  <Label>Customer ID</Label>
+                  <Input type="number" value={form.customerId} onChange={(event) => setForm((prev) => ({ ...prev, customerId: event.target.value }))} />
+                </div>
+                <div className="space-y-2">
+                  <Label>Due Date</Label>
+                  <Input type="date" value={form.dueDate} onChange={(event) => setForm((prev) => ({ ...prev, dueDate: event.target.value }))} />
+                </div>
+                <div className="space-y-2 md:col-span-2">
+                  <Label>Payment Method</Label>
+                  <Select value={form.paymentMethod} onValueChange={(value) => setForm((prev) => ({ ...prev, paymentMethod: value }))}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="cash">cash</SelectItem>
+                      <SelectItem value="termin">termin</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </>
+            )}
+
+            <div className="space-y-2 md:col-span-2">
+              <Label>Description</Label>
+              <Textarea value={form.description} onChange={(event) => setForm((prev) => ({ ...prev, description: event.target.value }))} />
+            </div>
+
+            {(activeTab === "invoice" || activeTab === "man_power") && (
+              <div className="space-y-2 md:col-span-2">
+                <Label>Notes</Label>
+                <Textarea value={form.notes} onChange={(event) => setForm((prev) => ({ ...prev, notes: event.target.value }))} />
+              </div>
+            )}
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsModalOpen(false)}>
+              Batal
+            </Button>
+            <Button className="bg-iprimary-blue hover:bg-iprimary-blue-tertiary text-white" onClick={submitForm} disabled={isSubmitting}>
+              {isSubmitting ? "Menyimpan..." : "Simpan"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}
+

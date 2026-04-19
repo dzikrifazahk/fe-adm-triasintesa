@@ -40,6 +40,13 @@ export class ProductionPlanService extends BaseHttpService {
     return response.data;
   }
 
+  async resetProductionPlanTankLink(id: string) {
+    const response = await this.httpClient.post(
+      `/production-plans/${id}/reset-tank-link`,
+    );
+    return response.data;
+  }
+
   async getProductionBatches(queryParams?: {}) {
     const response = await this.httpClient.get("/production-batches", {
       params: queryParams,

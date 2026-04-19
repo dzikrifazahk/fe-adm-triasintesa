@@ -23,6 +23,7 @@ type DataTableProps = {
   onPageSizeChange?: (newPageSize: number) => void;
   editData?: (id: string) => void;
   deleteData?: (id: string) => void;
+  resetData?: (id: string) => void;
   viewData?: (id: string) => void;
   dictionary: Awaited<ReturnType<typeof getDictionary>>["production_page_dic"]["production_plan"]["table"];
 };
@@ -56,6 +57,7 @@ export function DataTable({
   onPageSizeChange,
   editData,
   deleteData,
+  resetData,
   viewData,
   dictionary,
 }: DataTableProps) {
@@ -135,6 +137,15 @@ export function DataTable({
                           >
                             {dictionary.delete}
                           </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              resetData?.(planId);
+                            }}
+                            disabled={!resetData}
+                          >
+                            Reset Plan Link
+                          </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
                     </div>
@@ -207,6 +218,15 @@ export function DataTable({
                             className="text-red-600 focus:text-red-600"
                           >
                             {dictionary.delete}
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              resetData?.(planId);
+                            }}
+                            disabled={!resetData}
+                          >
+                            Reset Plan Link
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>

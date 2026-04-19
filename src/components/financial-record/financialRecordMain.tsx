@@ -1,7 +1,8 @@
 "use client";
 
-import { startTransition, useDeferredValue, useState } from "react";
+import { useDeferredValue, useEffect, useState } from "react";
 import { getDictionary } from "../../../get-dictionary";
+import { financialRecordService } from "@/services";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -55,6 +56,14 @@ import {
   Search,
   WalletCards,
 } from "lucide-react";
+import Swal from "sweetalert2";
+import axios from "axios";
+import {
+  IFlashCashRecord,
+  IInvoiceRecord,
+  IManPowerRecord,
+  IReimbursementRecord,
+} from "@/types/financial-record";
 
 type Dictionary = Awaited<
   ReturnType<typeof getDictionary>
@@ -71,9 +80,12 @@ type FinancialStatus =
   | "waiting_budget"
   | "ready_to_pay"
   | "paid";
+type FinancialSource = "flash_cash" | "invoice" | "man_power" | "reimbursement";
 
 type FinancialRecord = {
   id: string;
+  source: FinancialSource;
+  sourceId: number;
   title: string;
   vendor: string;
   category: string;
@@ -90,8 +102,17 @@ type FilterStatus = "all" | FinancialStatus;
 type FilterCategory = "all" | string;
 
 type FormState = {
+  source: FinancialSource;
   title: string;
   vendor: string;
+  invoiceNumber: string;
+  salesOrderId: string;
+  customerId: string;
+  dueDate: string;
+  paymentMethod: "cash" | "termin";
+  flashType: "in" | "out";
+  referenceType: string;
+  recordType: string;
   category: string;
   amount: string;
   date: string;
@@ -102,90 +123,20 @@ type FormState = {
   notes: string;
 };
 
-const initialRecords: FinancialRecord[] = [
-  {
-    id: "FR-2401",
-    title: "Pengadaan bahan kemasan April",
-    vendor: "PT Sentra Packaging",
-    category: "Operational",
-    amount: 12500000,
-    date: "2026-04-12",
-    stage: "submission",
-    status: "need_review",
-    notes: "Perlu validasi quantity dan harga satuan.",
-    priority: "high",
-    createdBy: "Anisa Putri",
-  },
-  {
-    id: "FR-2402",
-    title: "Biaya maintenance mixer line A",
-    vendor: "CV Teknik Utama",
-    category: "Maintenance",
-    amount: 8750000,
-    date: "2026-04-11",
-    stage: "submission",
-    status: "waiting_budget",
-    notes: "Menunggu persetujuan budget dari finance manager.",
-    priority: "medium",
-    createdBy: "Rifqi Maulana",
-  },
-  {
-    id: "FR-2403",
-    title: "Pembelian spare part filling machine",
-    vendor: "Mesin Makmur",
-    category: "Procurement",
-    amount: 15250000,
-    date: "2026-04-10",
-    stage: "payment_request",
-    status: "need_review",
-    notes: "Lampiran invoice sudah lengkap, tinggal approval akhir.",
-    priority: "high",
-    createdBy: "Vina Lestari",
-  },
-  {
-    id: "FR-2404",
-    title: "Transport vendor pengiriman dokumen",
-    vendor: "PT Lintas Express",
-    category: "Logistics",
-    amount: 1450000,
-    date: "2026-04-09",
-    stage: "payment_request",
-    status: "ready_to_pay",
-    notes: "Siap dijadwalkan untuk pembayaran batch minggu ini.",
-    priority: "low",
-    createdBy: "Dimas Saputra",
-  },
-  {
-    id: "FR-2405",
-    title: "Pembayaran listrik gudang produksi",
-    vendor: "PLN",
-    category: "Utilities",
-    amount: 6320000,
-    date: "2026-04-07",
-    stage: "paid",
-    status: "paid",
-    notes: "Sudah dibayar melalui transfer virtual account.",
-    priority: "medium",
-    createdBy: "Maya Salsabila",
-  },
-  {
-    id: "FR-2406",
-    title: "Sewa forklift tambahan",
-    vendor: "PT Sewa Alat Cepat",
-    category: "Operational",
-    amount: 4200000,
-    date: "2026-04-06",
-    stage: "paid",
-    status: "paid",
-    notes: "Digunakan untuk kebutuhan loading akhir kuartal.",
-    priority: "low",
-    createdBy: "Dion Pratama",
-  },
-];
+const initialRecords: FinancialRecord[] = [];
 
 const defaultFormState: FormState = {
+  source: "flash_cash",
   title: "",
   vendor: "",
+  invoiceNumber: "",
+  salesOrderId: "",
+  customerId: "",
+  dueDate: "2026-04-15",
+  paymentMethod: "cash",
+  flashType: "out",
+  referenceType: "manual",
+  recordType: "man_power",
   category: "Operational",
   amount: "",
   date: "2026-04-15",
@@ -279,33 +230,84 @@ function getReviewCount(records: FinancialRecord[], stage: FinancialStage) {
   ).length;
 }
 
-function buildNewRecordId(records: FinancialRecord[]) {
-  const highestNumber = records.reduce((maxValue, record) => {
-    const numericPart = Number(record.id.replace(/\D/g, ""));
-    return Number.isNaN(numericPart)
-      ? maxValue
-      : Math.max(maxValue, numericPart);
-  }, 2400);
-
-  return `FR-${highestNumber + 1}`;
-}
-
 function getStageIcon(stage: FinancialStage) {
   if (stage === "submission") return FileClock;
   if (stage === "payment_request") return CreditCard;
   return CheckCircle2;
 }
 
-function nextStage(stage: FinancialStage): FinancialStage {
-  if (stage === "submission") return "payment_request";
-  if (stage === "payment_request") return "paid";
-  return "paid";
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null;
 }
 
-function nextStatus(stage: FinancialStage): FinancialStatus {
-  if (stage === "submission") return "need_review";
-  if (stage === "payment_request") return "ready_to_pay";
-  return "paid";
+function unwrapData<T>(value: unknown): T {
+  if (isRecord(value) && "data" in value) {
+    return value.data as T;
+  }
+  return value as T;
+}
+
+function unwrapList<T>(value: unknown): T[] {
+  const payload = unwrapData<{ data?: T[] } | T[]>(value);
+  if (Array.isArray(payload)) return payload;
+  return Array.isArray(payload?.data) ? payload.data : [];
+}
+
+function getErrorMessage(error: unknown): string {
+  if (axios.isAxiosError(error)) {
+    const message = error.response?.data?.message;
+    if (typeof message === "string") return message;
+    if (Array.isArray(message)) return message.join(", ");
+  }
+  if (error instanceof Error) return error.message;
+  return "Terjadi kesalahan.";
+}
+
+function getPriorityFromAmount(amount: number): FinancialPriority {
+  if (amount >= 10000000) return "high";
+  if (amount >= 3000000) return "medium";
+  return "low";
+}
+
+function toInt(value: string, fallback = 0): number {
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed)) return fallback;
+  return parsed;
+}
+
+function mapInvoiceStatusToWorkflow(
+  status: IInvoiceRecord["status"],
+): { stage: FinancialStage; financialStatus: FinancialStatus } {
+  if (status === "paid") return { stage: "paid", financialStatus: "paid" };
+  if (status === "issued" || status === "partial_paid" || status === "overdue") {
+    return { stage: "payment_request", financialStatus: "ready_to_pay" };
+  }
+  return { stage: "submission", financialStatus: "need_review" };
+}
+
+function mapManPowerStatusToWorkflow(
+  status: IManPowerRecord["status"],
+): { stage: FinancialStage; financialStatus: FinancialStatus } {
+  if (status === "paid") return { stage: "paid", financialStatus: "paid" };
+  if (status === "approved") {
+    return { stage: "payment_request", financialStatus: "ready_to_pay" };
+  }
+  if (status === "rejected") {
+    return { stage: "submission", financialStatus: "waiting_budget" };
+  }
+  return { stage: "submission", financialStatus: "need_review" };
+}
+
+function mapReimbursementStatusToWorkflow(
+  status: IReimbursementRecord["status"],
+): { stage: FinancialStage; financialStatus: FinancialStatus } {
+  if (status === "approved") {
+    return { stage: "payment_request", financialStatus: "ready_to_pay" };
+  }
+  if (status === "rejected") {
+    return { stage: "submission", financialStatus: "waiting_budget" };
+  }
+  return { stage: "submission", financialStatus: "need_review" };
 }
 
 export default function FinancialRecordMain({ dictionary }: Props) {
@@ -322,6 +324,110 @@ export default function FinancialRecordMain({ dictionary }: Props) {
   const [isRefreshing, setIsRefreshing] = useState(false);
 
   const deferredSearchQuery = useDeferredValue(searchQuery);
+
+  async function loadRecords() {
+    const [flashCashRes, invoicesRes, manPowerRes, reimbursementRes] =
+      await Promise.all([
+        financialRecordService.getFlashCash({ page: 1, limit: 100 }),
+        financialRecordService.getInvoices({ page: 1, limit: 100 }),
+        financialRecordService.getManPowerRecords({ page: 1, limit: 100 }),
+        financialRecordService.getReimbursements({ page: 1, limit: 100 }),
+      ]);
+
+    const flashCashRows = unwrapList<IFlashCashRecord>(flashCashRes).map((row) => {
+      const approved = Boolean(row.approvedAt);
+      const stage: FinancialStage = approved ? "paid" : "submission";
+      const financialStatus: FinancialStatus = approved
+        ? "paid"
+        : row.requiresApproval
+          ? "need_review"
+          : "waiting_budget";
+      return {
+        id: `FC-${row.id}`,
+        source: "flash_cash" as const,
+        sourceId: row.id,
+        title: row.description || `Flash Cash ${row.category}`,
+        vendor: row.referenceType || "Flash Cash",
+        category: `Flash Cash / ${row.category}`,
+        amount: Number(row.amount || 0),
+        date: row.transactionDate,
+        stage,
+        status: financialStatus,
+        notes: row.description || "",
+        priority: getPriorityFromAmount(Number(row.amount || 0)),
+        createdBy: row.approvedBy || "Finance",
+      };
+    });
+
+    const invoiceRows = unwrapList<IInvoiceRecord>(invoicesRes).map((row) => {
+      const workflow = mapInvoiceStatusToWorkflow(row.status);
+      return {
+        id: `INV-${row.id}`,
+        source: "invoice" as const,
+        sourceId: row.id,
+        title: `Invoice ${row.invoiceNumber}`,
+        vendor: `Customer #${row.customerId}`,
+        category: "Invoice",
+        amount: Number(row.grandTotal || 0),
+        date: row.invoiceDate,
+        stage: workflow.stage,
+        status: workflow.financialStatus,
+        notes: row.notes || "",
+        priority: getPriorityFromAmount(Number(row.grandTotal || 0)),
+        createdBy: "Sales",
+      };
+    });
+
+    const manPowerRows = unwrapList<IManPowerRecord>(manPowerRes).map((row) => {
+      const workflow = mapManPowerStatusToWorkflow(row.status);
+      return {
+        id: `MP-${row.id}`,
+        source: "man_power" as const,
+        sourceId: row.id,
+        title: row.description || "Man Power",
+        vendor: "Man Power",
+        category: "Man Power",
+        amount: Number(row.amount || 0),
+        date: row.recordDate,
+        stage: workflow.stage,
+        status: workflow.financialStatus,
+        notes: row.notes || "",
+        priority: getPriorityFromAmount(Number(row.amount || 0)),
+        createdBy: "HR/GA",
+      };
+    });
+
+    const reimbursementRows = unwrapList<IReimbursementRecord>(
+      reimbursementRes,
+    ).map((row) => {
+      const workflow = mapReimbursementStatusToWorkflow(row.status);
+      return {
+        id: `REIM-${row.id}`,
+        source: "reimbursement" as const,
+        sourceId: row.id,
+        title: row.description || "Reimbursement",
+        vendor: row.requestedBy || "Employee",
+        category: `Reimbursement / ${row.category}`,
+        amount: Number(row.amount || 0),
+        date: row.expenseDate,
+        stage: workflow.stage,
+        status: workflow.financialStatus,
+        notes: row.rejectionReason || "",
+        priority: getPriorityFromAmount(Number(row.amount || 0)),
+        createdBy: row.requestedBy || "Employee",
+      };
+    });
+
+    setRecords(
+      [...flashCashRows, ...invoiceRows, ...manPowerRows, ...reimbursementRows]
+        .sort((a, b) => b.date.localeCompare(a.date)),
+    );
+  }
+
+  useEffect(() => {
+    handleRefetch();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const categories = Array.from(
     new Set(records.map((record) => record.category)),
@@ -430,11 +536,13 @@ export default function FinancialRecordMain({ dictionary }: Props) {
   ];
 
   function resetForm(nextStageValue: FinancialStage = activeTab) {
+    const today = new Date().toISOString().slice(0, 10);
     setForm({
       ...defaultFormState,
       stage: nextStageValue,
       status: nextStageValue === "paid" ? "paid" : "need_review",
-      date: "2026-04-15",
+      date: today,
+      dueDate: today,
     });
   }
 
@@ -447,8 +555,17 @@ export default function FinancialRecordMain({ dictionary }: Props) {
   function openEditDialog(record: FinancialRecord) {
     setEditingRecordId(record.id);
     setForm({
+      source: record.source,
       title: record.title,
       vendor: record.vendor,
+      invoiceNumber: record.source === "invoice" ? record.title.replace(/^Invoice\s+/i, "") : "",
+      salesOrderId: "",
+      customerId: "",
+      dueDate: record.date,
+      paymentMethod: "cash",
+      flashType: "out",
+      referenceType: "manual",
+      recordType: record.source === "man_power" ? "man_power" : "man_power",
       category: record.category,
       amount: String(record.amount),
       date: record.date,
@@ -468,12 +585,15 @@ export default function FinancialRecordMain({ dictionary }: Props) {
     setForm((current) => ({ ...current, [key]: value }));
   }
 
-  function handleSaveRecord() {
+  async function handleSaveRecord() {
     const parsedAmount = Number(form.amount);
+    const trimmedTitle = form.title.trim();
+    const trimmedVendor = form.vendor.trim();
+    const trimmedCategory = form.category.trim();
+    const trimmedNotes = form.notes.trim();
 
     if (
-      !form.title.trim() ||
-      !form.vendor.trim() ||
+      !trimmedTitle ||
       !form.createdBy.trim() ||
       !form.date ||
       Number.isNaN(parsedAmount) ||
@@ -482,83 +602,166 @@ export default function FinancialRecordMain({ dictionary }: Props) {
       return;
     }
 
-    startTransition(() => {
-      setRecords((currentRecords) => {
-        if (editingRecordId) {
-          return currentRecords.map((record) =>
-            record.id === editingRecordId
-              ? {
-                  ...record,
-                  ...form,
-                  amount: parsedAmount,
-                }
-              : record,
-          );
-        }
+    try {
+      const editingRecord = editingRecordId
+        ? records.find((record) => record.id === editingRecordId)
+        : null;
+      const source = editingRecord?.source ?? form.source;
+      const sourceId = editingRecord?.sourceId;
 
-        return [
-          {
-            id: buildNewRecordId(currentRecords),
-            title: form.title.trim(),
-            vendor: form.vendor.trim(),
-            category: form.category.trim(),
-            amount: parsedAmount,
-            date: form.date,
-            stage: form.stage,
-            status: form.status,
-            notes: form.notes.trim(),
-            priority: form.priority,
-            createdBy: form.createdBy.trim(),
-          },
-          ...currentRecords,
-        ];
-      });
-    });
-
-    setIsDialogOpen(false);
-  }
-
-  function handleAdvanceStage(recordId: string) {
-    setRecords((currentRecords) =>
-      currentRecords.map((record) => {
-        if (record.id !== recordId || record.stage === "paid") return record;
-
-        const updatedStage = nextStage(record.stage);
-
-        return {
-          ...record,
-          stage: updatedStage,
-          status: nextStatus(updatedStage),
+      if (source === "flash_cash") {
+        const payload = {
+          transactionDate: form.date,
+          type: form.flashType,
+          category: trimmedCategory,
+          amount: parsedAmount,
+          description: trimmedTitle,
+          referenceType: form.referenceType || "manual",
         };
-      }),
-    );
+        if (sourceId) {
+          await financialRecordService.updateFlashCash(sourceId, payload);
+        } else {
+          await financialRecordService.createFlashCash(payload);
+        }
+      }
+
+      if (source === "invoice") {
+        const invoiceNumber =
+          form.invoiceNumber.trim() ||
+          trimmedTitle.replace(/\s+/g, "-").toUpperCase().slice(0, 20) ||
+          `INV-${Date.now()}`;
+        const payload = {
+          salesOrderId: toInt(form.salesOrderId, 0),
+          customerId: toInt(form.customerId, 0),
+          invoiceNumber,
+          invoiceDate: form.date,
+          dueDate: form.dueDate || form.date,
+          subtotal: parsedAmount,
+          taxAmount: 0,
+          discountAmount: 0,
+          grandTotal: parsedAmount,
+          paymentMethod: form.paymentMethod,
+          paymentTermDays: 30,
+          notes: trimmedNotes || undefined,
+        };
+        if (sourceId) {
+          await financialRecordService.updateInvoice(sourceId, payload);
+        } else {
+          await financialRecordService.createInvoice(payload);
+        }
+      }
+
+      if (source === "man_power") {
+        const payload = {
+          recordDate: form.date,
+          recordType: form.recordType.trim() || "man_power",
+          amount: parsedAmount,
+          description: trimmedTitle,
+          notes: trimmedNotes || undefined,
+        };
+        if (sourceId) {
+          await financialRecordService.updateManPowerRecord(sourceId, payload);
+        } else {
+          await financialRecordService.createManPowerRecord(payload);
+        }
+      }
+
+      if (source === "reimbursement") {
+        const payload = {
+          expenseDate: form.date,
+          category: trimmedCategory || "reimbursement",
+          amount: parsedAmount,
+          description: trimmedTitle,
+        };
+        if (sourceId) {
+          await financialRecordService.updateReimbursement(sourceId, payload);
+        } else {
+          await financialRecordService.createReimbursement(payload);
+        }
+      }
+
+      setIsDialogOpen(false);
+      await handleRefetch();
+      Swal.fire({
+        icon: "success",
+        title: "Data berhasil disimpan",
+        toast: true,
+        position: "top-end",
+        timer: 1500,
+        showConfirmButton: false,
+      });
+    } catch (error) {
+      Swal.fire({
+        icon: "error",
+        title: "Gagal menyimpan data",
+        text: getErrorMessage(error),
+      });
+    }
   }
 
-  function handleRefetch() {
-    setIsRefreshing(true);
+  async function handleAdvanceStage(recordId: string) {
+    const record = records.find((item) => item.id === recordId);
+    if (!record || record.stage === "paid") return;
 
-    window.setTimeout(() => {
-      startTransition(() => {
-        setRecords((currentRecords) =>
-          currentRecords.map((record, index) => {
-            if (index !== 0 || record.stage === "paid") return record;
+    try {
+      if (record.source === "invoice") {
+        if (record.stage === "submission") {
+          await financialRecordService.issueInvoice(record.sourceId);
+        } else {
+          await financialRecordService.createPayment({
+            invoiceId: record.sourceId,
+            paymentDate: new Date().toISOString().slice(0, 10),
+            amount: record.amount,
+            paymentMethod: "cash",
+          });
+        }
+      }
 
-            return {
-              ...record,
-              status:
-                record.stage === "submission" ? "need_review" : "ready_to_pay",
-            };
-          }),
-        );
-        setLastRefetchedAt(
-          new Date().toLocaleTimeString("id-ID", {
-            hour: "2-digit",
-            minute: "2-digit",
-          }),
-        );
+      if (record.source === "man_power") {
+        if (record.stage === "submission") {
+          await financialRecordService.approveManPowerRecord(record.sourceId);
+        } else {
+          await financialRecordService.markManPowerPaid(record.sourceId);
+        }
+      }
+
+      if (record.source === "reimbursement" && record.stage === "submission") {
+        await financialRecordService.approveReimbursement(record.sourceId);
+      }
+
+      if (record.source === "flash_cash" && record.stage === "submission") {
+        await financialRecordService.approveFlashCash(record.sourceId);
+      }
+
+      await handleRefetch();
+    } catch (error) {
+      Swal.fire({
+        icon: "error",
+        title: "Gagal update stage",
+        text: getErrorMessage(error),
       });
+    }
+  }
+
+  async function handleRefetch() {
+    setIsRefreshing(true);
+    try {
+      await loadRecords();
+      setLastRefetchedAt(
+        new Date().toLocaleTimeString("id-ID", {
+          hour: "2-digit",
+          minute: "2-digit",
+        }),
+      );
+    } catch (error) {
+      Swal.fire({
+        icon: "error",
+        title: "Gagal memuat data",
+        text: getErrorMessage(error),
+      });
+    } finally {
       setIsRefreshing(false);
-    }, 700);
+    }
   }
 
   function clearFilters() {
@@ -567,12 +770,17 @@ export default function FinancialRecordMain({ dictionary }: Props) {
     setCategoryFilter("all");
   }
 
-  const hasValidationError =
-    !form.title.trim() ||
-    !form.vendor.trim() ||
-    !form.createdBy.trim() ||
-    !form.date ||
-    Number(form.amount) <= 0;
+  const hasBaseError =
+    !form.title.trim() || !form.createdBy.trim() || !form.date || Number(form.amount) <= 0;
+  const hasInvoiceError =
+    form.source === "invoice" &&
+    (!form.invoiceNumber.trim() || !form.customerId.trim() || !form.salesOrderId.trim() || !form.dueDate);
+  const hasSourceError =
+    (form.source === "flash_cash" && !form.category.trim()) ||
+    (form.source === "reimbursement" && !form.category.trim()) ||
+    (form.source === "man_power" && !form.recordType.trim()) ||
+    (form.source !== "invoice" && !form.vendor.trim());
+  const hasValidationError = hasBaseError || hasInvoiceError || hasSourceError;
 
   return (
     <>
@@ -954,19 +1162,39 @@ export default function FinancialRecordMain({ dictionary }: Props) {
               />
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="expense-vendor">
-                {copy?.form?.vendor_label ?? "Vendor"}
-              </Label>
-              <Input
-                id="expense-vendor"
-                value={form.vendor}
-                onChange={(event) =>
-                  handleFormChange("vendor", event.target.value)
-                }
-                placeholder={copy?.form?.vendor_placeholder ?? "Nama vendor"}
-              />
-            </div>
+            {form.source !== "invoice" ? (
+              <div className="space-y-2">
+                <Label htmlFor="expense-vendor">
+                  {form.source === "reimbursement"
+                    ? "Claimant"
+                    : copy?.form?.vendor_label ?? "Vendor"}
+                </Label>
+                <Input
+                  id="expense-vendor"
+                  value={form.vendor}
+                  onChange={(event) =>
+                    handleFormChange("vendor", event.target.value)
+                  }
+                  placeholder={
+                    form.source === "reimbursement"
+                      ? "Nama pengaju klaim"
+                      : copy?.form?.vendor_placeholder ?? "Nama vendor"
+                  }
+                />
+              </div>
+            ) : (
+              <div className="space-y-2">
+                <Label htmlFor="invoice-number">Invoice Number</Label>
+                <Input
+                  id="invoice-number"
+                  value={form.invoiceNumber}
+                  onChange={(event) =>
+                    handleFormChange("invoiceNumber", event.target.value)
+                  }
+                  placeholder="INV-2026-0001"
+                />
+              </div>
+            )}
 
             <div className="space-y-2">
               <Label htmlFor="expense-created-by">
@@ -985,29 +1213,84 @@ export default function FinancialRecordMain({ dictionary }: Props) {
             </div>
 
             <div className="space-y-2">
-              <Label>{copy?.form?.category_label ?? "Kategori"}</Label>
+              <Label>Tipe Record</Label>
               <Select
-                value={form.category}
-                onValueChange={(value) => handleFormChange("category", value)}
+                value={form.source}
+                onValueChange={(value) =>
+                  handleFormChange("source", value as FinancialSource)
+                }
               >
                 <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Pilih kategori" />
+                  <SelectValue placeholder="Pilih tipe record" />
                 </SelectTrigger>
                 <SelectContent>
-                  {[
-                    "Operational",
-                    "Maintenance",
-                    "Procurement",
-                    "Logistics",
-                    "Utilities",
-                  ].map((category) => (
-                    <SelectItem key={category} value={category}>
-                      {category}
-                    </SelectItem>
-                  ))}
+                  <SelectItem value="flash_cash">Flash Cash</SelectItem>
+                  <SelectItem value="invoice">Invoice</SelectItem>
+                  <SelectItem value="man_power">Man Power</SelectItem>
+                  <SelectItem value="reimbursement">Reimbursement</SelectItem>
                 </SelectContent>
               </Select>
             </div>
+
+            {form.source === "flash_cash" ? (
+              <div className="space-y-2">
+                <Label>Tipe Cash</Label>
+                <Select
+                  value={form.flashType}
+                  onValueChange={(value) =>
+                    handleFormChange("flashType", value as "in" | "out")
+                  }
+                >
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Pilih tipe cash" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="in">Cash In</SelectItem>
+                    <SelectItem value="out">Cash Out</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            ) : null}
+
+            {form.source === "invoice" ? (
+              <div className="space-y-2">
+                <Label htmlFor="customer-id">Customer ID</Label>
+                <Input
+                  id="customer-id"
+                  type="number"
+                  min="1"
+                  value={form.customerId}
+                  onChange={(event) =>
+                    handleFormChange("customerId", event.target.value)
+                  }
+                  placeholder="1"
+                />
+              </div>
+            ) : (
+              <div className="space-y-2">
+                <Label>{copy?.form?.category_label ?? "Kategori"}</Label>
+                <Select
+                  value={form.category}
+                  onValueChange={(value) => handleFormChange("category", value)}
+                >
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Pilih kategori" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {(form.source === "flash_cash"
+                      ? ["Operational", "Logistics", "Utilities", "Maintenance"]
+                      : form.source === "reimbursement"
+                        ? ["Transport", "Meal", "Accommodation", "Medical", "Office"]
+                        : ["Operational", "Maintenance", "Procurement", "Logistics", "Utilities"]
+                    ).map((category) => (
+                      <SelectItem key={category} value={category}>
+                        {category}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
 
             <div className="space-y-2">
               <Label htmlFor="expense-amount">
@@ -1038,6 +1321,80 @@ export default function FinancialRecordMain({ dictionary }: Props) {
                 }
               />
             </div>
+
+            {form.source === "invoice" ? (
+              <>
+                <div className="space-y-2">
+                  <Label htmlFor="sales-order-id">Sales Order ID</Label>
+                  <Input
+                    id="sales-order-id"
+                    type="number"
+                    min="1"
+                    value={form.salesOrderId}
+                    onChange={(event) =>
+                      handleFormChange("salesOrderId", event.target.value)
+                    }
+                    placeholder="1"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="due-date">Due Date</Label>
+                  <Input
+                    id="due-date"
+                    type="date"
+                    value={form.dueDate}
+                    onChange={(event) =>
+                      handleFormChange("dueDate", event.target.value)
+                    }
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Payment Method</Label>
+                  <Select
+                    value={form.paymentMethod}
+                    onValueChange={(value) =>
+                      handleFormChange("paymentMethod", value as "cash" | "termin")
+                    }
+                  >
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="Pilih metode bayar" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="cash">Cash</SelectItem>
+                      <SelectItem value="termin">Termin</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </>
+            ) : null}
+
+            {form.source === "flash_cash" ? (
+              <div className="space-y-2">
+                <Label htmlFor="reference-type">Reference Type</Label>
+                <Input
+                  id="reference-type"
+                  value={form.referenceType}
+                  onChange={(event) =>
+                    handleFormChange("referenceType", event.target.value)
+                  }
+                  placeholder="manual / sales_order / payment"
+                />
+              </div>
+            ) : null}
+
+            {form.source === "man_power" ? (
+              <div className="space-y-2">
+                <Label htmlFor="record-type">Record Type</Label>
+                <Input
+                  id="record-type"
+                  value={form.recordType}
+                  onChange={(event) =>
+                    handleFormChange("recordType", event.target.value)
+                  }
+                  placeholder="overtime / salary / service_fee"
+                />
+              </div>
+            ) : null}
 
             <div className="space-y-2">
               <Label>{copy?.form?.stage_label ?? "Tahap"}</Label>

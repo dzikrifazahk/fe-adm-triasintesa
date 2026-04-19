@@ -354,6 +354,10 @@
       "default_page_description": "Silahkan pilih salah satu tab di atas untuk melihat detail."
     }
   },
+  "customer_page_dic": {
+    "title": "Customer",
+    "description": "Kelola data customer untuk kebutuhan sales order, pengiriman, dan invoice."
+  },
   "shipping_page_dic": {
     "title": "Pengiriman",
     "description": "Kelola pengiriman dengan mudah dan efisien, mulai dari perencanaan hingga pelaporan.",
@@ -467,6 +471,7 @@
     "inventory": "Stok Barang",
     "sales_title": "Penjualan",
     "sales_order": "Order",
+    "customer": "Customer",
     "shipping": "Pengiriman",
     "report": "Laporan",
     "settings": "Pengaturan",
