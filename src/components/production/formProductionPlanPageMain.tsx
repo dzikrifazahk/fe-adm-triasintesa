@@ -1,7 +1,10 @@
 "use client";
 
 import { productionPlanService, tanksService } from "@/services";
-import { IAddOrUpdateProductionPlan, IProductionPlan } from "@/types/production";
+import {
+  IAddOrUpdateProductionPlan,
+  IProductionPlan,
+} from "@/types/production";
 import { ITank } from "@/types/tanks";
 import { getDictionary } from "../../../get-dictionary";
 import { useEffect, useMemo, useState } from "react";
@@ -19,6 +22,7 @@ import { Textarea } from "../ui/textarea";
 import { Beaker, CalendarRange, Droplets, Package2 } from "lucide-react";
 import Swal from "sweetalert2";
 import { useRouter } from "next/navigation";
+import { useLoading } from "@/context/loadingContext";
 
 type Props = {
   dictionary: Awaited<ReturnType<typeof getDictionary>>["production_page_dic"];
@@ -50,6 +54,7 @@ export default function FormProductionPlanMain({
   lang,
   planId,
 }: Props) {
+  const { setIsLoading } = useLoading();
   const productionPlanDictionary = dictionary.production_plan;
   const formDictionary = productionPlanDictionary.form;
   const statusOptions = [
@@ -110,7 +115,7 @@ export default function FormProductionPlanMain({
         ]);
 
         setTanks(tankResponse.data ?? []);
-
+        
         if (planResponse?.data) {
           const plan: IProductionPlan = planResponse.data;
           setForm({
@@ -123,6 +128,8 @@ export default function FormProductionPlanMain({
             // status: plan.status ?? "planned",
           });
         }
+        
+        setLoading(false);
       } catch (error) {
         console.error(error);
         Swal.fire({
@@ -266,6 +273,9 @@ export default function FormProductionPlanMain({
     }
   };
 
+  useEffect(() => {
+    setIsLoading(false);
+  }, []);
   return (
     <div className="h-full w-full rounded-lg border bg-muted/30 p-2">
       <div className="flex h-full min-h-0 flex-col rounded-lg border bg-white shadow-sm">
@@ -273,9 +283,7 @@ export default function FormProductionPlanMain({
           <div className="text-lg font-bold text-slate-900">
             {planId ? formDictionary.update_title : formDictionary.create_title}
           </div>
-          <div className="text-sm text-slate-500">
-            {dictionary.description}
-          </div>
+          <div className="text-sm text-slate-500">{dictionary.description}</div>
         </div>
 
         <form
@@ -285,7 +293,9 @@ export default function FormProductionPlanMain({
           <div className="space-y-4">
             <div className="grid gap-4 md:grid-cols-2">
               <div className="space-y-2">
-                <Label htmlFor="startDate">{formDictionary.field_start_date}</Label>
+                <Label htmlFor="startDate">
+                  {formDictionary.field_start_date}
+                </Label>
                 <Input
                   id="startDate"
                   type="date"
@@ -319,7 +329,9 @@ export default function FormProductionPlanMain({
                 disabled={loading || submitting}
               >
                 <SelectTrigger id="tankId" className="w-full">
-                  <SelectValue placeholder={formDictionary.field_tank_placeholder} />
+                  <SelectValue
+                    placeholder={formDictionary.field_tank_placeholder}
+                  />
                 </SelectTrigger>
                 <SelectContent>
                   {tanks.map((tank) => (
@@ -333,7 +345,9 @@ export default function FormProductionPlanMain({
 
             <div className="grid gap-4 md:grid-cols-2">
               <div className="space-y-2">
-                <Label htmlFor="targetBatches">{formDictionary.field_target_batches}</Label>
+                <Label htmlFor="targetBatches">
+                  {formDictionary.field_target_batches}
+                </Label>
                 <Input
                   id="targetBatches"
                   type="number"
@@ -348,7 +362,9 @@ export default function FormProductionPlanMain({
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="targetJirigenTotal">{formDictionary.field_target_jirigen_total}</Label>
+                <Label htmlFor="targetJirigenTotal">
+                  {formDictionary.field_target_jirigen_total}
+                </Label>
                 <Input
                   id="targetJirigenTotal"
                   type="number"
@@ -375,7 +391,9 @@ export default function FormProductionPlanMain({
                   disabled={loading || submitting}
                 >
                   <SelectTrigger id="status" className="w-full">
-                    <SelectValue placeholder={formDictionary.field_status_placeholder} />
+                    <SelectValue
+                      placeholder={formDictionary.field_status_placeholder}
+                    />
                   </SelectTrigger>
                   <SelectContent>
                     {statusOptions.map((status) => (

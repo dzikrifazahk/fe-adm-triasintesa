@@ -19,7 +19,6 @@ export async function POST(req: Request) {
       }
       const { xmail } = JSON.parse(bodyText);
       const { data } = await authService.forgotPasswordUnauthenticated(xmail);
-      console.log(data);
 
       const response = new NextResponse(
         JSON.stringify({

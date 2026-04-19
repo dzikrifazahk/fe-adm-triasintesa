@@ -1,5 +1,7 @@
 "use client";
 
+import { Modal } from "@/components/custom/modal";
+import { MobileContext } from "@/hooks/use-mobile-ssr";
 import { productionPlanService } from "@/services";
 import {
   IAddProductionBatch,
@@ -9,7 +11,17 @@ import {
   IProductionPlan,
 } from "@/types/production";
 import { getDictionary } from "../../../get-dictionary";
-import { useEffect, useMemo, useState } from "react";
+import { useContext, useEffect, useRef, useState } from "react";
+import {
+  ModalFilterProductionBatches,
+  ProductionDateFilterPayload,
+} from "./modalFilterProductionBatches";
+import {
+  ModalFilterProductionJirigen,
+  ProductionJirigenFilterPayload,
+} from "./modalFilterProductionJirigen";
+import { ProductionBatchesSection } from "./productionBatchesSection";
+import { ProductionJirigenSection } from "./productionJirigenSection";
 import { Button } from "../ui/button";
 import {
   Dialog,
@@ -28,8 +40,8 @@ import {
   SelectValue,
 } from "../ui/select";
 import { Textarea } from "../ui/textarea";
+import { Loader2, Pencil, X } from "lucide-react";
 import Swal from "sweetalert2";
-import { ChevronDown, Plus } from "lucide-react";
 
 type Props = {
   dictionary: Awaited<ReturnType<typeof getDictionary>>["production_page_dic"];
@@ -75,6 +87,16 @@ function formatDateTimeLocal(value?: string) {
   return localDate.toISOString().slice(0, 16);
 }
 
+function formatNumber(value?: string | number | null) {
+  const parsed = Number(value ?? 0);
+  return Number.isNaN(parsed) ? "0" : parsed.toLocaleString("id-ID");
+}
+
+function normalizeNumber(value?: string | number | null) {
+  const parsed = Number(value ?? 0);
+  return Number.isNaN(parsed) ? 0 : parsed;
+}
+
 function toList<T>(response: any): T[] {
   return response?.data?.data ?? response?.data ?? [];
 }
@@ -92,17 +114,23 @@ export default function ProductionPlanDetailMain({
   planId,
 }: Props) {
   const detailDictionary = dictionary.production_plan.detail;
+  const layoutDictionary = dictionary.production_plan.layout;
+  const formDictionary = dictionary.production_plan.form;
+  const { isMobile } = useContext(MobileContext);
   const [loadingPlan, setLoadingPlan] = useState(true);
   const [loadingBatches, setLoadingBatches] = useState(false);
   const [loadingJirigens, setLoadingJirigens] = useState(false);
   const [submittingBatch, setSubmittingBatch] = useState(false);
   const [submittingJirigen, setSubmittingJirigen] = useState(false);
+  const [updatingStatus, setUpdatingStatus] = useState(false);
+  const [isEditingStatus, setIsEditingStatus] = useState(false);
 
   const [plan, setPlan] = useState<IProductionPlan | null>(null);
   const [batches, setBatches] = useState<IProductionBatch[]>([]);
   const [jirigens, setJirigens] = useState<IProductionJirigen[]>([]);
 
-  const [batchForm, setBatchForm] = useState<IAddProductionBatch>(initialBatchForm);
+  const [batchForm, setBatchForm] =
+    useState<IAddProductionBatch>(initialBatchForm);
   const [jirigenForm, setJirigenForm] =
     useState<IAddProductionJirigen>(initialJirigenForm);
 
@@ -112,20 +140,63 @@ export default function ProductionPlanDetailMain({
   const [hasLoadedJirigens, setHasLoadedJirigens] = useState(false);
   const [isBatchModalOpen, setIsBatchModalOpen] = useState(false);
   const [isJirigenModalOpen, setIsJirigenModalOpen] = useState(false);
+  const [isBarcodePreviewOpen, setIsBarcodePreviewOpen] = useState(false);
+  const [isBatchFilterModalOpen, setIsBatchFilterModalOpen] = useState(false);
+  const [isJirigenFilterModalOpen, setIsJirigenFilterModalOpen] =
+    useState(false);
+  const [editingBatchId, setEditingBatchId] = useState<string | null>(null);
+  const [batchFilters, setBatchFilters] = useState<ProductionDateFilterPayload>(
+    {},
+  );
+  const [jirigenFilters, setJirigenFilters] =
+    useState<ProductionJirigenFilterPayload>({});
+  const [selectedStatus, setSelectedStatus] = useState("");
+  const [printingBarcodeId, setPrintingBarcodeId] = useState<string | null>(
+    null,
+  );
+  const [barcodePreviewUrl, setBarcodePreviewUrl] = useState<string | null>(
+    null,
+  );
+  const [loadingBarcodePreview, setLoadingBarcodePreview] = useState(false);
+  const barcodePreviewFrameRef = useRef<HTMLIFrameElement | null>(null);
 
-  const batchCounts = useMemo(() => {
-    return jirigens.reduce<Record<number, number>>((acc, jirigen) => {
-      acc[jirigen.batchId] = (acc[jirigen.batchId] ?? 0) + 1;
-      return acc;
-    }, {});
-  }, [jirigens]);
+  const tankCurrentVolume = normalizeNumber(plan?.tank?.currentVolume);
+  const tankTotalCapacity = normalizeNumber(plan?.tank?.totalCapacity);
+  const tankVolumePercentage =
+    tankTotalCapacity > 0
+      ? Math.min(
+          100,
+          Math.max(0, Math.round((tankCurrentVolume / tankTotalCapacity) * 100)),
+        )
+      : 0;
+
+  const statusOptions = [
+    {
+      value: "planned",
+      label: layoutDictionary.status_planned,
+    },
+    {
+      value: "in_progress",
+      label: layoutDictionary.status_in_progress,
+    },
+    {
+      value: "completed",
+      label: layoutDictionary.status_completed,
+    },
+    {
+      value: "cancel",
+      label: layoutDictionary.status_cancel,
+    },
+  ];
 
   const loadPlan = async () => {
     try {
       setLoadingPlan(true);
-      const planResponse = await productionPlanService.getProductionPlan(planId);
+      const planResponse =
+        await productionPlanService.getProductionPlan(planId);
       const planData = planResponse?.data ?? null;
       setPlan(planData);
+      setSelectedStatus(planData?.status ?? "");
 
       if (planData) {
         setBatchForm((prev) => ({
@@ -133,7 +204,7 @@ export default function ProductionPlanDetailMain({
           tankId: Number(planData.tankId) || 0,
           planId: Number(planData.id) || Number(planId),
           startDate: planData.startDate?.slice(0, 10) ?? "",
-          endDate: planData.startDate?.slice(0, 10) ?? "",
+          endDate: planData.endDate?.slice(0, 10) ?? "",
         }));
       }
     } catch (error) {
@@ -151,13 +222,15 @@ export default function ProductionPlanDetailMain({
     }
   };
 
-  const loadBatches = async () => {
+  const loadBatches = async (filters?: ProductionDateFilterPayload) => {
     try {
       setLoadingBatches(true);
-      const batchResponse = await productionPlanService.getProductionBatches({
-        planId,
-        limit: 100,
-      });
+      const activeFilters = filters ?? batchFilters;
+      const batchResponse =
+        await productionPlanService.getProductionBatchesByPlanID(
+          planId,
+          activeFilters,
+        );
       const batchData = toList<IProductionBatch>(batchResponse);
       setBatches(batchData);
       setHasLoadedBatches(true);
@@ -166,7 +239,8 @@ export default function ProductionPlanDetailMain({
         ...prev,
         batchId: batchData[0]?.id ?? prev.batchId ?? 0,
         productionDatetime:
-          prev.productionDatetime || formatDateTimeLocal(new Date().toISOString()),
+          prev.productionDatetime ||
+          formatDateTimeLocal(new Date().toISOString()),
       }));
     } catch (error) {
       console.error(error);
@@ -183,13 +257,17 @@ export default function ProductionPlanDetailMain({
     }
   };
 
-  const loadJirigens = async () => {
+  const loadJirigens = async (filters?: ProductionJirigenFilterPayload) => {
     try {
       setLoadingJirigens(true);
-      const jirigenResponse = await productionPlanService.getProductionJirigens({
-        planId,
-        limit: 500,
-      });
+      const activeFilters = filters ?? jirigenFilters;
+      const jirigenResponse = await productionPlanService.getProductionJirigens(
+        {
+          planId,
+          limit: 500,
+          ...activeFilters,
+        },
+      );
       setJirigens(toList<IProductionJirigen>(jirigenResponse));
       setHasLoadedJirigens(true);
     } catch (error) {
@@ -210,6 +288,14 @@ export default function ProductionPlanDetailMain({
   useEffect(() => {
     loadPlan();
   }, [planId]);
+
+  useEffect(() => {
+    return () => {
+      if (barcodePreviewUrl) {
+        URL.revokeObjectURL(barcodePreviewUrl);
+      }
+    };
+  }, [barcodePreviewUrl]);
 
   const handleToggleBatches = async () => {
     const nextState = !isBatchOpen;
@@ -234,38 +320,79 @@ export default function ProductionPlanDetailMain({
     setIsJirigenModalOpen(true);
   };
 
+  const resetBatchForm = () => {
+    setEditingBatchId(null);
+    setBatchForm({
+      ...initialBatchForm,
+      tankId: Number(plan?.tankId) || 0,
+      planId: Number(plan?.id) || Number(planId),
+      startDate: plan?.startDate?.slice(0, 10) ?? "",
+      endDate: plan?.endDate?.slice(0, 10) ?? "",
+    });
+  };
+
+  const handleOpenCreateBatchModal = () => {
+    resetBatchForm();
+    setIsBatchModalOpen(true);
+  };
+
+  const handleEditBatch = (batch: IProductionBatch) => {
+    setEditingBatchId(String(batch.id));
+    setBatchForm({
+      batchNumber: batch.batchNumber ?? "",
+      tankId: Number(batch.tankId) || Number(plan?.tankId) || 0,
+      planId: Number(batch.planId) || Number(plan?.id) || Number(planId),
+      startDate: batch.startDate?.slice(0, 10) ?? "",
+      endDate: batch.endDate?.slice(0, 10) ?? "",
+      rawMaterialVolume: Number(batch.rawMaterialVolume) || 0,
+      targetQuantityJirigen: Number(batch.targetQuantityJirigen) || 0,
+      notes: batch.notes ?? "",
+    });
+    setIsBatchModalOpen(true);
+  };
+
   const handleBatchSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
-    if (!plan || !batchForm.batchNumber || !batchForm.startDate || !batchForm.endDate) {
+    if (
+      !plan ||
+      !batchForm.batchNumber ||
+      !batchForm.startDate ||
+      !batchForm.endDate
+    ) {
       return;
     }
 
     try {
       setSubmittingBatch(true);
-      await productionPlanService.createProductionBatch({
+      const payload = {
         ...batchForm,
         tankId: Number(plan.tankId),
         planId: Number(plan.id),
         rawMaterialVolume: Number(batchForm.rawMaterialVolume),
         targetQuantityJirigen: Number(batchForm.targetQuantityJirigen),
-      });
+      };
+
+      if (editingBatchId) {
+        await productionPlanService.updateProductionBatch(
+          editingBatchId,
+          payload,
+        );
+      } else {
+        await productionPlanService.createProductionBatch(payload);
+      }
 
       Swal.fire({
         icon: "success",
-        title: detailDictionary.batch_create_success,
+        title: editingBatchId
+          ? detailDictionary.batch_update_success
+          : detailDictionary.batch_create_success,
         toast: true,
         position: "top-right",
         showConfirmButton: false,
         timer: 2200,
       });
 
-      setBatchForm((prev) => ({
-        ...prev,
-        batchNumber: "",
-        rawMaterialVolume: 0,
-        targetQuantityJirigen: 0,
-        notes: "",
-      }));
+      resetBatchForm();
       setIsBatchModalOpen(false);
       setIsBatchOpen(true);
       await loadBatches();
@@ -273,7 +400,9 @@ export default function ProductionPlanDetailMain({
       console.error(error);
       Swal.fire({
         icon: "error",
-        title: detailDictionary.batch_create_error,
+        title: editingBatchId
+          ? detailDictionary.batch_update_error
+          : detailDictionary.batch_create_error,
         toast: true,
         position: "top-right",
         showConfirmButton: false,
@@ -334,8 +463,136 @@ export default function ProductionPlanDetailMain({
     }
   };
 
+  const handleApplyBatchFilters = async (
+    payload: ProductionDateFilterPayload,
+  ) => {
+    setBatchFilters(payload);
+    await loadBatches(payload);
+    setIsBatchOpen(true);
+  };
+
+  const handleClearBatchFilters = async () => {
+    const clearedFilters = {};
+    setBatchFilters(clearedFilters);
+    await loadBatches(clearedFilters);
+    setIsBatchOpen(true);
+  };
+
+  const handleApplyJirigenFilters = async (
+    payload: ProductionJirigenFilterPayload,
+  ) => {
+    setJirigenFilters(payload);
+    await loadJirigens(payload);
+    setIsJirigenOpen(true);
+  };
+
+  const handleClearJirigenFilters = async () => {
+    const clearedFilters = {};
+    setJirigenFilters(clearedFilters);
+    await loadJirigens(clearedFilters);
+    setIsJirigenOpen(true);
+  };
+
+  const handlePrintJirigenBarcode = async (jirigenId: string) => {
+    try {
+      setPrintingBarcodeId(jirigenId);
+      setLoadingBarcodePreview(true);
+      setIsBarcodePreviewOpen(true);
+
+      if (barcodePreviewUrl) {
+        URL.revokeObjectURL(barcodePreviewUrl);
+        setBarcodePreviewUrl(null);
+      }
+
+      const pdfBlob =
+        await productionPlanService.printProductionJirigenBarcode(jirigenId);
+      const previewUrl = URL.createObjectURL(pdfBlob);
+      setBarcodePreviewUrl(previewUrl);
+    } catch (error) {
+      console.error(error);
+      setIsBarcodePreviewOpen(false);
+      Swal.fire({
+        icon: "error",
+        title: "Gagal memuat preview barcode",
+        toast: true,
+        position: "top-right",
+        showConfirmButton: false,
+        timer: 2200,
+      });
+    } finally {
+      setPrintingBarcodeId(null);
+      setLoadingBarcodePreview(false);
+    }
+  };
+
+  const handlePrintBarcodePreview = () => {
+    const iframeWindow = barcodePreviewFrameRef.current?.contentWindow;
+    if (!iframeWindow) return;
+
+    iframeWindow.focus();
+    iframeWindow.print();
+  };
+
+  const handleUpdateStatus = async (status: string) => {
+    if (!plan || plan.status === status) return;
+
+    if (status === "completed" || status === "cancel") {
+      const result = await Swal.fire({
+        icon: "question",
+        title:
+          status === "completed"
+            ? `${layoutDictionary.status_completed}?`
+            : `${layoutDictionary.status_cancel}?`,
+        text: formDictionary.confirm_update,
+        showCancelButton: true,
+        confirmButtonText: formDictionary.confirm_yes,
+        cancelButtonText: formDictionary.confirm_cancel,
+        confirmButtonColor: status === "cancel" ? "#DC2626" : "#2B59FF",
+      });
+
+      if (!result.isConfirmed) return;
+    }
+
+    try {
+      setUpdatingStatus(true);
+      await productionPlanService.updateProductionPlan(planId, {
+        status,
+        startDate: plan.startDate?.slice(0, 10) ?? "",
+        endDate: plan.endDate?.slice(0, 10) ?? "",
+        tankId: Number(plan.tankId) || 0,
+        targetBatches: Number(plan.targetBatches) || 0,
+        targetJirigenTotal: plan.targetJirigenTotal ?? 0,
+        notes: plan.notes ?? "",
+      });
+      setPlan((prev) => (prev ? { ...prev, status } : prev));
+      setSelectedStatus(status);
+      setIsEditingStatus(false);
+
+      Swal.fire({
+        icon: "success",
+        title: formDictionary.save_success_update,
+        toast: true,
+        position: "top-right",
+        showConfirmButton: false,
+        timer: 2200,
+      });
+    } catch (error) {
+      console.error(error);
+      Swal.fire({
+        icon: "error",
+        title: formDictionary.save_error,
+        toast: true,
+        position: "top-right",
+        showConfirmButton: false,
+        timer: 2400,
+      });
+    } finally {
+      setUpdatingStatus(false);
+    }
+  };
+
   return (
-    <div className="h-full w-full rounded-lg border bg-white p-4 dark:border-[#34363B] dark:bg-[#26282D]">
+    <div className="h-full min-h-0 w-full overflow-y-auto overflow-x-hidden rounded-lg border bg-white p-4 dark:border-[#34363B] dark:bg-[#26282D]">
       {loadingPlan ? (
         <SectionEmpty text={detailDictionary.loading} />
       ) : !plan ? (
@@ -343,21 +600,112 @@ export default function ProductionPlanDetailMain({
       ) : (
         <div className="flex h-full min-h-0 flex-col gap-4">
           <div className="rounded-2xl border bg-slate-50 p-4 dark:border-[#34363B] dark:bg-[#1F2023]">
-            <div className="text-2xl font-bold text-slate-900 dark:text-slate-100">
-              {dictionary.title} {detailDictionary.title_suffix}
-            </div>
-            <div className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-              {detailDictionary.summary_prefix} {formatDate(plan.startDate)} - {formatDate(plan.endDate)} •{" "}
-              {plan.targetJirigenTotal.toLocaleString("id-ID")} {detailDictionary.summary_jirigen_suffix}
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <div className="text-2xl font-bold text-slate-900 dark:text-slate-100">
+                  {dictionary.title} {detailDictionary.title_suffix}
+                </div>
+                <div className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+                  {detailDictionary.summary_prefix} {formatDate(plan.startDate)}{" "}
+                  - {formatDate(plan.endDate)} •{" "}
+                  {plan.targetJirigenTotal.toLocaleString("id-ID")}{" "}
+                  {detailDictionary.summary_jirigen_suffix}
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <Button
+                  type="button"
+                  variant={isEditingStatus ? "default" : "outline"}
+                  size="sm"
+                  className="shrink-0 gap-2"
+                  onClick={() => {
+                    if (isEditingStatus) {
+                      void handleUpdateStatus(selectedStatus);
+                      return;
+                    }
+
+                    setSelectedStatus(plan.status ?? "");
+                    setIsEditingStatus(true);
+                  }}
+                  disabled={
+                    updatingStatus ||
+                    (isEditingStatus &&
+                      (!selectedStatus || selectedStatus === plan.status))
+                  }
+                >
+                  {updatingStatus ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      Saving...
+                    </>
+                  ) : isEditingStatus ? (
+                    "Save"
+                  ) : (
+                    <>
+                      <Pencil className="h-4 w-4" />
+                      Update Status
+                    </>
+                  )}
+                </Button>
+
+                {isEditingStatus ? (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="shrink-0 gap-2"
+                    disabled={updatingStatus}
+                    onClick={() => {
+                      setSelectedStatus(plan.status ?? "");
+                      setIsEditingStatus(false);
+                    }}
+                  >
+                    <X className="h-4 w-4" />
+                    Cancel
+                  </Button>
+                ) : null}
+              </div>
             </div>
 
-            <div className="mt-4 grid gap-3 md:grid-cols-4">
+            <div className="mt-4 grid gap-3 md:grid-cols-3">
               <div className="rounded-xl border bg-white p-3 dark:border-[#34363B] dark:bg-[#26282D]">
                 <div className="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400">
                   {detailDictionary.tank}
                 </div>
                 <div className="mt-1 text-sm font-semibold text-slate-900 dark:text-slate-100">
                   {plan.tank?.tankName || plan.tank?.tankCode || "-"}
+                </div>
+              </div>
+              <div className="rounded-xl border bg-white p-3 dark:border-[#34363B] dark:bg-[#26282D]">
+                <div className="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                  Tank Volume
+                </div>
+                <div className="mt-3">
+                  <div className="mb-3 h-28 overflow-hidden rounded-2xl border bg-slate-100 dark:border-[#34363B] dark:bg-[#1F2023]">
+                    <div className="flex h-full items-end justify-center px-6 pb-4">
+                      <div className="relative h-full w-full max-w-16 overflow-hidden rounded-t-[20px] border-4 border-slate-300 bg-white dark:border-slate-600 dark:bg-[#26282D]">
+                        <div
+                          className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-blue-600 to-cyan-400 transition-all duration-500"
+                          style={{ height: `${tankVolumePercentage}%` }}
+                        />
+                        <div className="absolute inset-x-0 top-2 text-center text-[10px] font-semibold text-slate-500 dark:text-slate-300">
+                          {tankVolumePercentage}%
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="text-sm font-semibold text-slate-900 dark:text-slate-100">
+                    {formatNumber(plan.tank?.currentVolume)} /{" "}
+                    {formatNumber(plan.tank?.totalCapacity)} L
+                  </div>
+                  <div className="mt-1 h-2 overflow-hidden rounded-full bg-slate-200 dark:bg-slate-700">
+                    <div
+                      className="h-full rounded-full bg-gradient-to-r from-blue-600 to-cyan-400 transition-all duration-500"
+                      style={{ width: `${tankVolumePercentage}%` }}
+                    />
+                  </div>
                 </div>
               </div>
               <div className="rounded-xl border bg-white p-3 dark:border-[#34363B] dark:bg-[#26282D]">
@@ -380,176 +728,114 @@ export default function ProductionPlanDetailMain({
                 <div className="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400">
                   {detailDictionary.status}
                 </div>
-                <div className="mt-1 text-sm font-semibold capitalize text-slate-900 dark:text-slate-100">
-                  {plan.status?.replaceAll("_", " ") || "-"}
+                {isEditingStatus ? (
+                  <div className="mt-2">
+                    <Select
+                      value={selectedStatus}
+                      onValueChange={setSelectedStatus}
+                      disabled={updatingStatus}
+                    >
+                      <SelectTrigger className="w-full">
+                        <SelectValue placeholder={detailDictionary.status} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {statusOptions.map((option) => (
+                          <SelectItem key={option.value} value={option.value}>
+                            {option.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                ) : (
+                  <div className="mt-1 text-sm font-semibold text-slate-900 dark:text-slate-100">
+                    {statusOptions.find(
+                      (option) => option.value === plan.status,
+                    )?.label ??
+                      plan.status?.replaceAll("_", " ") ??
+                      "-"}
+                  </div>
+                )}
+              </div>
+              <div className="rounded-xl border bg-white p-3 dark:border-[#34363B] dark:bg-[#26282D]">
+                <div className="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                  Notes
+                </div>
+                <div className="mt-1 whitespace-pre-wrap text-sm text-slate-900 dark:text-slate-100">
+                  {plan.notes?.trim() || "-"}
                 </div>
               </div>
             </div>
           </div>
 
           <div className="space-y-4">
-            <div className="rounded-2xl border p-4 dark:border-[#34363B]">
-              <div className="flex items-center justify-between gap-3">
-                <button
-                  type="button"
-                  onClick={handleToggleBatches}
-                  className="flex flex-1 items-center justify-between rounded-xl bg-slate-50 px-4 py-3 text-left dark:bg-[#1F2023]"
-                >
-                  <div>
-                    <div className="text-lg font-semibold text-slate-900 dark:text-slate-100">
-                      {detailDictionary.batch_section_title}
-                    </div>
-                    <div className="text-sm text-slate-500 dark:text-slate-400">
-                      {detailDictionary.batch_section_description}
-                    </div>
-                  </div>
-                  <ChevronDown
-                    className={`h-5 w-5 text-slate-500 transition-transform dark:text-slate-300 ${
-                      isBatchOpen ? "rotate-180" : ""
-                    }`}
-                  />
-                </button>
+            <ProductionBatchesSection
+              dictionary={detailDictionary}
+              isOpen={isBatchOpen}
+              loading={loadingBatches}
+              batches={batches}
+              onToggle={handleToggleBatches}
+              onCreate={handleOpenCreateBatchModal}
+              onEdit={handleEditBatch}
+              onOpenFilter={() => setIsBatchFilterModalOpen(true)}
+              onRefresh={() => loadBatches()}
+              formatDate={formatDate}
+              renderEmpty={(text) => <SectionEmpty text={text} />}
+            />
 
-                <Button
-                  type="button"
-                  onClick={() => setIsBatchModalOpen(true)}
-                  className="bg-iprimary-blue text-white hover:bg-iprimary-blue/90"
-                >
-                  <Plus className="mr-2 h-4 w-4" />
-                  {detailDictionary.batch_button}
-                </Button>
-              </div>
-
-              {isBatchOpen ? (
-                <div className="mt-4 space-y-3">
-                  {loadingBatches ? (
-                    <SectionEmpty text={detailDictionary.batch_loading} />
-                  ) : batches.length ? (
-                    batches.map((batch) => (
-                      <div
-                        key={batch.id}
-                        className="rounded-xl border bg-slate-50 p-4 dark:border-[#34363B] dark:bg-[#1F2023]"
-                      >
-                        <div className="flex items-start justify-between gap-3">
-                          <div>
-                            <div className="text-base font-semibold text-slate-900 dark:text-slate-100">
-                              {batch.batchNumber}
-                            </div>
-                            <div className="text-sm text-slate-500 dark:text-slate-400">
-                              {formatDate(batch.startDate)} - {formatDate(batch.endDate)}
-                            </div>
-                          </div>
-                          <div className="rounded-full bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-700 dark:bg-[#2E3138] dark:text-blue-300">
-                            {batchCounts[batch.id] ?? 0} jirigen
-                          </div>
-                        </div>
-                        <div className="mt-3 grid gap-3 sm:grid-cols-2">
-                          <div className="text-sm text-slate-600 dark:text-slate-300">
-                            {detailDictionary.raw_material}:{" "}
-                            <span className="font-semibold">
-                              {Number(batch.rawMaterialVolume).toLocaleString("id-ID")} L
-                            </span>
-                          </div>
-                          <div className="text-sm text-slate-600 dark:text-slate-300">
-                            {detailDictionary.target_quantity}:{" "}
-                            <span className="font-semibold">
-                              {Number(batch.targetQuantityJirigen).toLocaleString("id-ID")}
-                            </span>
-                          </div>
-                        </div>
-                        {batch.notes ? (
-                          <div className="mt-2 text-sm text-slate-500 dark:text-slate-400">
-                            {batch.notes}
-                          </div>
-                        ) : null}
-                      </div>
-                    ))
-                  ) : (
-                    <SectionEmpty text={detailDictionary.batch_empty} />
-                  )}
-                </div>
-              ) : null}
-            </div>
-
-            <div className="rounded-2xl border p-4 dark:border-[#34363B]">
-              <div className="flex items-center justify-between gap-3">
-                <button
-                  type="button"
-                  onClick={handleToggleJirigens}
-                  className="flex flex-1 items-center justify-between rounded-xl bg-slate-50 px-4 py-3 text-left dark:bg-[#1F2023]"
-                >
-                  <div>
-                    <div className="text-lg font-semibold text-slate-900 dark:text-slate-100">
-                      {detailDictionary.jirigen_section_title}
-                    </div>
-                    <div className="text-sm text-slate-500 dark:text-slate-400">
-                      {detailDictionary.jirigen_section_description}
-                    </div>
-                  </div>
-                  <ChevronDown
-                    className={`h-5 w-5 text-slate-500 transition-transform dark:text-slate-300 ${
-                      isJirigenOpen ? "rotate-180" : ""
-                    }`}
-                  />
-                </button>
-
-                <Button
-                  type="button"
-                  onClick={handleOpenJirigenModal}
-                  className="bg-iprimary-blue text-white hover:bg-iprimary-blue/90"
-                  disabled={hasLoadedBatches ? batches.length === 0 : false}
-                >
-                  <Plus className="mr-2 h-4 w-4" />
-                  {detailDictionary.jirigen_button}
-                </Button>
-              </div>
-
-              {isJirigenOpen ? (
-                <div className="mt-4 space-y-2">
-                  {loadingJirigens ? (
-                    <SectionEmpty text={detailDictionary.jirigen_loading} />
-                  ) : jirigens.length ? (
-                    jirigens.map((jirigen) => (
-                      <div
-                        key={jirigen.id}
-                        className="flex flex-col gap-1 rounded-xl border bg-slate-50 p-3 dark:border-[#34363B] dark:bg-[#1F2023] sm:flex-row sm:items-center sm:justify-between"
-                      >
-                        <div>
-                          <div className="text-sm font-semibold text-slate-900 dark:text-slate-100">
-                            Jirigen #{jirigen.jirigenNumber}
-                          </div>
-                          <div className="text-xs text-slate-500 dark:text-slate-400">
-                            {detailDictionary.batch_id} {jirigen.batchId} •{" "}
-                            {formatDate(jirigen.productionDatetime)}
-                          </div>
-                        </div>
-                        <div className="text-sm font-medium text-slate-700 dark:text-slate-200">
-                          {Number(jirigen.volumeLiter).toLocaleString("id-ID")} L
-                        </div>
-                      </div>
-                    ))
-                  ) : (
-                    <SectionEmpty text={detailDictionary.jirigen_empty} />
-                  )}
-                </div>
-              ) : null}
-            </div>
+            <ProductionJirigenSection
+              dictionary={detailDictionary}
+              isOpen={isJirigenOpen}
+              loading={loadingJirigens}
+              jirigens={jirigens}
+              batchesCount={batches.length}
+              hasLoadedBatches={hasLoadedBatches}
+              onToggle={handleToggleJirigens}
+              onCreate={handleOpenJirigenModal}
+              onPrintBarcode={handlePrintJirigenBarcode}
+              printingBarcodeId={printingBarcodeId}
+              onOpenFilter={() => setIsJirigenFilterModalOpen(true)}
+              onRefresh={() => loadJirigens()}
+              formatDate={formatDate}
+              renderEmpty={(text) => <SectionEmpty text={text} />}
+            />
           </div>
         </div>
       )}
 
-      <Dialog open={isBatchModalOpen} onOpenChange={setIsBatchModalOpen}>
-        <DialogContent className="sm:max-w-xl">
-          <DialogHeader>
-            <DialogTitle>{detailDictionary.batch_modal_title}</DialogTitle>
-            <DialogDescription>
-              {detailDictionary.batch_modal_description}
-            </DialogDescription>
-          </DialogHeader>
+      <Modal
+        isOpen={isBatchModalOpen}
+        onClose={() => {
+          setIsBatchModalOpen(false);
+          resetBatchForm();
+        }}
+        onCancel={() => {
+          setIsBatchModalOpen(false);
+          resetBatchForm();
+        }}
+        title={
+          editingBatchId
+            ? detailDictionary.batch_modal_title_edit
+            : detailDictionary.batch_modal_title
+        }
+        width={`${isMobile ? "w-[95vw]" : "w-[920px]"}`}
+        onSubmit={handleBatchSubmit}
+        showConfirmButton={false}
+      >
+        <div className="max-h-[85vh] overflow-y-auto p-5">
+          <div className="mb-4">
+            <div className="text-sm text-slate-500 dark:text-slate-400">
+              {editingBatchId
+                ? detailDictionary.batch_modal_description_edit
+                : detailDictionary.batch_modal_description}
+            </div>
+          </div>
 
-          <form onSubmit={handleBatchSubmit} className="space-y-3">
+          <div className="space-y-3">
             <div className="space-y-2">
-              <Label htmlFor="batchNumber">{detailDictionary.batch_number}</Label>
+              <Label htmlFor="batchNumber">
+                {detailDictionary.batch_number}
+              </Label>
               <Input
                 id="batchNumber"
                 value={batchForm.batchNumber}
@@ -564,7 +850,9 @@ export default function ProductionPlanDetailMain({
             </div>
             <div className="grid gap-3 sm:grid-cols-2">
               <div className="space-y-2">
-                <Label htmlFor="batchStartDate">{detailDictionary.batch_start_date}</Label>
+                <Label htmlFor="batchStartDate">
+                  {detailDictionary.batch_start_date}
+                </Label>
                 <Input
                   id="batchStartDate"
                   type="date"
@@ -578,7 +866,9 @@ export default function ProductionPlanDetailMain({
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="batchEndDate">{detailDictionary.batch_end_date}</Label>
+                <Label htmlFor="batchEndDate">
+                  {detailDictionary.batch_end_date}
+                </Label>
                 <Input
                   id="batchEndDate"
                   type="date"
@@ -594,7 +884,9 @@ export default function ProductionPlanDetailMain({
             </div>
             <div className="grid gap-3 sm:grid-cols-2">
               <div className="space-y-2">
-                <Label htmlFor="rawMaterialVolume">{detailDictionary.batch_raw_material_volume}</Label>
+                <Label htmlFor="rawMaterialVolume">
+                  {detailDictionary.batch_raw_material_volume}
+                </Label>
                 <Input
                   id="rawMaterialVolume"
                   type="number"
@@ -645,26 +937,50 @@ export default function ProductionPlanDetailMain({
               className="w-full bg-iprimary-blue text-white hover:bg-iprimary-blue/90"
               disabled={submittingBatch}
             >
-              {submittingBatch ? detailDictionary.batch_submit_loading : detailDictionary.batch_submit}
+              {submittingBatch
+                ? editingBatchId
+                  ? detailDictionary.batch_update_loading
+                  : detailDictionary.batch_submit_loading
+                : editingBatchId
+                  ? detailDictionary.batch_update_submit
+                  : detailDictionary.batch_submit}
             </Button>
-          </form>
-        </DialogContent>
-      </Dialog>
+          </div>
+        </div>
+      </Modal>
 
-      <Dialog open={isJirigenModalOpen} onOpenChange={setIsJirigenModalOpen}>
-        <DialogContent className="sm:max-w-xl">
-          <DialogHeader>
-            <DialogTitle>{detailDictionary.jirigen_modal_title}</DialogTitle>
-            <DialogDescription>
+      <ModalFilterProductionBatches
+        isOpen={isBatchFilterModalOpen}
+        onClose={() => setIsBatchFilterModalOpen(false)}
+        onSubmit={handleApplyBatchFilters}
+        onClear={handleClearBatchFilters}
+        dictionary={detailDictionary}
+        title={detailDictionary.batch_filter_modal_title}
+      />
+
+      <Modal
+        isOpen={isJirigenModalOpen}
+        onClose={() => setIsJirigenModalOpen(false)}
+        onCancel={() => setIsJirigenModalOpen(false)}
+        title={detailDictionary.jirigen_modal_title}
+        width={`${isMobile ? "w-[95vw]" : "w-[920px]"}`}
+        onSubmit={handleJirigenSubmit}
+        showConfirmButton={false}
+      >
+        <div className="max-h-[85vh] overflow-y-auto p-5">
+          <div className="mb-4">
+            <div className="text-sm text-slate-500 dark:text-slate-400">
               {detailDictionary.jirigen_modal_description}
-            </DialogDescription>
-          </DialogHeader>
+            </div>
+          </div>
 
-          <form onSubmit={handleJirigenSubmit} className="space-y-3">
+          <div className="space-y-3">
             <div className="space-y-2">
               <Label htmlFor="batchId">{detailDictionary.jirigen_batch}</Label>
               <Select
-                value={jirigenForm.batchId ? String(jirigenForm.batchId) : undefined}
+                value={
+                  jirigenForm.batchId ? String(jirigenForm.batchId) : undefined
+                }
                 onValueChange={(value) =>
                   setJirigenForm((prev) => ({
                     ...prev,
@@ -673,7 +989,9 @@ export default function ProductionPlanDetailMain({
                 }
               >
                 <SelectTrigger id="batchId" className="w-full">
-                  <SelectValue placeholder={detailDictionary.jirigen_batch_placeholder} />
+                  <SelectValue
+                    placeholder={detailDictionary.jirigen_batch_placeholder}
+                  />
                 </SelectTrigger>
                 <SelectContent>
                   {batches.map((batch) => (
@@ -686,7 +1004,9 @@ export default function ProductionPlanDetailMain({
             </div>
             <div className="grid gap-3 sm:grid-cols-2">
               <div className="space-y-2">
-                <Label htmlFor="jirigenNumber">{detailDictionary.jirigen_number}</Label>
+                <Label htmlFor="jirigenNumber">
+                  {detailDictionary.jirigen_number}
+                </Label>
                 <Input
                   id="jirigenNumber"
                   type="number"
@@ -701,7 +1021,9 @@ export default function ProductionPlanDetailMain({
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="volumeLiter">{detailDictionary.jirigen_volume_liter}</Label>
+                <Label htmlFor="volumeLiter">
+                  {detailDictionary.jirigen_volume_liter}
+                </Label>
                 <Input
                   id="volumeLiter"
                   type="number"
@@ -717,7 +1039,9 @@ export default function ProductionPlanDetailMain({
               </div>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="productionDatetime">{detailDictionary.jirigen_production_datetime}</Label>
+              <Label htmlFor="productionDatetime">
+                {detailDictionary.jirigen_production_datetime}
+              </Label>
               <Input
                 id="productionDatetime"
                 type="datetime-local"
@@ -731,7 +1055,9 @@ export default function ProductionPlanDetailMain({
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="jirigenNotes">{detailDictionary.jirigen_notes}</Label>
+              <Label htmlFor="jirigenNotes">
+                {detailDictionary.jirigen_notes}
+              </Label>
               <Textarea
                 id="jirigenNotes"
                 value={jirigenForm.notes}
@@ -749,11 +1075,74 @@ export default function ProductionPlanDetailMain({
               className="w-full bg-iprimary-blue text-white hover:bg-iprimary-blue/90"
               disabled={submittingJirigen || batches.length === 0}
             >
-              {submittingJirigen ? detailDictionary.jirigen_submit_loading : detailDictionary.jirigen_submit}
+              {submittingJirigen
+                ? detailDictionary.jirigen_submit_loading
+                : detailDictionary.jirigen_submit}
             </Button>
-          </form>
+          </div>
+        </div>
+      </Modal>
+
+      <Dialog
+        open={isBarcodePreviewOpen}
+        onOpenChange={(open) => {
+          setIsBarcodePreviewOpen(open);
+          if (!open && barcodePreviewUrl) {
+            URL.revokeObjectURL(barcodePreviewUrl);
+            setBarcodePreviewUrl(null);
+          }
+        }}
+      >
+        <DialogContent className="flex h-[85vh] max-w-5xl flex-col" showCloseButton>
+          <DialogHeader>
+            <DialogTitle>Preview Barcode Jirigen</DialogTitle>
+            <DialogDescription>
+              Preview PDF barcode berdasarkan production jirigen terpilih.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="flex justify-end">
+            <Button
+              type="button"
+              onClick={handlePrintBarcodePreview}
+              disabled={loadingBarcodePreview || !barcodePreviewUrl}
+              className="bg-iprimary-blue text-white hover:bg-iprimary-blue/90"
+            >
+              Print PDF
+            </Button>
+          </div>
+
+          <div className="min-h-0 flex-1 overflow-hidden rounded-lg border bg-slate-50 dark:border-[#34363B] dark:bg-[#1F2023]">
+            {loadingBarcodePreview ? (
+              <div className="flex h-full min-h-[60vh] items-center justify-center gap-3 text-sm text-slate-500 dark:text-slate-300">
+                <Loader2 className="h-5 w-5 animate-spin" />
+                Memuat preview barcode...
+              </div>
+            ) : barcodePreviewUrl ? (
+              <iframe
+                ref={barcodePreviewFrameRef}
+                src={barcodePreviewUrl}
+                title="Preview Barcode PDF"
+                className="h-full min-h-[60vh] w-full"
+              />
+            ) : (
+              <div className="flex h-full min-h-[60vh] items-center justify-center text-sm text-slate-500 dark:text-slate-300">
+                Preview PDF belum tersedia.
+              </div>
+            )}
+          </div>
         </DialogContent>
       </Dialog>
+
+      <ModalFilterProductionJirigen
+        isOpen={isJirigenFilterModalOpen}
+        onClose={() => setIsJirigenFilterModalOpen(false)}
+        onSubmit={handleApplyJirigenFilters}
+        onClear={handleClearJirigenFilters}
+        dictionary={detailDictionary}
+        title={detailDictionary.jirigen_filter_modal_title}
+        batches={batches}
+      />
     </div>
   );
 }

@@ -2,6 +2,7 @@ import {
   IAddOrUpdateProductionPlan,
   IAddProductionBatch,
   IAddProductionJirigen,
+  IUpdateProductionBatch,
 } from "@/types/production";
 import { BaseHttpService } from "./base.service";
 
@@ -47,8 +48,26 @@ export class ProductionPlanService extends BaseHttpService {
     return response.data;
   }
 
+  async getProductionBatchesByPlanID(planId: string, queryParams?: {}) {
+    const response = await this.httpClient.get(
+      `/production-batches/by-plan/${planId}`,
+      {
+        params: queryParams,
+      },
+    );
+    return response.data;
+  }
+
   async createProductionBatch(payload: IAddProductionBatch) {
     const response = await this.httpClient.post("/production-batches", payload);
+    return response.data;
+  }
+
+  async updateProductionBatch(id: string, payload: IUpdateProductionBatch) {
+    const response = await this.httpClient.patch(
+      `/production-batches/${id}`,
+      payload,
+    );
     return response.data;
   }
 
@@ -60,9 +79,16 @@ export class ProductionPlanService extends BaseHttpService {
   }
 
   async createProductionJirigen(payload: IAddProductionJirigen) {
-    const response = await this.httpClient.post(
-      "/production-jirigen",
-      payload,
+    const response = await this.httpClient.post("/production-jirigen", payload);
+    return response.data;
+  }
+
+  async printProductionJirigenBarcode(id: string) {
+    const response = await this.httpClient.get(
+      `/production-jirigen/${id}/print-barcode`,
+      {
+        responseType: "blob",
+      },
     );
     return response.data;
   }

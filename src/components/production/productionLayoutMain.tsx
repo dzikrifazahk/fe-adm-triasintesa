@@ -22,6 +22,7 @@ import { DateRangeCustom } from "../custom/dateRangeCustom";
 import { getDictionary } from "../../../get-dictionary";
 import { IProductionPlan } from "@/types/production";
 import { Badge } from "../ui/badge";
+import { useLoading } from "@/context/loadingContext";
 
 export default function ProductionLayoutMain({
   children,
@@ -31,6 +32,7 @@ export default function ProductionLayoutMain({
   dictionary: Awaited<ReturnType<typeof getDictionary>>["production_page_dic"];
 }) {
   const productionPlanDictionary = dictionary.production_plan;
+  const { setIsLoading } = useLoading();
   /* ---------- mobile detection ---------- */
   const { isMobile } = useContext(MobileContext);
 
@@ -57,6 +59,7 @@ export default function ProductionLayoutMain({
   /* ---------- skip initial render refs ---------- */
   const isFirstSearchRender = useRef(true);
   const isFirstDateRender = useRef(true);
+  const previousPathnameRef = useRef(pathname);
 
   /* ---------- API calls ---------- */
   const getData = async (
@@ -108,6 +111,15 @@ export default function ProductionLayoutMain({
   }, []);
 
   useEffect(() => {
+    const previousPathname = previousPathnameRef.current;
+    const isReturningFromForm =
+      previousPathname.includes("/form-production-plan") &&
+      !pathname.includes("/form-production-plan");
+
+    previousPathnameRef.current = pathname;
+
+    if (!isReturningFromForm) return;
+
     getData("", page, pageSize, search, selectedDateRange, filterPayload);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pathname]);
@@ -152,10 +164,12 @@ export default function ProductionLayoutMain({
   const locale = pathname.split("/")[1] || "id";
 
   const handleCreateProductionPlan = () => {
+    setIsLoading(true);
     router.push(`/${locale}/dashboard/production/form-production-plan`);
   };
 
   const handleEditProject = (id: string) => {
+    setIsLoading(true);
     router.push(`/${locale}/dashboard/production/${id}/form-production-plan`);
   };
 
@@ -247,7 +261,10 @@ export default function ProductionLayoutMain({
               <>
                 {[
                   ["#D1E0FF", productionPlanDictionary.layout.status_planned],
-                  ["#FFBE58", productionPlanDictionary.layout.status_in_progress],
+                  [
+                    "#FFBE58",
+                    productionPlanDictionary.layout.status_in_progress,
+                  ],
                   ["#21EB21", productionPlanDictionary.layout.status_completed],
                   ["#FF0000", productionPlanDictionary.layout.status_cancel],
                 ].map(([clr, lbl]) => (
@@ -256,7 +273,9 @@ export default function ProductionLayoutMain({
                       className="h-4 w-2"
                       style={{ background: clr, borderColor: clr }}
                     />
-                    <span className="text-sm text-slate-700 dark:text-slate-200">{lbl}</span>
+                    <span className="text-sm text-slate-700 dark:text-slate-200">
+                      {lbl}
+                    </span>
                   </div>
                 ))}
               </>
@@ -292,7 +311,9 @@ export default function ProductionLayoutMain({
                     onChange={setSelectedDateRange}
                     widthButton="w-full"
                     borderColor="border border-iprimary-blue"
-                    placeHolder={productionPlanDictionary.layout.date_placeholder}
+                    placeHolder={
+                      productionPlanDictionary.layout.date_placeholder
+                    }
                     className="cursor-pointer"
                   />
                 </>

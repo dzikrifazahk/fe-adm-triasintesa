@@ -56,6 +56,8 @@ export interface IAddProductionBatch {
   notes: string;
 }
 
+export interface IUpdateProductionBatch extends IAddProductionBatch {}
+
 export interface IProductionJirigen {
   id: number;
   batchId: number;
