@@ -41,10 +41,7 @@ import {
 import Swal from "sweetalert2";
 import axios from "axios";
 import {
-  IFlashCashRecord,
-  IInvoiceRecord,
-  IManPowerRecord,
-  IReimbursementRecord,
+  IFinancialRecordItem,
 } from "@/types/financial-record";
 
 type Dictionary = Awaited<
@@ -255,44 +252,6 @@ function toInt(value: string, fallback = 0): number {
   return parsed;
 }
 
-function mapInvoiceStatusToWorkflow(
-  status: IInvoiceRecord["status"],
-): { stage: FinancialStage; financialStatus: FinancialStatus } {
-  if (status === "paid") return { stage: "paid", financialStatus: "paid" };
-  if (status === "issued" || status === "partial_paid" || status === "overdue") {
-    return { stage: "payment_request", financialStatus: "ready_to_pay" };
-  }
-  return { stage: "submission", financialStatus: "need_review" };
-}
-
-function mapManPowerStatusToWorkflow(
-  status: IManPowerRecord["status"],
-): { stage: FinancialStage; financialStatus: FinancialStatus } {
-  if (status === "paid") return { stage: "paid", financialStatus: "paid" };
-  if (status === "approved") {
-    return { stage: "payment_request", financialStatus: "ready_to_pay" };
-  }
-  if (status === "rejected") {
-    return { stage: "submission", financialStatus: "waiting_budget" };
-  }
-  return { stage: "submission", financialStatus: "need_review" };
-}
-
-function mapReimbursementStatusToWorkflow(
-  status: IReimbursementRecord["status"],
-): { stage: FinancialStage; financialStatus: FinancialStatus } {
-  if (status === "pending_director_approval") {
-    return { stage: "payment_request", financialStatus: "ready_to_pay" };
-  }
-  if (status === "approved") {
-    return { stage: "paid", financialStatus: "paid" };
-  }
-  if (status === "rejected") {
-    return { stage: "submission", financialStatus: "waiting_budget" };
-  }
-  return { stage: "submission", financialStatus: "need_review" };
-}
-
 export default function FinancialRecordMain({ dictionary }: Props) {
   const copy = dictionary;
   const [activeTab, setActiveTab] = useState<FinancialStage>("submission");
@@ -309,102 +268,28 @@ export default function FinancialRecordMain({ dictionary }: Props) {
   const deferredSearchQuery = useDeferredValue(searchQuery);
 
   async function loadRecords() {
-    const [flashCashRes, invoicesRes, manPowerRes, reimbursementRes] =
-      await Promise.all([
-        financialRecordService.getFlashCash({ page: 1, limit: 100 }),
-        financialRecordService.getInvoices({ page: 1, limit: 100 }),
-        financialRecordService.getManPowerRecords({ page: 1, limit: 100 }),
-        financialRecordService.getReimbursements({ page: 1, limit: 100 }),
-      ]);
-
-    const flashCashRows = unwrapList<IFlashCashRecord>(flashCashRes).map((row) => {
-      const approved = Boolean(row.approvedAt);
-      const stage: FinancialStage = approved ? "paid" : "submission";
-      const financialStatus: FinancialStatus = approved
-        ? "paid"
-        : row.requiresApproval
-          ? "need_review"
-          : "waiting_budget";
-      return {
-        id: `FC-${row.id}`,
-        source: "flash_cash" as const,
-        sourceId: row.id,
-        title: row.description || `Flash Cash ${row.category}`,
-        vendor: "Flash Cash",
-        category: `Flash Cash / ${row.category}`,
-        amount: Number(row.amount || 0),
-        date: row.transactionDate,
-        stage,
-        status: financialStatus,
-        notes: row.description || "",
-        priority: getPriorityFromAmount(Number(row.amount || 0)),
-        createdBy: row.approvedBy || "Finance",
-      };
+    const financialRecordsRes = await financialRecordService.getFinancialRecords({
+      page: 1,
+      limit: 100,
     });
 
-    const invoiceRows = unwrapList<IInvoiceRecord>(invoicesRes).map((row) => {
-      const workflow = mapInvoiceStatusToWorkflow(row.status);
-      return {
-        id: `INV-${row.id}`,
-        source: "invoice" as const,
-        sourceId: row.id,
-        title: `Invoice ${row.invoiceNumber}`,
-        vendor: `Customer #${row.customerId}`,
-        category: "Invoice",
-        amount: Number(row.grandTotal || 0),
-        date: row.invoiceDate,
-        stage: workflow.stage,
-        status: workflow.financialStatus,
-        notes: row.notes || "",
-        priority: getPriorityFromAmount(Number(row.grandTotal || 0)),
-        createdBy: "Sales",
-      };
-    });
+    const rows = unwrapList<IFinancialRecordItem>(financialRecordsRes).map((row) => ({
+      id: row.id,
+      source: row.source,
+      sourceId: row.sourceId,
+      title: row.title,
+      vendor: row.vendor,
+      category: row.category,
+      amount: Number(row.amount || 0),
+      date: row.date,
+      stage: row.stage,
+      status: row.status,
+      notes: row.notes || "",
+      priority: row.priority || getPriorityFromAmount(Number(row.amount || 0)),
+      createdBy: row.createdBy,
+    }));
 
-    const manPowerRows = unwrapList<IManPowerRecord>(manPowerRes).map((row) => {
-      const workflow = mapManPowerStatusToWorkflow(row.status);
-      return {
-        id: `MP-${row.id}`,
-        source: "man_power" as const,
-        sourceId: row.id,
-        title: row.description || "Man Power",
-        vendor: "Man Power",
-        category: "Man Power",
-        amount: Number(row.amount || 0),
-        date: row.recordDate,
-        stage: workflow.stage,
-        status: workflow.financialStatus,
-        notes: row.notes || "",
-        priority: getPriorityFromAmount(Number(row.amount || 0)),
-        createdBy: "HR/GA",
-      };
-    });
-
-    const reimbursementRows = unwrapList<IReimbursementRecord>(
-      reimbursementRes,
-    ).map((row) => {
-      const workflow = mapReimbursementStatusToWorkflow(row.status);
-      return {
-        id: `REIM-${row.id}`,
-        source: "reimbursement" as const,
-        sourceId: row.id,
-        title: row.description || "Reimbursement",
-        vendor: row.requestedBy || "Employee",
-        category: `Reimbursement / ${row.category}`,
-        amount: Number(row.amount || 0),
-        date: row.expenseDate,
-        stage: workflow.stage,
-        status: workflow.financialStatus,
-        notes: row.rejectionReason || "",
-        priority: getPriorityFromAmount(Number(row.amount || 0)),
-        createdBy: row.requestedBy || "Employee",
-      };
-    });
-
-    setRecords(
-      [...flashCashRows, ...invoiceRows, ...manPowerRows, ...reimbursementRows]
-        .sort((a, b) => b.date.localeCompare(a.date)),
-    );
+    setRecords(rows.sort((a, b) => b.date.localeCompare(a.date)));
   }
 
   useEffect(() => {

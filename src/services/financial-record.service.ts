@@ -5,6 +5,11 @@ export class FinancialRecordService extends BaseHttpService {
     super();
   }
 
+  async getFinancialRecords(queryParams: Record<string, unknown> = {}) {
+    const response = await this.httpClient.get("/financial-records", { params: queryParams });
+    return response.data;
+  }
+
   async getFlashCash(queryParams: Record<string, unknown> = {}) {
     const response = await this.httpClient.get("/cash-flow", { params: queryParams });
     return response.data;
@@ -31,42 +36,42 @@ export class FinancialRecordService extends BaseHttpService {
   }
 
   async getReimbursements(queryParams: Record<string, unknown> = {}) {
-    const response = await this.httpClient.get("/expenses", { params: queryParams });
+    const response = await this.httpClient.get("/reimbursements", { params: queryParams });
     return response.data;
   }
 
   async createReimbursement(payload: Record<string, unknown>) {
-    const response = await this.httpClient.post("/expenses", payload);
+    const response = await this.httpClient.post("/reimbursements", payload);
     return response.data;
   }
 
   async updateReimbursement(id: number, payload: Record<string, unknown>) {
-    const response = await this.httpClient.patch(`/expenses/${id}`, payload);
+    const response = await this.httpClient.patch(`/reimbursements/${id}`, payload);
     return response.data;
   }
 
   async deleteReimbursement(id: number) {
-    const response = await this.httpClient.delete(`/expenses/${id}`);
+    const response = await this.httpClient.delete(`/reimbursements/${id}`);
     return response.data;
   }
 
   async approveReimbursementByStaff(id: number) {
-    const response = await this.httpClient.post(`/expenses/${id}/approve-staff`);
+    const response = await this.httpClient.post(`/reimbursements/${id}/approve-staff`);
     return response.data;
   }
 
   async approveReimbursementByDirector(id: number) {
-    const response = await this.httpClient.post(`/expenses/${id}/approve-director`);
+    const response = await this.httpClient.post(`/reimbursements/${id}/approve-director`);
     return response.data;
   }
 
   async rejectReimbursement(id: number, reason: string) {
-    const response = await this.httpClient.post(`/expenses/${id}/reject`, { reason });
+    const response = await this.httpClient.post(`/reimbursements/${id}/reject`, { reason });
     return response.data;
   }
 
   async uploadReimbursementReceipt(id: number, payload: FormData) {
-    const response = await this.httpClient.post(`/expenses/${id}/upload-receipt`, payload, {
+    const response = await this.httpClient.post(`/reimbursements/${id}/upload-receipt`, payload, {
       headers: {
         "Content-Type": "multipart/form-data",
       },

@@ -74,3 +74,22 @@ export interface IManPowerRecord {
   paidAt?: string;
   rejectionReason?: string;
 }
+
+export interface IFinancialRecordItem {
+  id: string;
+  ledgerId: number;
+  source: "flash_cash" | "invoice" | "man_power" | "reimbursement";
+  sourceId: number;
+  sourceStatus?: string | null;
+  title: string;
+  vendor: string;
+  category: string;
+  amount: number;
+  date: string;
+  stage: "submission" | "payment_request" | "paid";
+  status: "need_review" | "waiting_budget" | "ready_to_pay" | "paid";
+  notes: string;
+  priority: "high" | "medium" | "low";
+  createdBy: string;
+  sourceMeta?: Record<string, unknown> | null;
+}
