@@ -1,7 +1,7 @@
 export interface IAddOrUpdateInventoryLocation {
   locationCode: string;
   locationName: string;
-  status: string;
+  status: "active" | "inactive";
   notes: string;
 }
 
@@ -16,6 +16,6 @@ export interface IInventoryLocations {
   id: number;
   locationCode: string;
   locationName: string;
-  status: string;
+  status: "active" | "inactive";
   notes: string;
 }

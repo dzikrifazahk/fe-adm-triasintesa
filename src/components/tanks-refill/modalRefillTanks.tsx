@@ -2,7 +2,7 @@
 
 import { Modal } from "@/components/custom/modal";
 import { MobileContext } from "@/hooks/use-mobile-ssr";
-import { ITank } from "@/types/tanks";
+import { ITank, ITankUpsert, TankType } from "@/types/tanks";
 import { useContext, useEffect, useMemo, useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -23,6 +23,14 @@ type Props = {
 };
 
 const statusOptions = ["available", "in_use", "maintenance"];
+const tankTypeOptions = [
+  { value: "raw_material", label: "Bahan Baku" },
+  { value: "softener", label: "Softener" },
+  { value: "output_water", label: "Air Hasil" },
+] as const;
+
+const getTankTypeLabel = (value?: string | null) =>
+  tankTypeOptions.find((item) => item.value === value)?.label || "-";
 
 export function ModalUpsertTanks({
   isOpen,
@@ -40,6 +48,7 @@ export function ModalUpsertTanks({
   const [tankName, setTankName] = useState("");
   const [totalCapacity, setTotalCapacity] = useState(0);
   const [location, setLocation] = useState("");
+  const [tankType, setTankType] = useState<TankType | "">("");
   const [status, setStatus] = useState("");
   const [notes, setNotes] = useState("");
   const [isDetailEditing, setIsDetailEditing] = useState(false);
@@ -50,6 +59,7 @@ export function ModalUpsertTanks({
       setTankName(detailData?.tankName ?? "");
       setTotalCapacity(Number(detailData?.totalCapacity) || 0);
       setLocation(detailData?.location ?? "");
+      setTankType((detailData?.tankType ?? "") as TankType | "");
       setStatus(detailData?.status ?? "");
       setNotes(detailData?.notes ?? "");
       setIsDetailEditing(false);
@@ -86,6 +96,7 @@ export function ModalUpsertTanks({
     setTankName("");
     setTotalCapacity(0);
     setLocation("");
+    setTankType("");
     setStatus("");
     setNotes("");
     setIsDetailEditing(false);
@@ -99,11 +110,24 @@ export function ModalUpsertTanks({
       return;
     }
 
-    const payload = {
+    if (!tankType) {
+      Swal.fire({
+        icon: "warning",
+        title: "Tipe tank wajib dipilih",
+        toast: true,
+        position: "top-right",
+        showConfirmButton: false,
+        timer: 2500,
+      });
+      return;
+    }
+
+    const payload: ITankUpsert = {
       tankCode,
       tankName,
       totalCapacity,
       location,
+      tankType,
       status,
       notes,
     };
@@ -226,6 +250,9 @@ export function ModalUpsertTanks({
                 >
                   {(status || detailData?.status || "-").replaceAll("_", " ")}
                 </span>
+                <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-medium text-slate-600">
+                  {getTankTypeLabel(tankType || detailData?.tankType)}
+                </span>
               </div>
 
               <div className="relative h-[240px] overflow-hidden rounded-2xl border border-slate-200 bg-slate-100">
@@ -262,6 +289,10 @@ export function ModalUpsertTanks({
                 <InfoCard
                   label="Location"
                   value={location || detailData?.location || "-"}
+                />
+                <InfoCard
+                  label="Tipe"
+                  value={getTankTypeLabel(tankType || detailData?.tankType)}
                 />
                 <InfoCard
                   label="Status"
@@ -317,7 +348,26 @@ export function ModalUpsertTanks({
               />
             </Field>
 
-            <Field label="Status" required className="md:col-span-2">
+            <Field label="Tipe" required>
+              <select
+                value={tankType}
+                onChange={(e) =>
+                  setTankType((e.target.value || "") as TankType | "")
+                }
+                className="h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                disabled={isReadOnly}
+                required
+              >
+                <option value="">Pilih tipe tank</option>
+                {tankTypeOptions.map((item) => (
+                  <option key={item.value} value={item.value}>
+                    {item.label}
+                  </option>
+                ))}
+              </select>
+            </Field>
+
+            <Field label="Status" required>
               <select
                 value={status}
                 onChange={(e) => setStatus(e.target.value)}

@@ -166,7 +166,7 @@ export default function InventoryMain({ dictionary }: { dictionary: Dictionary }
     const response = await inventoryService.getInvLocations({
       page: 1,
       limit: 200,
-      status: "aktif",
+      status: "active",
     });
     const payload = unwrapData<ListPayload<IInventoryLocation>>(response);
     setLocations(Array.isArray(payload?.data) ? payload.data : []);

@@ -12,8 +12,8 @@ import {
   DropdownMenuTrigger,
 } from "@radix-ui/react-dropdown-menu";
 import { ColumnDef } from "@tanstack/react-table";
-import { ArrowUpDown, Check, MoreHorizontal, X } from "lucide-react";
-import { FaEye, FaLock, FaPencil, FaTrash } from "react-icons/fa6";
+import { ArrowUpDown, MoreHorizontal } from "lucide-react";
+import { FaEye, FaPencil, FaTrash } from "react-icons/fa6";
 import { getDictionary } from "../../../../get-dictionary";
 import { ITank } from "@/types/tanks";
 import { format } from "date-fns";
@@ -23,6 +23,19 @@ type childProps = {
   editData: (id: string) => void;
   viewDetailData: (id: string) => void;
   dictionary: Awaited<ReturnType<typeof getDictionary>>["settings_tanks"];
+};
+
+const getTankTypeLabel = (value?: string | null) => {
+  switch (value) {
+    case "raw_material":
+      return "Bahan Baku";
+    case "softener":
+      return "Softener";
+    case "output_water":
+      return "Air Hasil";
+    default:
+      return "-";
+  }
 };
 
 export const columns = (props: childProps): ColumnDef<ITank>[] => [
@@ -103,6 +116,21 @@ export const columns = (props: childProps): ColumnDef<ITank>[] => [
           onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
         >
           {props.dictionary.column.location}
+          <ArrowUpDown className="ml-2 h-4 w-4" />
+        </Button>
+      );
+    },
+  },
+  {
+    id: "Tipe",
+    accessorFn: (row) => getTankTypeLabel(row.tankType),
+    header: ({ column }) => {
+      return (
+        <Button
+          variant="ghost"
+          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+        >
+          Tipe
           <ArrowUpDown className="ml-2 h-4 w-4" />
         </Button>
       );
