@@ -115,6 +115,8 @@ function normalizeTemplateParameters(parameters: unknown): TemplateParameter[] {
 
 function getParameterFillStatus(inspection: IQcInspection): {
   label: string;
+  filled: number;
+  unfilled: number;
   isComplete: boolean | null;
 } {
   const hasTemplateData =
@@ -126,12 +128,12 @@ function getParameterFillStatus(inspection: IQcInspection): {
   const results = inspection.results;
 
   if (!hasTemplateData || !Array.isArray(results)) {
-    return { label: "-", isComplete: null };
+    return { label: "-", filled: 0, unfilled: 0, isComplete: null };
   }
 
   const total = templateParameters.length;
   if (total === 0) {
-    return { label: "0/0", isComplete: true };
+    return { label: "Terisi 0, Belum 0", filled: 0, unfilled: 0, isComplete: true };
   }
 
   const filled = templateParameters.filter((item) => {
@@ -139,9 +141,12 @@ function getParameterFillStatus(inspection: IQcInspection): {
     return Boolean(row?.result?.trim());
   }).length;
 
+  const unfilled = Math.max(total - filled, 0);
   return {
-    label: `${filled}/${total}`,
-    isComplete: filled === total,
+    label: `Terisi ${filled}, Belum ${unfilled}`,
+    filled,
+    unfilled,
+    isComplete: unfilled === 0,
   };
 }
 
@@ -304,22 +309,6 @@ export default function QcInspectionList({
         return;
       }
 
-      if (
-        selectedBatch.productionStatus === "qc_approved" ||
-        selectedBatch.hasApprovedQc
-      ) {
-        Swal.fire({
-          icon: "info",
-          title: "Batch ini sudah memiliki QC approved",
-          toast: true,
-          position: "top-right",
-          timer: 2200,
-          showConfirmButton: false,
-        });
-        clearCreateQueryParams();
-        return;
-      }
-
       setModalOpen(true);
       clearCreateQueryParams();
     };
@@ -424,6 +413,21 @@ export default function QcInspectionList({
       } finally {
         setIsLoading(false);
       }
+    });
+  };
+
+  const handleResubmit = (inspection: IQcInspection) => {
+    Swal.fire({
+      icon: "question",
+      text: "Ajukan ulang inspection ini?",
+      showCancelButton: true,
+      confirmButtonText: "Ya, ajukan ulang",
+      cancelButtonText: "Batal",
+    }).then((result) => {
+      if (!result.isConfirmed) return;
+      router.push(
+        `/${locale}/dashboard/qc/inspections?action=create&batchId=${inspection.batchId}`
+      );
     });
   };
 
@@ -630,20 +634,33 @@ export default function QcInspectionList({
                                 Detail
                               </Button>
                             </Link>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => openEdit(item)}
-                            >
-                              Edit
-                            </Button>
-                            <Button
-                              variant="destructive"
-                              size="sm"
-                              onClick={() => handleDelete(item.id)}
-                            >
-                              Hapus
-                            </Button>
+                            {item.finalStatus === "pending" && (
+                              <>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => openEdit(item)}
+                                >
+                                  Edit
+                                </Button>
+                                <Button
+                                  variant="destructive"
+                                  size="sm"
+                                  onClick={() => handleDelete(item.id)}
+                                >
+                                  Hapus
+                                </Button>
+                              </>
+                            )}
+                            {item.finalStatus === "rejected" &&
+                              !item.hasNewerInspectionInBatch && (
+                              <Button
+                                size="sm"
+                                onClick={() => handleResubmit(item)}
+                              >
+                                Ajukan Ulang
+                              </Button>
+                            )}
                           </div>
                         </TableCell>
                       </TableRow>

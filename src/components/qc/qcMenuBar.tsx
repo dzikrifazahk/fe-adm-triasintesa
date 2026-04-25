@@ -14,7 +14,6 @@ interface Props {
 const menuItems = [
   { label: "QC Inspections", to: "/dashboard/qc/inspections" },
   { label: "QC Templates", to: "/dashboard/qc/templates" },
-  { label: "QC Reject Logs", to: "/dashboard/qc/reject-logs" },
   { label: "COA Certificates", to: "/dashboard/qc/coa-certificates" },
 ];
 

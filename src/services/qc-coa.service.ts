@@ -78,6 +78,13 @@ export class QcCoaService extends BaseHttpService {
     return response.data;
   }
 
+  async resubmitQcInspection(id: string) {
+    const response = await this.httpClient.post(
+      `/qc-coa/qc-inspections/${id}/resubmit`,
+    );
+    return response.data;
+  }
+
   async getQcTemplates(queryParams?: QueryParams) {
     const response = await this.httpClient.get("/qc-coa/qc-templates", {
       params: queryParams,
@@ -111,43 +118,6 @@ export class QcCoaService extends BaseHttpService {
   async deleteQcTemplate(id: string) {
     const response = await this.httpClient.delete(
       `/qc-coa/qc-templates/${id}`,
-    );
-    return response.data;
-  }
-
-  async getQcRejectLogs(queryParams?: QueryParams) {
-    const response = await this.httpClient.get("/qc-coa/qc-reject-logs", {
-      params: queryParams,
-    });
-    return response.data;
-  }
-
-  async getQcRejectLog(id: string) {
-    const response = await this.httpClient.get(
-      `/qc-coa/qc-reject-logs/${id}`,
-    );
-    return response.data;
-  }
-
-  async createQcRejectLog(payload: unknown) {
-    const response = await this.httpClient.post(
-      "/qc-coa/qc-reject-logs",
-      payload,
-    );
-    return response.data;
-  }
-
-  async updateQcRejectLog(id: string, payload: unknown) {
-    const response = await this.httpClient.patch(
-      `/qc-coa/qc-reject-logs/${id}`,
-      payload,
-    );
-    return response.data;
-  }
-
-  async deleteQcRejectLog(id: string) {
-    const response = await this.httpClient.delete(
-      `/qc-coa/qc-reject-logs/${id}`,
     );
     return response.data;
   }

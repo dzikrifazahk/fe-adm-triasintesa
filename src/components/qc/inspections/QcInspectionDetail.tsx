@@ -24,7 +24,7 @@ import {
 } from "@/components/ui/table";
 import { Modal } from "@/components/custom/modal";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 
 type Dictionary = Awaited<
   ReturnType<typeof getDictionary>
@@ -164,6 +164,7 @@ export default function QcInspectionDetail({
 }) {
   const { setIsLoading } = useLoading();
   const pathname = usePathname();
+  const router = useRouter();
   const locale = pathname.split("/")[1] || "";
   const [inspection, setInspection] = useState<IQcInspection | null>(null);
   const [approvalStatus, setApprovalStatus] = useState<IQcApprovalStatus | null>(null);
@@ -245,12 +246,25 @@ export default function QcInspectionDetail({
     field: "result" | "notes",
     value: string
   ) => {
+    if (inspection?.finalStatus !== "pending") return;
     setResultRows((prev) =>
       prev.map((row, idx) => (idx === index ? { ...row, [field]: value } : row))
     );
   };
 
   const handleSaveResults = async () => {
+    if (inspection?.finalStatus !== "pending") {
+      Swal.fire({
+        icon: "warning",
+        title: "Hasil parameter hanya bisa diubah saat status pending",
+        toast: true,
+        position: "top-right",
+        timer: 2200,
+        showConfirmButton: false,
+      });
+      return;
+    }
+
     if (resultRows.some((row) => !row.result.trim())) {
       Swal.fire({
         icon: "warning",
@@ -399,6 +413,12 @@ export default function QcInspectionDetail({
     }
   };
 
+  const handleResubmit = (batchId: number) => {
+    router.push(
+      `/${locale}/dashboard/qc/inspections?action=create&batchId=${batchId}`
+    );
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center py-20">
@@ -414,6 +434,8 @@ export default function QcInspectionDetail({
       </div>
     );
   }
+
+  const canEditResults = inspection.finalStatus === "pending";
 
   return (
     <div className="flex w-full flex-col gap-5 pb-10">
@@ -460,13 +482,15 @@ export default function QcInspectionDetail({
       <SectionCard
         title="Hasil QC"
         action={
-          <Button
-            size="sm"
-            className="h-8 bg-slate-900 px-4 text-xs font-medium text-white hover:bg-slate-700 dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-slate-300"
-            onClick={handleSaveResults}
-          >
-            Simpan Hasil
-          </Button>
+          canEditResults ? (
+            <Button
+              size="sm"
+              className="h-8 bg-slate-900 px-4 text-xs font-medium text-white hover:bg-slate-700 dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-slate-300"
+              onClick={handleSaveResults}
+            >
+              Simpan Hasil
+            </Button>
+          ) : null
         }
       >
         {/* overflow-x-auto agar tabel bisa scroll horizontal di layar kecil */}
@@ -512,6 +536,7 @@ export default function QcInspectionDetail({
                         value={row.result}
                         placeholder="Isi hasil..."
                         className="h-8 border-slate-200 bg-white text-sm focus-visible:ring-1 focus-visible:ring-slate-400 dark:border-slate-600 dark:bg-slate-800"
+                        disabled={!canEditResults}
                         onChange={(e) =>
                           handleUpdateResult(index, "result", e.target.value)
                         }
@@ -522,6 +547,7 @@ export default function QcInspectionDetail({
                         value={row.notes ?? ""}
                         placeholder="Catatan..."
                         className="h-8 border-slate-200 bg-white text-sm focus-visible:ring-1 focus-visible:ring-slate-400 dark:border-slate-600 dark:bg-slate-800"
+                        disabled={!canEditResults}
                         onChange={(e) =>
                           handleUpdateResult(index, "notes", e.target.value)
                         }
@@ -549,7 +575,7 @@ export default function QcInspectionDetail({
         title="Status Approval"
         action={
           <div className="flex gap-2">
-            {inspection.finalStatus !== "rejected" && !inspection.pjtQcApproved && (
+            {inspection.finalStatus === "pending" && !inspection.pjtQcApproved && (
               <Button
                 size="sm"
                 className="h-8 bg-slate-900 px-4 text-xs font-medium text-white hover:bg-slate-700 dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-slate-300"
@@ -559,7 +585,7 @@ export default function QcInspectionDetail({
                 Approve PJT QC
               </Button>
             )}
-            {inspection.finalStatus !== "approved" && (
+            {inspection.finalStatus === "pending" && (
               <Button
                 size="sm"
                 variant="destructive"
@@ -579,6 +605,16 @@ export default function QcInspectionDetail({
                   Lihat COA
                 </Button>
               </Link>
+            )}
+            {inspection.finalStatus === "rejected" &&
+              !inspection.hasNewerInspectionInBatch && (
+              <Button
+                size="sm"
+                className="h-8 px-4 text-xs font-medium"
+                onClick={() => handleResubmit(inspection.batchId)}
+              >
+                Ajukan Ulang
+              </Button>
             )}
           </div>
         }

@@ -26,27 +26,16 @@ export interface IQcInspection {
   interpretationNotes?: string;
   digitalSignaturePjtQc?: string;
   pjtQcApproved?: boolean;
-  pjtQcApprovedBy?: number;
+  pjtQcApprovedBy?: string;
   pjtQcApprovedAt?: string;
+  resubmittedAt?: string;
+  resubmittedBy?: string;
+  hasNewerInspectionInBatch?: boolean;
   finalStatus: QcFinalStatus;
   rejectionReason?: string;
   batch?: IProductionBatch;
   template?: IQcTemplate;
   results?: IQcInspectionResult[];
-}
-
-export interface IQcRejectLog {
-  id: number;
-  batchId: number;
-  qcInspectionId: number;
-  rejectDate: string;
-  rejectStage: "bahan_baku" | "proses_1" | "proses_2" | "hasil_akhir";
-  reason: string;
-  quantityRejected: number;
-  rejectedBy: number;
-  notes?: string;
-  batch?: IProductionBatch;
-  qcInspection?: IQcInspection;
 }
 
 export interface IQcApprovalStatus {
@@ -56,7 +45,7 @@ export interface IQcApprovalStatus {
   approvalStages: {
     pjtQc: {
       approved: boolean;
-      approvedBy?: number;
+      approvedBy?: string;
       approvedAt?: string;
     };
   };
