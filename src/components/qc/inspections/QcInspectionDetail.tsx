@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import Swal from "sweetalert2";
 import { getDictionary } from "../../../../get-dictionary";
 import { useLoading } from "@/context/loadingContext";
@@ -10,7 +10,6 @@ import {
   IQcInspection,
   IQcInspectionResult,
 } from "@/types/qc-coa";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -24,6 +23,8 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Modal } from "@/components/custom/modal";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
 
 type Dictionary = Awaited<
   ReturnType<typeof getDictionary>
@@ -51,34 +52,55 @@ function formatDate(value?: string) {
   });
 }
 
-function normalizeTemplateParameters(parameters: any): TemplateItem[] {
+function normalizeTemplateParameters(parameters: unknown): TemplateItem[] {
+  const toOptionalString = (value: unknown): string | undefined => {
+    if (typeof value === "string") return value;
+    if (typeof value === "number" || typeof value === "boolean") {
+      return String(value);
+    }
+    return undefined;
+  };
+
   if (!parameters) return [];
   if (Array.isArray(parameters)) {
     return parameters
-      .map((item) => ({
-        parameter:
-          item?.parameter ?? item?.name ?? item?.parameterName ?? "",
-        testMethod: item?.testMethod ?? item?.method ?? item?.metodeUji,
-        specification:
-          item?.specification ?? item?.spec ?? item?.limit ?? item?.batas,
-      }))
+      .map((item) => {
+        const row = item as Record<string, unknown>;
+        return {
+          parameter:
+            toOptionalString(row.parameter) ??
+            toOptionalString(row.name) ??
+            toOptionalString(row.parameterName) ??
+            "",
+          testMethod:
+            toOptionalString(row.testMethod) ??
+            toOptionalString(row.method) ??
+            toOptionalString(row.metodeUji),
+          specification:
+            toOptionalString(row.specification) ??
+            toOptionalString(row.spec) ??
+            toOptionalString(row.limit) ??
+            toOptionalString(row.batas),
+        };
+      })
       .filter((item) => Boolean(item.parameter));
   }
   if (typeof parameters === "object") {
     return Object.entries(parameters)
       .map(([key, value]) => {
         if (value && typeof value === "object") {
+          const row = value as Record<string, unknown>;
           return {
-            parameter: (value as any).parameter ?? key,
+            parameter: toOptionalString(row.parameter) ?? key,
             testMethod:
-              (value as any).testMethod ??
-              (value as any).method ??
-              (value as any).metodeUji,
+              toOptionalString(row.testMethod) ??
+              toOptionalString(row.method) ??
+              toOptionalString(row.metodeUji),
             specification:
-              (value as any).specification ??
-              (value as any).spec ??
-              (value as any).limit ??
-              (value as any).batas,
+              toOptionalString(row.specification) ??
+              toOptionalString(row.spec) ??
+              toOptionalString(row.limit) ??
+              toOptionalString(row.batas),
           };
         }
         return {
@@ -91,11 +113,46 @@ function normalizeTemplateParameters(parameters: any): TemplateItem[] {
   return [];
 }
 
-function statusBadge(value?: string) {
-  if (!value) return "bg-slate-100 text-slate-700";
-  if (value === "approved") return "bg-emerald-100 text-emerald-700";
-  if (value === "rejected") return "bg-rose-100 text-rose-700";
-  return "bg-amber-100 text-amber-700";
+function statusBadgeClass(value?: string) {
+  if (!value) return "bg-slate-100 text-slate-600 border-slate-200";
+  if (value === "approved") return "bg-emerald-50 text-emerald-700 border-emerald-200";
+  if (value === "rejected") return "bg-rose-50 text-rose-700 border-rose-200";
+  return "bg-amber-50 text-amber-700 border-amber-200";
+}
+
+function InfoItem({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div className="flex flex-col gap-1">
+      <p className="text-[11px] font-medium uppercase tracking-wide text-slate-400 dark:text-slate-500">
+        {label}
+      </p>
+      <div className="text-sm font-medium text-slate-800 dark:text-slate-100">
+        {children}
+      </div>
+    </div>
+  );
+}
+
+function SectionCard({
+  title,
+  action,
+  children,
+}: {
+  title: string;
+  action?: React.ReactNode;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="rounded-xl border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-900">
+      <div className="flex items-center justify-between border-b border-slate-100 px-5 py-3.5 dark:border-slate-700">
+        <h2 className="text-sm font-semibold text-slate-700 dark:text-slate-200">
+          {title}
+        </h2>
+        {action && <div className="flex items-center gap-2">{action}</div>}
+      </div>
+      <div className="p-5">{children}</div>
+    </div>
+  );
 }
 
 export default function QcInspectionDetail({
@@ -106,9 +163,10 @@ export default function QcInspectionDetail({
   dictionary: Dictionary;
 }) {
   const { setIsLoading } = useLoading();
+  const pathname = usePathname();
+  const locale = pathname.split("/")[1] || "";
   const [inspection, setInspection] = useState<IQcInspection | null>(null);
-  const [approvalStatus, setApprovalStatus] =
-    useState<IQcApprovalStatus | null>(null);
+  const [approvalStatus, setApprovalStatus] = useState<IQcApprovalStatus | null>(null);
   const [loading, setLoading] = useState(true);
   const [resultRows, setResultRows] = useState<ResultRow[]>([]);
 
@@ -116,25 +174,27 @@ export default function QcInspectionDetail({
   const [rejectReason, setRejectReason] = useState("");
   const [rejectNotes, setRejectNotes] = useState("");
 
-  const [direkturModalOpen, setDirekturModalOpen] = useState(false);
-  const [direkturSignature, setDirekturSignature] = useState("");
-  const [direkturFile, setDirekturFile] = useState<File | null>(null);
-
   const pageTitle = useMemo(
     () => dictionary?.title ?? "Kontrol Kualitas",
     [dictionary]
   );
+  const totalParameters = resultRows.length;
+  const filledParameters = useMemo(
+    () => resultRows.filter((row) => row.result.trim()).length,
+    [resultRows]
+  );
+  const missingParameters = Math.max(totalParameters - filledParameters, 0);
+  const hasNoParameters = totalParameters === 0;
+  const allParametersFilled = hasNoParameters || missingParameters === 0;
 
-  const loadInspection = async () => {
+  const loadInspection = useCallback(async () => {
     setLoading(true);
     try {
       const response = await qcCoaService.getQcInspection(inspectionId);
       const data = response?.data ?? response;
       setInspection(data);
 
-      const templateItems = normalizeTemplateParameters(
-        data?.template?.parameters
-      );
+      const templateItems = normalizeTemplateParameters(data?.template?.parameters);
       const existingResults: IQcInspectionResult[] = data?.results ?? [];
       const rows = templateItems.map((item) => {
         const existing = existingResults.find(
@@ -147,7 +207,7 @@ export default function QcInspectionDetail({
         };
       });
       setResultRows(rows);
-    } catch (error) {
+    } catch {
       Swal.fire({
         icon: "error",
         title: "Gagal memuat QC inspection",
@@ -159,28 +219,26 @@ export default function QcInspectionDetail({
     } finally {
       setLoading(false);
     }
-  };
+  }, [inspectionId]);
 
-  const loadApprovalStatus = async () => {
+  const loadApprovalStatus = useCallback(async () => {
     try {
-      const response = await qcCoaService.getQcInspectionApprovalStatus(
-        inspectionId
-      );
+      const response = await qcCoaService.getQcInspectionApprovalStatus(inspectionId);
       const data = response?.data ?? response;
       setApprovalStatus(data);
-    } catch (error) {
+    } catch {
       setApprovalStatus(null);
     }
-  };
-
-  useEffect(() => {
-    loadInspection();
-    loadApprovalStatus();
   }, [inspectionId]);
 
   useEffect(() => {
+    void loadInspection();
+    void loadApprovalStatus();
+  }, [loadApprovalStatus, loadInspection]);
+
+  useEffect(() => {
     setIsLoading(false);
-  }, []);
+  }, [setIsLoading]);
 
   const handleUpdateResult = (
     index: number,
@@ -188,9 +246,7 @@ export default function QcInspectionDetail({
     value: string
   ) => {
     setResultRows((prev) =>
-      prev.map((row, idx) =>
-        idx === index ? { ...row, [field]: value } : row
-      )
+      prev.map((row, idx) => (idx === index ? { ...row, [field]: value } : row))
     );
   };
 
@@ -225,7 +281,7 @@ export default function QcInspectionDetail({
         timer: 2000,
         showConfirmButton: false,
       });
-    } catch (error) {
+    } catch {
       Swal.fire({
         icon: "error",
         title: "Gagal menyimpan hasil",
@@ -240,9 +296,28 @@ export default function QcInspectionDetail({
   };
 
   const handleApprovePjtQc = async () => {
+    if (!allParametersFilled) {
+      Swal.fire({
+        icon: "warning",
+        title: "Approve hanya bisa jika semua parameter terisi",
+        text: `Masih ada ${missingParameters} parameter yang belum diisi.`,
+        toast: true,
+        position: "top-right",
+        timer: 2200,
+        showConfirmButton: false,
+      });
+      return;
+    }
+
     const result = await Swal.fire({
-      title: "Digital Signature (optional)",
-      input: "text",
+      icon: "question",
+      title: "Konfirmasi Approve PJT QC",
+      html: `
+        <div style="text-align:left">
+          <p>Status parameter terisi: <strong>${filledParameters}/${totalParameters}</strong></p>
+          <p>${hasNoParameters ? "Template tidak memiliki parameter." : "Semua parameter sudah terisi."} Lanjutkan approve?</p>
+        </div>
+      `,
       showCancelButton: true,
       confirmButtonText: "Approve",
       cancelButtonText: "Batal",
@@ -251,99 +326,22 @@ export default function QcInspectionDetail({
 
     try {
       setIsLoading(true);
-      await qcCoaService.approvePjtQc(inspectionId, {
-        digitalSignature: result.value || undefined,
-      });
+      await qcCoaService.approvePjtQc(inspectionId);
       await loadInspection();
       await loadApprovalStatus();
       Swal.fire({
         icon: "success",
         title: "Approved oleh PJT QC",
+        text: "COA otomatis dibuat setelah QC disetujui.",
         toast: true,
         position: "top-right",
         timer: 2000,
         showConfirmButton: false,
       });
-    } catch (error) {
+    } catch {
       Swal.fire({
         icon: "error",
         title: "Gagal approve PJT QC",
-        toast: true,
-        position: "top-right",
-        timer: 2000,
-        showConfirmButton: false,
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleApproveStaff = async () => {
-    try {
-      setIsLoading(true);
-      await qcCoaService.approveStaffProduksi(inspectionId);
-      await loadInspection();
-      await loadApprovalStatus();
-      Swal.fire({
-        icon: "success",
-        title: "Approved oleh Staff Produksi",
-        toast: true,
-        position: "top-right",
-        timer: 2000,
-        showConfirmButton: false,
-      });
-    } catch (error) {
-      Swal.fire({
-        icon: "error",
-        title: "Gagal approve Staff Produksi",
-        toast: true,
-        position: "top-right",
-        timer: 2000,
-        showConfirmButton: false,
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleApproveDirektur = async (e?: React.FormEvent) => {
-    if (e) e.preventDefault();
-    if (!direkturFile) {
-      Swal.fire({
-        icon: "warning",
-        title: "Stamp file wajib diunggah",
-        toast: true,
-        position: "top-right",
-        timer: 2000,
-        showConfirmButton: false,
-      });
-      return;
-    }
-
-    try {
-      setIsLoading(true);
-      await qcCoaService.approveDirektur(
-        inspectionId,
-        direkturFile,
-        direkturSignature || undefined
-      );
-      setDirekturModalOpen(false);
-      setDirekturFile(null);
-      setDirekturSignature("");
-      await loadInspection();
-      await loadApprovalStatus();
-      Swal.fire({
-        icon: "success",
-        title: "Approved oleh Direktur",
-        toast: true,
-        position: "top-right",
-        timer: 2000,
-        showConfirmButton: false,
-      });
-    } catch (error) {
-      Swal.fire({
-        icon: "error",
-        title: "Gagal approve Direktur",
         toast: true,
         position: "top-right",
         timer: 2000,
@@ -387,7 +385,7 @@ export default function QcInspectionDetail({
         timer: 2000,
         showConfirmButton: false,
       });
-    } catch (error) {
+    } catch {
       Swal.fire({
         icon: "error",
         title: "Gagal reject QC inspection",
@@ -402,196 +400,253 @@ export default function QcInspectionDetail({
   };
 
   if (loading) {
-    return <p className="text-sm text-slate-500">Memuat data QC...</p>;
+    return (
+      <div className="flex items-center justify-center py-20">
+        <p className="text-sm text-slate-400">Memuat data QC...</p>
+      </div>
+    );
   }
 
   if (!inspection) {
-    return <p className="text-sm text-slate-500">Data tidak ditemukan.</p>;
+    return (
+      <div className="flex items-center justify-center py-20">
+        <p className="text-sm text-slate-400">Data tidak ditemukan.</p>
+      </div>
+    );
   }
 
   return (
-    <div className="flex w-full flex-col gap-6">
-      <div>
-        <h1 className="text-2xl font-semibold text-slate-900 dark:text-slate-100">
-          {pageTitle} - QC Detail
+    <div className="flex w-full flex-col gap-5 pb-10">
+      {/* Page Header */}
+      <div className="flex flex-col gap-1">
+        <h1 className="text-xl font-semibold text-slate-900 dark:text-slate-100">
+          {pageTitle} — QC Detail
         </h1>
-        <p className="text-sm text-slate-500">
-          {inspection.qcNumber} • Batch {inspection.batch?.batchNumber ?? "-"}
+        <p className="text-sm text-slate-400">
+          {inspection.qcNumber} &bull; Batch {inspection.batch?.batchNumber ?? "-"}
         </p>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Ringkasan QC</CardTitle>
-        </CardHeader>
-        <CardContent className="grid gap-4 md:grid-cols-2">
-          <div>
-            <p className="text-xs text-slate-500">QC Number</p>
-            <p className="font-medium">{inspection.qcNumber}</p>
-          </div>
-          <div>
-            <p className="text-xs text-slate-500">QC Stage</p>
-            <p className="font-medium">{inspection.qcStage}</p>
-          </div>
-          <div>
-            <p className="text-xs text-slate-500">Tanggal Inspeksi</p>
-            <p className="font-medium">
-              {formatDate(inspection.inspectionDate)} {inspection.inspectionTime}
-            </p>
-          </div>
-          <div>
-            <p className="text-xs text-slate-500">Status</p>
-            <Badge className={statusBadge(inspection.finalStatus)}>
-              {inspection.finalStatus}
+      {/* Ringkasan QC */}
+      <SectionCard title="Ringkasan QC">
+        <div className="grid grid-cols-2 gap-x-8 gap-y-5 md:grid-cols-3">
+          <InfoItem label="QC Number">{inspection.qcNumber}</InfoItem>
+          <InfoItem label="Batch">
+            {inspection.batch?.batchNumber ?? inspection.batchId}
+          </InfoItem>
+          <InfoItem label="Template">
+            {inspection.template?.templateName ?? "-"}
+          </InfoItem>
+          <InfoItem label="Tanggal & Waktu">
+            {formatDate(inspection.inspectionDate)}{" "}
+            {inspection.inspectionTime ?? ""}
+          </InfoItem>
+          <InfoItem label="Status">
+            <Badge
+              className={`border text-xs font-medium ${statusBadgeClass(inspection.finalStatus)}`}
+            >
+              {inspection.finalStatus ?? "-"}
             </Badge>
-          </div>
-          <div>
-            <p className="text-xs text-slate-500">Test Result</p>
-            <p className="font-medium">{inspection.testResult}</p>
-          </div>
-          <div>
-            <p className="text-xs text-slate-500">Template</p>
-            <p className="font-medium">
-              {inspection.template?.templateName ?? "-"}
-            </p>
-          </div>
-        </CardContent>
-      </Card>
+          </InfoItem>
+          <InfoItem label="Interpretation Notes">
+            <span className="text-slate-500 dark:text-slate-400">
+              {inspection.interpretationNotes?.trim() || "—"}
+            </span>
+          </InfoItem>
+        </div>
+      </SectionCard>
 
-      <Card>
-        <CardHeader className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
-          <CardTitle>Hasil QC</CardTitle>
-          <Button onClick={handleSaveResults}>Simpan Hasil</Button>
-        </CardHeader>
-        <CardContent>
-          <div className="rounded-lg border">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Parameter</TableHead>
-                  <TableHead>Metode</TableHead>
-                  <TableHead>Spesifikasi</TableHead>
-                  <TableHead>Hasil</TableHead>
-                  <TableHead>Catatan</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {resultRows.length ? (
-                  resultRows.map((row, index) => (
-                    <TableRow key={`${row.parameter}-${index}`}>
-                      <TableCell>{row.parameter}</TableCell>
-                      <TableCell>{row.testMethod ?? "-"}</TableCell>
-                      <TableCell>{row.specification ?? "-"}</TableCell>
-                      <TableCell>
-                        <Input
-                          value={row.result}
-                          onChange={(e) =>
-                            handleUpdateResult(index, "result", e.target.value)
-                          }
-                        />
-                      </TableCell>
-                      <TableCell>
-                        <Input
-                          value={row.notes ?? ""}
-                          onChange={(e) =>
-                            handleUpdateResult(index, "notes", e.target.value)
-                          }
-                        />
-                      </TableCell>
-                    </TableRow>
-                  ))
-                ) : (
-                  <TableRow>
-                    <TableCell colSpan={5} className="text-center">
-                      Template belum memiliki parameter.
+      {/* Hasil QC */}
+      <SectionCard
+        title="Hasil QC"
+        action={
+          <Button
+            size="sm"
+            className="h-8 bg-slate-900 px-4 text-xs font-medium text-white hover:bg-slate-700 dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-slate-300"
+            onClick={handleSaveResults}
+          >
+            Simpan Hasil
+          </Button>
+        }
+      >
+        {/* overflow-x-auto agar tabel bisa scroll horizontal di layar kecil */}
+        <div className="overflow-x-auto rounded-lg border border-slate-100 dark:border-slate-700">
+          <Table className="min-w-[640px] text-sm">
+            <TableHeader>
+              <TableRow className="bg-slate-50 dark:bg-slate-800">
+                <TableHead className="w-[16%] py-3 text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  Parameter
+                </TableHead>
+                <TableHead className="w-[16%] py-3 text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  Metode
+                </TableHead>
+                <TableHead className="w-[20%] py-3 text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  Spesifikasi
+                </TableHead>
+                <TableHead className="w-[24%] py-3 text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  Hasil
+                </TableHead>
+                <TableHead className="w-[24%] py-3 text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  Catatan
+                </TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {resultRows.length ? (
+                resultRows.map((row, index) => (
+                  <TableRow
+                    key={`${row.parameter}-${index}`}
+                    className="border-slate-100 transition-colors hover:bg-slate-50 dark:border-slate-700 dark:hover:bg-slate-800/50"
+                  >
+                    <TableCell className="py-2.5 font-medium text-slate-700 dark:text-slate-200">
+                      {row.parameter}
+                    </TableCell>
+                    <TableCell className="py-2.5 text-slate-500 dark:text-slate-400">
+                      {row.testMethod ?? "—"}
+                    </TableCell>
+                    <TableCell className="py-2.5 text-slate-500 dark:text-slate-400">
+                      {row.specification ?? "—"}
+                    </TableCell>
+                    <TableCell className="py-2.5">
+                      <Input
+                        value={row.result}
+                        placeholder="Isi hasil..."
+                        className="h-8 border-slate-200 bg-white text-sm focus-visible:ring-1 focus-visible:ring-slate-400 dark:border-slate-600 dark:bg-slate-800"
+                        onChange={(e) =>
+                          handleUpdateResult(index, "result", e.target.value)
+                        }
+                      />
+                    </TableCell>
+                    <TableCell className="py-2.5">
+                      <Input
+                        value={row.notes ?? ""}
+                        placeholder="Catatan..."
+                        className="h-8 border-slate-200 bg-white text-sm focus-visible:ring-1 focus-visible:ring-slate-400 dark:border-slate-600 dark:bg-slate-800"
+                        onChange={(e) =>
+                          handleUpdateResult(index, "notes", e.target.value)
+                        }
+                      />
                     </TableCell>
                   </TableRow>
-                )}
-              </TableBody>
-            </Table>
-          </div>
-        </CardContent>
-      </Card>
+                ))
+              ) : (
+                <TableRow>
+                  <TableCell
+                    colSpan={5}
+                    className="py-10 text-center text-sm text-slate-400"
+                  >
+                    Template belum memiliki parameter.
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
+        </div>
+      </SectionCard>
 
-      <Card>
-        <CardHeader className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
-          <CardTitle>Status Approval</CardTitle>
-          <div className="flex flex-wrap gap-2">
+      {/* Status Approval */}
+      <SectionCard
+        title="Status Approval"
+        action={
+          <div className="flex gap-2">
             {inspection.finalStatus !== "rejected" && !inspection.pjtQcApproved && (
-              <Button onClick={handleApprovePjtQc}>Approve PJT QC</Button>
-            )}
-            {inspection.finalStatus !== "rejected" &&
-              inspection.pjtQcApproved &&
-              !inspection.staffProduksiApproved && (
-              <Button onClick={handleApproveStaff}>
-                Approve Staff Produksi
+              <Button
+                size="sm"
+                className="h-8 bg-slate-900 px-4 text-xs font-medium text-white hover:bg-slate-700 dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-slate-300"
+                onClick={handleApprovePjtQc}
+                disabled={!allParametersFilled}
+              >
+                Approve PJT QC
               </Button>
             )}
-            {inspection.finalStatus !== "rejected" &&
-              inspection.staffProduksiApproved &&
-              !inspection.direkturApproved && (
-                <Button onClick={() => setDirekturModalOpen(true)}>
-                  Approve Direktur
-                </Button>
-              )}
             {inspection.finalStatus !== "approved" && (
-              <Button variant="destructive" onClick={() => setRejectModalOpen(true)}>
+              <Button
+                size="sm"
+                variant="destructive"
+                className="h-8 px-4 text-xs font-medium"
+                onClick={() => setRejectModalOpen(true)}
+              >
                 Reject
               </Button>
             )}
+            {inspection.finalStatus === "approved" && (
+              <Link href={`/${locale}/dashboard/qc/coa-certificates`}>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="h-8 px-4 text-xs font-medium"
+                >
+                  Lihat COA
+                </Button>
+              </Link>
+            )}
           </div>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          <div className="grid gap-3 md:grid-cols-3">
-            <div className="rounded-lg border p-3">
-              <p className="text-xs text-slate-500">Stage 1 - PJT QC</p>
-              <p className="font-medium">
+        }
+      >
+        <div className="flex flex-col gap-4">
+          {/* Approval boxes */}
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <div className="rounded-lg border border-slate-100 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-800">
+              <p className="mb-1 text-[11px] font-medium uppercase tracking-wide text-slate-400">
+                PJT QC Approval
+              </p>
+              <p className="text-sm font-semibold text-slate-700 dark:text-slate-200">
                 {inspection.pjtQcApproved ? "Approved" : "Pending"}
               </p>
-              <p className="text-xs text-slate-500">
+              <p className="mt-0.5 text-xs text-slate-400">
                 {inspection.pjtQcApprovedAt
                   ? formatDate(inspection.pjtQcApprovedAt)
-                  : "-"}
+                  : "—"}
               </p>
             </div>
-            <div className="rounded-lg border p-3">
-              <p className="text-xs text-slate-500">Stage 2 - Staff Produksi</p>
-              <p className="font-medium">
-                {inspection.staffProduksiApproved ? "Approved" : "Pending"}
+
+            <div className="rounded-lg border border-slate-100 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-800">
+              <p className="mb-1 text-[11px] font-medium uppercase tracking-wide text-slate-400">
+                Final Status
               </p>
-              <p className="text-xs text-slate-500">
-                {inspection.staffProduksiApprovedAt
-                  ? formatDate(inspection.staffProduksiApprovedAt)
-                  : "-"}
-              </p>
-            </div>
-            <div className="rounded-lg border p-3">
-              <p className="text-xs text-slate-500">Stage 3 - Direktur</p>
-              <p className="font-medium">
-                {inspection.direkturApproved ? "Approved" : "Pending"}
-              </p>
-              <p className="text-xs text-slate-500">
-                {inspection.direkturApprovedAt
-                  ? formatDate(inspection.direkturApprovedAt)
-                  : "-"}
-              </p>
+              <Badge
+                className={`border text-xs font-medium ${statusBadgeClass(inspection.finalStatus)}`}
+              >
+                {inspection.finalStatus ?? "—"}
+              </Badge>
             </div>
           </div>
 
-          {approvalStatus?.nextAction ? (
-            <div className="rounded-lg border bg-slate-50 p-3 text-sm text-slate-600">
-              Next action: {approvalStatus.nextAction}
-            </div>
-          ) : null}
+          <div className="rounded-lg border border-slate-100 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-800">
+            <p className="mb-1 text-[11px] font-medium uppercase tracking-wide text-slate-400">
+              Status Hasil Parameter
+            </p>
+            <p className="text-sm font-semibold text-slate-700 dark:text-slate-200">
+              {filledParameters}/{totalParameters} terisi
+            </p>
+            <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+              {hasNoParameters
+                ? "Template tidak memiliki parameter. Approve tetap diizinkan."
+                : allParametersFilled
+                  ? "Semua parameter sudah terisi."
+                  : `Belum lengkap, kurang ${missingParameters} parameter.`}
+            </p>
+          </div>
 
-          {inspection.rejectionReason ? (
-            <div className="rounded-lg border border-rose-200 bg-rose-50 p-3 text-sm text-rose-700">
-              Rejection reason: {inspection.rejectionReason}
+          {/* Next action */}
+          {approvalStatus?.nextAction && (
+            <div className="rounded-lg border border-blue-100 bg-blue-50 px-4 py-3 text-sm text-blue-700 dark:border-blue-900 dark:bg-blue-950/40 dark:text-blue-300">
+              <span className="font-medium">Next action:</span>{" "}
+              {approvalStatus.nextAction}
             </div>
-          ) : null}
-        </CardContent>
-      </Card>
+          )}
 
+          {/* Rejection reason */}
+          {inspection.rejectionReason && (
+            <div className="rounded-lg border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700 dark:border-rose-900 dark:bg-rose-950/40 dark:text-rose-300">
+              <span className="font-medium">Rejection reason:</span>{" "}
+              {inspection.rejectionReason}
+            </div>
+          )}
+        </div>
+      </SectionCard>
+
+      {/* Reject Modal */}
       <Modal
         isOpen={rejectModalOpen}
         onClose={() => setRejectModalOpen(false)}
@@ -601,49 +656,27 @@ export default function QcInspectionDetail({
         onCancel={() => setRejectModalOpen(false)}
       >
         <div className="flex flex-col gap-4 p-5">
-          <div>
-            <span className="text-sm font-medium">Reason</span>
+          <div className="flex flex-col gap-1.5">
+            <label className="text-sm font-medium text-slate-700 dark:text-slate-200">
+              Reason <span className="text-rose-500">*</span>
+            </label>
             <Input
               value={rejectReason}
+              placeholder="Masukkan alasan penolakan..."
+              className="border-slate-200 text-sm focus-visible:ring-1 focus-visible:ring-slate-400 dark:border-slate-600"
               onChange={(e) => setRejectReason(e.target.value)}
             />
           </div>
-          <div>
-            <span className="text-sm font-medium">Notes</span>
+          <div className="flex flex-col gap-1.5">
+            <label className="text-sm font-medium text-slate-700 dark:text-slate-200">
+              Notes
+            </label>
             <Textarea
               value={rejectNotes}
-              onChange={(e) => setRejectNotes(e.target.value)}
+              placeholder="Catatan tambahan (opsional)..."
               rows={3}
-            />
-          </div>
-        </div>
-      </Modal>
-
-      <Modal
-        isOpen={direkturModalOpen}
-        onClose={() => setDirekturModalOpen(false)}
-        title="Approve Direktur"
-        width="w-[90vw] md:w-[40vw]"
-        onSubmit={handleApproveDirektur}
-        onCancel={() => setDirekturModalOpen(false)}
-      >
-        <div className="flex flex-col gap-4 p-5">
-          <div>
-            <span className="text-sm font-medium">Digital Signature (optional)</span>
-            <Input
-              value={direkturSignature}
-              onChange={(e) => setDirekturSignature(e.target.value)}
-              placeholder="base64 signature"
-            />
-          </div>
-          <div>
-            <span className="text-sm font-medium">Stamp File</span>
-            <Input
-              type="file"
-              accept="image/jpeg,image/png,image/webp"
-              onChange={(e) =>
-                setDirekturFile(e.target.files ? e.target.files[0] : null)
-              }
+              className="border-slate-200 text-sm focus-visible:ring-1 focus-visible:ring-slate-400 dark:border-slate-600"
+              onChange={(e) => setRejectNotes(e.target.value)}
             />
           </div>
         </div>

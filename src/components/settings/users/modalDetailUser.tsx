@@ -50,7 +50,7 @@ export const DetailModalUser = ({
       <div className="max-h-[85vh] overflow-y-auto p-6">
         <div className="flex flex-col gap-6">
           {/* HEADER */}
-          <div className="rounded-2xl border bg-gradient-to-r from-slate-50 to-white p-6 shadow-sm">
+          <div className="rounded-2xl border bg-linear-to-r from-slate-50 to-white p-6 shadow-sm">
             <div className="flex flex-col gap-5 md:flex-row md:items-center">
               <Avatar className="h-24 w-24 border shadow-sm">
                 {avatarUrl && <AvatarImage src={avatarUrl} />}
@@ -265,7 +265,7 @@ const InfoItem = ({
       <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
         {label}
       </p>
-      <p className="mt-1 break-words text-sm font-semibold text-slate-900">
+      <p className="mt-1 wrap-break-word text-sm font-semibold text-slate-900">
         {value !== null && value !== undefined && value !== "" ? value : "-"}
       </p>
     </div>

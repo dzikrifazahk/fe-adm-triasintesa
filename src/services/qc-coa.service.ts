@@ -1,11 +1,13 @@
 import { BaseHttpService } from "./base.service";
 
+type QueryParams = Record<string, unknown>;
+
 export class QcCoaService extends BaseHttpService {
   constructor() {
     super();
   }
 
-  async getQcInspections(queryParams?: {}) {
+  async getQcInspections(queryParams?: QueryParams) {
     const response = await this.httpClient.get("/qc-coa/qc-inspections", {
       params: queryParams,
     });
@@ -19,7 +21,7 @@ export class QcCoaService extends BaseHttpService {
     return response.data;
   }
 
-  async createQcInspection(payload: any) {
+  async createQcInspection(payload: unknown) {
     const response = await this.httpClient.post(
       "/qc-coa/qc-inspections",
       payload,
@@ -27,7 +29,7 @@ export class QcCoaService extends BaseHttpService {
     return response.data;
   }
 
-  async updateQcInspection(id: string, payload: any) {
+  async updateQcInspection(id: string, payload: unknown) {
     const response = await this.httpClient.patch(
       `/qc-coa/qc-inspections/${id}`,
       payload,
@@ -42,7 +44,7 @@ export class QcCoaService extends BaseHttpService {
     return response.data;
   }
 
-  async replaceQcResults(id: string, payload: any) {
+  async replaceQcResults(id: string, payload: unknown) {
     const response = await this.httpClient.put(
       `/qc-coa/qc-inspections/${id}/results`,
       payload,
@@ -65,31 +67,6 @@ export class QcCoaService extends BaseHttpService {
     return response.data;
   }
 
-  async approveStaffProduksi(id: string) {
-    const response = await this.httpClient.post(
-      `/qc-coa/qc-inspections/${id}/approve-staff-produksi`,
-    );
-    return response.data;
-  }
-
-  async approveDirektur(
-    id: string,
-    file: File,
-    digitalSignature?: string,
-  ) {
-    const formData = new FormData();
-    formData.append("stamp", file);
-    if (digitalSignature) {
-      formData.append("digitalSignature", digitalSignature);
-    }
-    const response = await this.httpClient.post(
-      `/qc-coa/qc-inspections/${id}/approve-direktur`,
-      formData,
-      { headers: { "Content-Type": "multipart/form-data" } },
-    );
-    return response.data;
-  }
-
   async rejectQcInspection(
     id: string,
     payload: { reason: string; notes?: string },
@@ -101,7 +78,7 @@ export class QcCoaService extends BaseHttpService {
     return response.data;
   }
 
-  async getQcTemplates(queryParams?: {}) {
+  async getQcTemplates(queryParams?: QueryParams) {
     const response = await this.httpClient.get("/qc-coa/qc-templates", {
       params: queryParams,
     });
@@ -115,7 +92,7 @@ export class QcCoaService extends BaseHttpService {
     return response.data;
   }
 
-  async createQcTemplate(payload: any) {
+  async createQcTemplate(payload: unknown) {
     const response = await this.httpClient.post(
       "/qc-coa/qc-templates",
       payload,
@@ -123,7 +100,7 @@ export class QcCoaService extends BaseHttpService {
     return response.data;
   }
 
-  async updateQcTemplate(id: string, payload: any) {
+  async updateQcTemplate(id: string, payload: unknown) {
     const response = await this.httpClient.patch(
       `/qc-coa/qc-templates/${id}`,
       payload,
@@ -138,7 +115,7 @@ export class QcCoaService extends BaseHttpService {
     return response.data;
   }
 
-  async getQcRejectLogs(queryParams?: {}) {
+  async getQcRejectLogs(queryParams?: QueryParams) {
     const response = await this.httpClient.get("/qc-coa/qc-reject-logs", {
       params: queryParams,
     });
@@ -152,7 +129,7 @@ export class QcCoaService extends BaseHttpService {
     return response.data;
   }
 
-  async createQcRejectLog(payload: any) {
+  async createQcRejectLog(payload: unknown) {
     const response = await this.httpClient.post(
       "/qc-coa/qc-reject-logs",
       payload,
@@ -160,7 +137,7 @@ export class QcCoaService extends BaseHttpService {
     return response.data;
   }
 
-  async updateQcRejectLog(id: string, payload: any) {
+  async updateQcRejectLog(id: string, payload: unknown) {
     const response = await this.httpClient.patch(
       `/qc-coa/qc-reject-logs/${id}`,
       payload,
@@ -175,7 +152,7 @@ export class QcCoaService extends BaseHttpService {
     return response.data;
   }
 
-  async getCoaCertificates(queryParams?: {}) {
+  async getCoaCertificates(queryParams?: QueryParams) {
     const response = await this.httpClient.get(
       "/qc-coa/coa-certificates",
       { params: queryParams },
@@ -186,17 +163,6 @@ export class QcCoaService extends BaseHttpService {
   async getCoaCertificate(id: string) {
     const response = await this.httpClient.get(
       `/qc-coa/coa-certificates/${id}`,
-    );
-    return response.data;
-  }
-
-  async approveCoaCertificate(
-    id: string,
-    payload?: { digitalSignature?: string },
-  ) {
-    const response = await this.httpClient.post(
-      `/qc-coa/coa-certificates/${id}/approve`,
-      payload ?? {},
     );
     return response.data;
   }

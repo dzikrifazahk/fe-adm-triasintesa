@@ -68,6 +68,15 @@ function getStatusColor(status?: string) {
   }
 }
 
+function getQcSummary(plan: IProductionPlan) {
+  const summary = plan.qcSummary;
+  if (!summary || summary.totalBatches === 0) {
+    return "QC: 0 batch";
+  }
+
+  return `QC: ${summary.approved}/${summary.totalBatches} approved`;
+}
+
 export function DataTable({
   data,
   metadata,
@@ -228,6 +237,9 @@ export function DataTable({
                         <div className="truncate text-sm font-medium text-[#111827] dark:text-slate-100">
                           {formatPlanDate(plan.startDate, plan.endDate)}
                         </div>
+                        <div className="mt-1 truncate text-xs text-slate-500 dark:text-slate-400">
+                          {getQcSummary(plan)}
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -254,6 +266,9 @@ export function DataTable({
                           {plan?.targetJirigenTotal || 0}{" "}
                           {dictionary.jirigen_unit}
                         </span>
+                      </div>
+                      <div className="mt-1 truncate text-xs text-[#6B7280] dark:text-slate-400">
+                        {getQcSummary(plan)}
                       </div>
                     </div>
 

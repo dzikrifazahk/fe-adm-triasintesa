@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import Swal from "sweetalert2";
@@ -26,12 +26,25 @@ type Dictionary = Awaited<
   ReturnType<typeof getDictionary>
 >["quality_control_page_dic"];
 
-function toList<T>(response: any): T[] {
-  return response?.data?.data ?? response?.data ?? [];
+function toList<T>(response: unknown): T[] {
+  const payload = response as {
+    data?: {
+      data?: T[];
+    } | T[];
+  };
+  if (Array.isArray(payload?.data)) return payload.data;
+  if (Array.isArray(payload?.data?.data)) return payload.data.data;
+  return [];
 }
 
-function toMeta(response: any) {
-  return response?.meta ?? response?.data?.meta ?? null;
+function toMeta(response: unknown) {
+  const payload = response as {
+    meta?: unknown;
+    data?: {
+      meta?: unknown;
+    };
+  };
+  return payload?.meta ?? payload?.data?.meta ?? null;
 }
 
 function formatDate(value?: string) {
@@ -57,7 +70,7 @@ export default function QcCoaList({
   const [data, setData] = useState<ICoaCertificate[]>([]);
   const [loadingList, setLoadingList] = useState(false);
   const [page, setPage] = useState(1);
-  const [limit, setLimit] = useState(10);
+  const [limit] = useState(10);
   const [totalPages, setTotalPages] = useState(1);
 
   const [filters, setFilters] = useState({
@@ -71,7 +84,7 @@ export default function QcCoaList({
     [dictionary]
   );
 
-  const fetchCoa = async () => {
+  const fetchCoa = useCallback(async () => {
     setLoadingList(true);
     try {
       const response = await qcCoaService.getCoaCertificates({
@@ -83,12 +96,12 @@ export default function QcCoaList({
       });
       setData(toList<ICoaCertificate>(response));
       const meta = toMeta(response);
-      if (meta?.totalPages) {
-        setTotalPages(meta.totalPages);
+      if (meta && typeof meta === "object" && "totalPages" in meta) {
+        setTotalPages(meta.totalPages as number);
       } else {
         setTotalPages(1);
       }
-    } catch (error) {
+    } catch {
       Swal.fire({
         icon: "error",
         title: "Gagal memuat COA",
@@ -100,15 +113,15 @@ export default function QcCoaList({
     } finally {
       setLoadingList(false);
     }
-  };
+  }, [page, limit, filters]);
 
   useEffect(() => {
     fetchCoa();
-  }, [page, limit]);
+  }, [page, fetchCoa]);
 
   useEffect(() => {
     setIsLoading(false);
-  }, []);
+  }, [setIsLoading]);
 
   useEffect(() => {
     const delay = setTimeout(() => {
@@ -116,7 +129,7 @@ export default function QcCoaList({
       fetchCoa();
     }, 500);
     return () => clearTimeout(delay);
-  }, [filters]);
+  }, [filters, fetchCoa]);
 
   return (
     <div className="flex w-full flex-col gap-6">
@@ -161,7 +174,6 @@ export default function QcCoaList({
               <SelectContent>
                 <SelectItem value="pass">Pass</SelectItem>
                 <SelectItem value="fail">Fail</SelectItem>
-                <SelectItem value="conditional">Conditional</SelectItem>
               </SelectContent>
             </Select>
           </div>

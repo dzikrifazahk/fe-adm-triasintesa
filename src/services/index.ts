@@ -30,6 +30,7 @@ import { FinancialRecordService } from "./financial-record.service";
 import { InventoryService } from "./inventory.service";
 import { CustomerService } from "./customer.service";
 import { ReportService } from "./report.service";
+import { CodeGeneratorService } from "./code-generator.service";
 
 export const authService = new AuthService();
 export const taxService = new TaxsService();
@@ -63,3 +64,4 @@ export const financialRecordService = new FinancialRecordService();
 export const inventoryService = new InventoryService();
 export const customerService = new CustomerService();
 export const reportService = new ReportService();
+export const codeGeneratorService = new CodeGeneratorService();

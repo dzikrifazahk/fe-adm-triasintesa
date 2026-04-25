@@ -44,7 +44,7 @@ interface DataTableProps<TData, TValue> {
   onPageSizeChange?: (newPageSize: number) => void;
   metadata?: IMeta;
   onSearchChange: (searchValue: string) => void;
-  onFilterChange?: (payload: any) => void;
+  onFilterChange?: (payload: Record<string, unknown>) => void;
   isClearPayload: (payload: boolean) => void;
   dictionary: Awaited<ReturnType<typeof getDictionary>>["settings_users"];
   isGetData?: () => void;
@@ -128,7 +128,7 @@ export function DataTable<TData, TValue>({
     setIsOpenModalFilter(true);
   };
 
-  const handleCloseModalFilter = (payload: any) => {
+  const handleCloseModalFilter = (payload: Record<string, unknown>) => {
     setIsOpenModalFilter(false);
     if (onFilterChange) {
       onFilterChange(payload);
@@ -153,13 +153,13 @@ export function DataTable<TData, TValue>({
           className="
                   grid w-full gap-3 md:gap-4
                   grid-cols-1
-                  xl:[grid-template-columns:minmax(0,1fr)_auto]
+                  xl:grid-cols-[minmax(0,1fr)_auto]
                   items-start p-1
                 "
         >
           <div className="flex flex-col gap-1 min-w-0">
             <div className="font-bold truncate">{dictionary.title}</div>
-            <div className="text-xs text-gray-500 whitespace-normal break-words leading-relaxed">
+            <div className="text-xs text-gray-500 whitespace-normal wrap-break-word leading-relaxed">
               {dictionary.description}
             </div>
           </div>

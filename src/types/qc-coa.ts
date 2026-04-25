@@ -1,13 +1,12 @@
 import { IProductionBatch } from "./production";
 
-export type QcTestResult = "PASS" | "FAIL" | "CONDITIONAL";
 export type QcFinalStatus = "pending" | "approved" | "rejected";
-export type CoaConclusion = "pass" | "fail" | "conditional";
+export type CoaConclusion = "pass" | "fail";
 
 export interface IQcTemplate {
   id: number;
   templateName: string;
-  parameters: any;
+  parameters: unknown;
 }
 
 export interface IQcInspectionResult {
@@ -24,21 +23,11 @@ export interface IQcInspection {
   inspectionDate: string;
   inspectionTime: string;
   templateId: number;
-  qcStage: number;
   interpretationNotes?: string;
-  testResult: QcTestResult;
-  qcBarcode: string;
   digitalSignaturePjtQc?: string;
   pjtQcApproved?: boolean;
   pjtQcApprovedBy?: number;
   pjtQcApprovedAt?: string;
-  staffProduksiApproved?: boolean;
-  staffProduksiApprovedBy?: number;
-  staffProduksiApprovedAt?: string;
-  direkturApproved?: boolean;
-  direkturApprovedBy?: number;
-  direkturApprovedAt?: string;
-  direkturStampFile?: string;
   finalStatus: QcFinalStatus;
   rejectionReason?: string;
   batch?: IProductionBatch;
@@ -65,21 +54,10 @@ export interface IQcApprovalStatus {
   qcNumber: string;
   finalStatus: QcFinalStatus;
   approvalStages: {
-    stage1_pjtQc: {
+    pjtQc: {
       approved: boolean;
       approvedBy?: number;
       approvedAt?: string;
-    };
-    stage2_staffProduksi: {
-      approved: boolean;
-      approvedBy?: number;
-      approvedAt?: string;
-    };
-    stage3_direktur: {
-      approved: boolean;
-      approvedBy?: number;
-      approvedAt?: string;
-      stampFile?: string;
     };
   };
   nextAction?: string;
@@ -103,15 +81,12 @@ export interface ICoaCertificate {
   productName: string;
   batchNumber: string;
   productionDate?: string;
-  testResults?: any;
-  specificationLimits?: any;
+  testResults?: unknown;
+  specificationLimits?: unknown;
   testMethod?: string;
   testStandard?: string;
   conclusion: CoaConclusion;
   remarks?: string;
-  approvedBy?: number;
-  approvedAt?: string;
-  digitalSignature?: string;
   pdfFilePath?: string;
   batch?: IProductionBatch;
   qcInspection?: IQcInspection;

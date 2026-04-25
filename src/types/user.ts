@@ -41,32 +41,21 @@ export interface IUserDetail extends CommonColumn {
   gender: string;
 }
 
-interface IRoles {
-  id: number;
-  role_name: string;
-}
-
-interface IDivisionResponse {
-  id: string;
-  name: string;
-  kode_divisi: string;
-}
 export interface IAddUser extends CommonColumn {
   email: string;
   username: string;
-  password: string;
   roleId: string;
   userDetail: {
     fullName: string;
-    phoneNumber: string;
-    address: string;
-    city: string;
-    country: string;
-    postalCode: string;
-    avatarUrl: string;
-    bio: string;
-    dateOfBirth: string;
-    gender: string;
+    phoneNumber?: string;
+    address?: string;
+    city?: string;
+    country?: string;
+    postalCode?: string;
+    avatarUrl?: string;
+    bio?: string;
+    dateOfBirth?: string;
+    gender?: string;
   };
 }
 

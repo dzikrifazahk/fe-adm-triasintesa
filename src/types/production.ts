@@ -1,6 +1,13 @@
 import { ITank } from "./tanks";
 import { ICreator } from "./user";
 
+export interface IProductionPlanQcSummary {
+  totalBatches: number;
+  approved: number;
+  pending: number;
+  rejected: number;
+}
+
 export interface IProductionPlan {
   version: number;
   startDate: string;
@@ -19,6 +26,7 @@ export interface IProductionPlan {
   id: number;
   tank: ITank;
   creator: ICreator;
+  qcSummary?: IProductionPlanQcSummary;
 }
 
 export interface IAddOrUpdateProductionPlan {
@@ -40,6 +48,15 @@ export interface IProductionBatch {
   endDate: string;
   rawMaterialVolume: number;
   targetQuantityJirigen: number;
+  productionStatus?: string;
+  hasApprovedQc?: boolean;
+  qcInspectionCount?: number;
+  latestQcInspection?: {
+    id: number;
+    qcNumber: string;
+    finalStatus: string;
+    inspectionDate?: string;
+  } | null;
   notes: string;
   createdAt?: string;
   updatedAt?: string;
@@ -56,7 +73,7 @@ export interface IAddProductionBatch {
   notes: string;
 }
 
-export interface IUpdateProductionBatch extends IAddProductionBatch {}
+export type IUpdateProductionBatch = IAddProductionBatch
 
 export interface IProductionJirigen {
   id: number;

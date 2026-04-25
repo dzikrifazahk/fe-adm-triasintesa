@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import Swal from "sweetalert2";
 import { getDictionary } from "../../../../get-dictionary";
 import { useLoading } from "@/context/loadingContext";
@@ -8,7 +8,6 @@ import { qcCoaService } from "@/services";
 import { ICoaCertificate } from "@/types/qc-coa";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import {
   Table,
   TableBody,
@@ -17,7 +16,6 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Modal } from "@/components/custom/modal";
 
 type Dictionary = Awaited<
   ReturnType<typeof getDictionary>
@@ -44,20 +42,18 @@ export default function QcCoaDetail({
   const { setIsLoading } = useLoading();
   const [coa, setCoa] = useState<ICoaCertificate | null>(null);
   const [loading, setLoading] = useState(true);
-  const [approveModalOpen, setApproveModalOpen] = useState(false);
-  const [digitalSignature, setDigitalSignature] = useState("");
 
   const pageTitle = useMemo(
     () => dictionary?.title ?? "Kontrol Kualitas",
     [dictionary]
   );
 
-  const loadCoa = async () => {
+  const loadCoa = useCallback(async () => {
     setLoading(true);
     try {
       const response = await qcCoaService.getCoaCertificate(coaId);
       setCoa(response?.data ?? response);
-    } catch (error) {
+    } catch {
       Swal.fire({
         icon: "error",
         title: "Gagal memuat COA",
@@ -69,49 +65,17 @@ export default function QcCoaDetail({
     } finally {
       setLoading(false);
     }
-  };
-
-  useEffect(() => {
-    loadCoa();
   }, [coaId]);
 
   useEffect(() => {
+    loadCoa();
+  }, [coaId, loadCoa]);
+
+  useEffect(() => {
     setIsLoading(false);
-  }, []);
+  }, [setIsLoading]);
 
-  const handleApprove = async (e?: React.FormEvent) => {
-    if (e) e.preventDefault();
-    try {
-      setIsLoading(true);
-      await qcCoaService.approveCoaCertificate(coaId, {
-        digitalSignature: digitalSignature || undefined,
-      });
-      setApproveModalOpen(false);
-      setDigitalSignature("");
-      await loadCoa();
-      Swal.fire({
-        icon: "success",
-        title: "COA approved",
-        toast: true,
-        position: "top-right",
-        timer: 2000,
-        showConfirmButton: false,
-      });
-    } catch (error) {
-      Swal.fire({
-        icon: "error",
-        title: "Gagal approve COA",
-        toast: true,
-        position: "top-right",
-        timer: 2000,
-        showConfirmButton: false,
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleGeneratePdf = async () => {
+  const handleGeneratePdf = useCallback(async () => {
     try {
       setIsLoading(true);
       await qcCoaService.generateCoaPdf(coaId);
@@ -124,7 +88,7 @@ export default function QcCoaDetail({
         timer: 2000,
         showConfirmButton: false,
       });
-    } catch (error) {
+    } catch {
       Swal.fire({
         icon: "error",
         title: "Gagal generate PDF",
@@ -136,12 +100,12 @@ export default function QcCoaDetail({
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [coaId, setIsLoading, loadCoa]);
 
-  const handlePrint = () => {
+  const handlePrint = useCallback(() => {
     const url = qcCoaService.getCoaPrintUrl(coaId);
     window.open(url, "_blank");
-  };
+  }, [coaId]);
 
   if (loading) {
     return <p className="text-sm text-slate-500">Memuat COA...</p>;
@@ -157,18 +121,13 @@ export default function QcCoaDetail({
         <h1 className="text-2xl font-semibold text-slate-900 dark:text-slate-100">
           {pageTitle} - COA Detail
         </h1>
-        <p className="text-sm text-slate-500">{coa.coaNumber}</p>
+        <p className="text-sm text-slate-500">{coa.coaNumber} • Dokumen turunan QC</p>
       </div>
 
       <Card>
         <CardHeader className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
           <CardTitle>Ringkasan COA</CardTitle>
           <div className="flex flex-wrap gap-2">
-            {!coa.approvedAt && (
-              <Button onClick={() => setApproveModalOpen(true)}>
-                Approve COA
-              </Button>
-            )}
             <Button variant="outline" onClick={handleGeneratePdf}>
               Generate PDF
             </Button>
@@ -199,8 +158,8 @@ export default function QcCoaDetail({
             <p className="font-medium">{coa.conclusion}</p>
           </div>
           <div>
-            <p className="text-xs text-slate-500">Approved At</p>
-            <p className="font-medium">{formatDate(coa.approvedAt)}</p>
+            <p className="text-xs text-slate-500">Issued Date</p>
+            <p className="font-medium">{formatDate(coa.issueDate)}</p>
           </div>
         </CardContent>
       </Card>
@@ -243,25 +202,6 @@ export default function QcCoaDetail({
         </CardContent>
       </Card>
 
-      <Modal
-        isOpen={approveModalOpen}
-        onClose={() => setApproveModalOpen(false)}
-        title="Approve COA"
-        width="w-[90vw] md:w-[40vw]"
-        onSubmit={handleApprove}
-        onCancel={() => setApproveModalOpen(false)}
-      >
-        <div className="flex flex-col gap-4 p-5">
-          <div>
-            <span className="text-sm font-medium">Digital Signature (optional)</span>
-            <Input
-              value={digitalSignature}
-              onChange={(e) => setDigitalSignature(e.target.value)}
-              placeholder="base64 signature"
-            />
-          </div>
-        </div>
-      </Modal>
     </div>
   );
 }

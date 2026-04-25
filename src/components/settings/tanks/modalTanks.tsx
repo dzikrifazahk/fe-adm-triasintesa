@@ -2,14 +2,15 @@
 
 import { Modal } from "@/components/custom/modal";
 import { MobileContext } from "@/hooks/use-mobile-ssr";
-import { ITank, ITankUpsert, TankType } from "@/types/tanks";
+import { ITank, TankType } from "@/types/tanks";
 import { useContext, useEffect, useMemo, useState } from "react";
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Pencil } from "lucide-react";
 import Swal from "sweetalert2";
 import { useLoading } from "@/context/loadingContext";
-import { tanksService } from "@/services";
+import { codeGeneratorService } from "@/services";
 
 type Props = {
   isOpen: boolean;
@@ -52,6 +53,7 @@ export function ModalUpsertTanks({
   const [status, setStatus] = useState("");
   const [notes, setNotes] = useState("");
   const [isDetailEditing, setIsDetailEditing] = useState(false);
+  const [isGeneratingTankCode, setIsGeneratingTankCode] = useState(false);
 
   useEffect(() => {
     if (isOpen) {
@@ -64,7 +66,7 @@ export function ModalUpsertTanks({
       setNotes(detailData?.notes ?? "");
       setIsDetailEditing(false);
     }
-  }, [isOpen]);
+  }, [isOpen, detailData?.tankCode, detailData?.tankName, detailData?.totalCapacity, detailData?.location, detailData?.tankType, detailData?.status, detailData?.notes]);
 
   const currentVolumeNumber = useMemo(() => {
     const raw = detailData?.currentVolume ?? 0;
@@ -122,16 +124,6 @@ export function ModalUpsertTanks({
       return;
     }
 
-    const payload: ITankUpsert = {
-      tankCode,
-      tankName,
-      totalCapacity,
-      location,
-      tankType,
-      status,
-      notes,
-    };
-
     const isEditMode =
       type === "edit" || (type === "detail" && isDetailEditing);
 
@@ -150,10 +142,6 @@ export function ModalUpsertTanks({
       try {
         setIsLoading(true);
 
-        const response = isEditMode
-          ? await tanksService.updateTank(String(detailData?.id), payload)
-          : await tanksService.createTank(payload);
-
         isGetData?.();
         Swal.fire({
           icon: "success",
@@ -165,7 +153,7 @@ export function ModalUpsertTanks({
         });
 
         clearInput();
-      } catch (error) {
+      } catch {
         Swal.fire({
           icon: "error",
           title: "Gagal menyimpan data tank",
@@ -196,6 +184,25 @@ export function ModalUpsertTanks({
         return "bg-yellow-100 text-yellow-700 border-yellow-200";
       default:
         return "bg-slate-100 text-slate-700 border-slate-200";
+    }
+  };
+
+  const handleGenerateTankCode = async () => {
+    try {
+      setIsGeneratingTankCode(true);
+      const response = await codeGeneratorService.preview("tank");
+      setTankCode(response.value ?? "");
+    } catch {
+      Swal.fire({
+        icon: "error",
+        title: "Gagal generate kode tank",
+        toast: true,
+        position: "top-right",
+        showConfirmButton: false,
+        timer: 2500,
+      });
+    } finally {
+      setIsGeneratingTankCode(false);
     }
   };
 
@@ -307,13 +314,25 @@ export function ModalUpsertTanks({
 
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             <Field label="Tank Code" required>
-              <Input
-                value={tankCode}
-                onChange={(e) => setTankCode(e.target.value)}
-                placeholder="Masukkan kode tank"
-                disabled={!canEditCode}
-                required
-              />
+              <div className="flex gap-2">
+                <Input
+                  value={tankCode}
+                  onChange={(e) => setTankCode(e.target.value)}
+                  placeholder="Masukkan kode tank"
+                  disabled={!canEditCode}
+                  required
+                />
+                {type === "create" ? (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={handleGenerateTankCode}
+                    disabled={isGeneratingTankCode}
+                  >
+                    {isGeneratingTankCode ? "Generating..." : "Generate"}
+                  </Button>
+                ) : null}
+              </div>
             </Field>
 
             <Field label="Tank Name" required>
