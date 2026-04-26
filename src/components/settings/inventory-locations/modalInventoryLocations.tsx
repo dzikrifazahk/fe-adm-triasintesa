@@ -9,10 +9,11 @@ import {
 import { useContext, useEffect, useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { Button } from "@/components/ui/button";
 import { Pencil } from "lucide-react";
 import Swal from "sweetalert2";
 import { useLoading } from "@/context/loadingContext";
-import { inventoryLocationsService } from "@/services";
+import { codeGeneratorService, inventoryLocationsService } from "@/services";
 
 type Props = {
   isOpen: boolean;
@@ -25,7 +26,7 @@ type Props = {
   isGetData?: () => void;
 };
 
-const statusOptions = ["active", "inactive"];
+const statusOptions = ["active", "inactive"] as const;
 
 export function ModalUpsertInventoryLocations({
   isOpen,
@@ -41,9 +42,10 @@ export function ModalUpsertInventoryLocations({
 
   const [locationCode, setLocationCode] = useState("");
   const [locationName, setLocationName] = useState("");
-  const [status, setStatus] = useState("");
+  const [status, setStatus] = useState<"active" | "inactive" | "">("");
   const [notes, setNotes] = useState("");
   const [isDetailEditing, setIsDetailEditing] = useState(false);
+  const [isGeneratingLocationCode, setIsGeneratingLocationCode] = useState(false);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -71,6 +73,7 @@ export function ModalUpsertInventoryLocations({
     event?.preventDefault();
 
     if (type === "detail" && !isDetailEditing) return;
+    if (!status) return;
 
     const payload: IAddOrUpdateInventoryLocation = {
       locationCode,
@@ -135,6 +138,25 @@ export function ModalUpsertInventoryLocations({
     return Number.isNaN(date.getTime()) ? value : date.toLocaleString();
   };
 
+  const handleGenerateLocationCode = async () => {
+    try {
+      setIsGeneratingLocationCode(true);
+      const response = await codeGeneratorService.preview("inventory_location");
+      setLocationCode(response.value ?? "");
+    } catch {
+      Swal.fire({
+        icon: "error",
+        title: "Gagal generate kode lokasi",
+        toast: true,
+        position: "top-right",
+        showConfirmButton: false,
+        timer: 2500,
+      });
+    } finally {
+      setIsGeneratingLocationCode(false);
+    }
+  };
+
   return (
     <Modal
       isOpen={isOpen}
@@ -184,13 +206,25 @@ export function ModalUpsertInventoryLocations({
 
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             <Field label="Location Code" required>
-              <Input
-                value={locationCode}
-                onChange={(e) => setLocationCode(e.target.value)}
-                placeholder="Masukkan kode lokasi"
-                disabled={isReadOnly}
-                required
-              />
+              <div className="flex gap-2">
+                <Input
+                  value={locationCode}
+                  onChange={(e) => setLocationCode(e.target.value)}
+                  placeholder="Masukkan kode lokasi"
+                  disabled={isReadOnly}
+                  required
+                />
+                {type === "create" ? (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={handleGenerateLocationCode}
+                    disabled={isGeneratingLocationCode}
+                  >
+                    {isGeneratingLocationCode ? "Generating..." : "Generate"}
+                  </Button>
+                ) : null}
+              </div>
             </Field>
 
             <Field label="Location Name" required>
@@ -206,7 +240,9 @@ export function ModalUpsertInventoryLocations({
             <Field label="Status" required className="md:col-span-2">
               <select
                 value={status}
-                onChange={(e) => setStatus(e.target.value)}
+                onChange={(e) =>
+                  setStatus(e.target.value as "active" | "inactive" | "")
+                }
                 className="h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
                 disabled={isReadOnly}
                 required

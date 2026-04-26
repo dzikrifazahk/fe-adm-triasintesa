@@ -2,14 +2,15 @@
 
 import { Modal } from "@/components/custom/modal";
 import { MobileContext } from "@/hooks/use-mobile-ssr";
-import { ITank } from "@/types/tanks";
+import { ITank, TankType } from "@/types/tanks";
 import { useContext, useEffect, useMemo, useState } from "react";
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Pencil } from "lucide-react";
 import Swal from "sweetalert2";
 import { useLoading } from "@/context/loadingContext";
-import { tanksService } from "@/services";
+import { codeGeneratorService } from "@/services";
 
 type Props = {
   isOpen: boolean;
@@ -23,6 +24,14 @@ type Props = {
 };
 
 const statusOptions = ["available", "in_use", "maintenance"];
+const tankTypeOptions = [
+  { value: "raw_material", label: "Bahan Baku" },
+  { value: "softener", label: "Softener" },
+  { value: "output_water", label: "Air Hasil" },
+] as const;
+
+const getTankTypeLabel = (value?: string | null) =>
+  tankTypeOptions.find((item) => item.value === value)?.label || "-";
 
 export function ModalUpsertTanks({
   isOpen,
@@ -40,9 +49,11 @@ export function ModalUpsertTanks({
   const [tankName, setTankName] = useState("");
   const [totalCapacity, setTotalCapacity] = useState(0);
   const [location, setLocation] = useState("");
+  const [tankType, setTankType] = useState<TankType | "">("");
   const [status, setStatus] = useState("");
   const [notes, setNotes] = useState("");
   const [isDetailEditing, setIsDetailEditing] = useState(false);
+  const [isGeneratingTankCode, setIsGeneratingTankCode] = useState(false);
 
   useEffect(() => {
     if (isOpen) {
@@ -50,11 +61,12 @@ export function ModalUpsertTanks({
       setTankName(detailData?.tankName ?? "");
       setTotalCapacity(Number(detailData?.totalCapacity) || 0);
       setLocation(detailData?.location ?? "");
+      setTankType((detailData?.tankType ?? "") as TankType | "");
       setStatus(detailData?.status ?? "");
       setNotes(detailData?.notes ?? "");
       setIsDetailEditing(false);
     }
-  }, [isOpen]);
+  }, [isOpen, detailData?.tankCode, detailData?.tankName, detailData?.totalCapacity, detailData?.location, detailData?.tankType, detailData?.status, detailData?.notes]);
 
   const currentVolumeNumber = useMemo(() => {
     const raw = detailData?.currentVolume ?? 0;
@@ -86,6 +98,7 @@ export function ModalUpsertTanks({
     setTankName("");
     setTotalCapacity(0);
     setLocation("");
+    setTankType("");
     setStatus("");
     setNotes("");
     setIsDetailEditing(false);
@@ -99,14 +112,17 @@ export function ModalUpsertTanks({
       return;
     }
 
-    const payload = {
-      tankCode,
-      tankName,
-      totalCapacity,
-      location,
-      status,
-      notes,
-    };
+    if (!tankType) {
+      Swal.fire({
+        icon: "warning",
+        title: "Tipe tank wajib dipilih",
+        toast: true,
+        position: "top-right",
+        showConfirmButton: false,
+        timer: 2500,
+      });
+      return;
+    }
 
     const isEditMode =
       type === "edit" || (type === "detail" && isDetailEditing);
@@ -126,10 +142,6 @@ export function ModalUpsertTanks({
       try {
         setIsLoading(true);
 
-        const response = isEditMode
-          ? await tanksService.updateTank(String(detailData?.id), payload)
-          : await tanksService.createTank(payload);
-
         isGetData?.();
         Swal.fire({
           icon: "success",
@@ -141,7 +153,7 @@ export function ModalUpsertTanks({
         });
 
         clearInput();
-      } catch (error) {
+      } catch {
         Swal.fire({
           icon: "error",
           title: "Gagal menyimpan data tank",
@@ -172,6 +184,25 @@ export function ModalUpsertTanks({
         return "bg-yellow-100 text-yellow-700 border-yellow-200";
       default:
         return "bg-slate-100 text-slate-700 border-slate-200";
+    }
+  };
+
+  const handleGenerateTankCode = async () => {
+    try {
+      setIsGeneratingTankCode(true);
+      const response = await codeGeneratorService.preview("tank");
+      setTankCode(response.value ?? "");
+    } catch {
+      Swal.fire({
+        icon: "error",
+        title: "Gagal generate kode tank",
+        toast: true,
+        position: "top-right",
+        showConfirmButton: false,
+        timer: 2500,
+      });
+    } finally {
+      setIsGeneratingTankCode(false);
     }
   };
 
@@ -226,6 +257,9 @@ export function ModalUpsertTanks({
                 >
                   {(status || detailData?.status || "-").replaceAll("_", " ")}
                 </span>
+                <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-medium text-slate-600">
+                  {getTankTypeLabel(tankType || detailData?.tankType)}
+                </span>
               </div>
 
               <div className="relative h-[240px] overflow-hidden rounded-2xl border border-slate-200 bg-slate-100">
@@ -264,6 +298,10 @@ export function ModalUpsertTanks({
                   value={location || detailData?.location || "-"}
                 />
                 <InfoCard
+                  label="Tipe"
+                  value={getTankTypeLabel(tankType || detailData?.tankType)}
+                />
+                <InfoCard
                   label="Status"
                   value={(status || detailData?.status || "-").replaceAll(
                     "_",
@@ -276,13 +314,25 @@ export function ModalUpsertTanks({
 
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             <Field label="Tank Code" required>
-              <Input
-                value={tankCode}
-                onChange={(e) => setTankCode(e.target.value)}
-                placeholder="Masukkan kode tank"
-                disabled={!canEditCode}
-                required
-              />
+              <div className="flex gap-2">
+                <Input
+                  value={tankCode}
+                  onChange={(e) => setTankCode(e.target.value)}
+                  placeholder="Masukkan kode tank"
+                  disabled={!canEditCode}
+                  required
+                />
+                {type === "create" ? (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={handleGenerateTankCode}
+                    disabled={isGeneratingTankCode}
+                  >
+                    {isGeneratingTankCode ? "Generating..." : "Generate"}
+                  </Button>
+                ) : null}
+              </div>
             </Field>
 
             <Field label="Tank Name" required>
@@ -317,7 +367,26 @@ export function ModalUpsertTanks({
               />
             </Field>
 
-            <Field label="Status" required className="md:col-span-2">
+            <Field label="Tipe" required>
+              <select
+                value={tankType}
+                onChange={(e) =>
+                  setTankType((e.target.value || "") as TankType | "")
+                }
+                className="h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                disabled={isReadOnly}
+                required
+              >
+                <option value="">Pilih tipe tank</option>
+                {tankTypeOptions.map((item) => (
+                  <option key={item.value} value={item.value}>
+                    {item.label}
+                  </option>
+                ))}
+              </select>
+            </Field>
+
+            <Field label="Status" required>
               <select
                 value={status}
                 onChange={(e) => setStatus(e.target.value)}

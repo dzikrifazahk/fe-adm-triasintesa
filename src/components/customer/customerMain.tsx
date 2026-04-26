@@ -5,7 +5,7 @@ import axios from "axios";
 import Swal from "sweetalert2";
 import { getDictionary } from "../../../get-dictionary";
 import { useLoading } from "@/context/loadingContext";
-import { customerService } from "@/services";
+import { codeGeneratorService, customerService } from "@/services";
 import {
   CustomerStatus,
   ICreateCustomerPayload,
@@ -36,7 +36,6 @@ import {
 } from "@/components/ui/table";
 
 type Dictionary = Awaited<ReturnType<typeof getDictionary>>["customer_page_dic"];
-type Envelope<T> = { data: T };
 type ListPayload<T> = { data: T[]; meta?: unknown };
 
 type FormState = {
@@ -99,6 +98,7 @@ export default function CustomerMain({ dictionary }: { dictionary: Dictionary })
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
+  const [isGeneratingCustomerCode, setIsGeneratingCustomerCode] = useState(false);
   const [form, setForm] = useState<FormState>(emptyForm);
 
   const title = dictionary?.title ?? "Customer";
@@ -183,30 +183,39 @@ export default function CustomerMain({ dictionary }: { dictionary: Dictionary })
     }
   };
 
+  const handleGenerateCustomerCode = async () => {
+    try {
+      setIsGeneratingCustomerCode(true);
+      const response = await codeGeneratorService.preview("customer");
+      setField("customerCode", response.value ?? "");
+    } catch (error) {
+      Swal.fire({
+        icon: "error",
+        title: "Gagal generate kode customer",
+        text: getErrorMessage(error),
+      });
+    } finally {
+      setIsGeneratingCustomerCode(false);
+    }
+  };
+
   const submitForm = async () => {
     const payload: ICreateCustomerPayload | IUpdateCustomerPayload = {
       customerCode: form.customerCode.trim(),
       companyName: form.companyName.trim(),
-      contactPerson: form.contactPerson.trim(),
-      email: form.email.trim(),
-      phone: form.phone.trim(),
-      address: form.address.trim(),
+      contactPerson: form.contactPerson.trim() || undefined,
+      email: form.email.trim() || undefined,
+      phone: form.phone.trim() || undefined,
+      address: form.address.trim() || undefined,
       status: form.status,
       notes: form.notes.trim() || undefined,
     };
 
-    if (
-      !payload.customerCode ||
-      !payload.companyName ||
-      !payload.contactPerson ||
-      !payload.email ||
-      !payload.phone ||
-      !payload.address
-    ) {
+    if (!payload.customerCode || !payload.companyName) {
       Swal.fire({
         icon: "warning",
         title: "Field wajib belum lengkap",
-        text: "Lengkapi kode, perusahaan, PIC, email, telepon, dan alamat.",
+        text: "Lengkapi kode customer dan nama perusahaan.",
       });
       return;
     }
@@ -416,11 +425,23 @@ export default function CustomerMain({ dictionary }: { dictionary: Dictionary })
           <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
             <div className="space-y-2">
               <Label>Kode Customer</Label>
-              <Input
-                value={form.customerCode}
-                onChange={(event) => setField("customerCode", event.target.value)}
-                placeholder="CUST-202603-001"
-              />
+              <div className="flex gap-2">
+                <Input
+                  value={form.customerCode}
+                  onChange={(event) => setField("customerCode", event.target.value)}
+                  placeholder="CUST-202603-001"
+                />
+                {!isEditMode ? (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={handleGenerateCustomerCode}
+                    disabled={isGeneratingCustomerCode}
+                  >
+                    {isGeneratingCustomerCode ? "Generating..." : "Generate"}
+                  </Button>
+                ) : null}
+              </div>
             </div>
             <div className="space-y-2">
               <Label>Nama Perusahaan</Label>

@@ -1,12 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { columns } from "./column";
-import { roleService, userService } from "@/services";
+import { userService } from "@/services";
 import Swal from "sweetalert2";
 import { IUser } from "@/types/user";
 import { IMeta } from "@/types/common";
-import { getUser } from "@/services/base.service";
 import axios from "axios";
 import useDebounce from "@/utils/useDebouncy";
 import { getDictionary } from "../../../../get-dictionary";
@@ -42,33 +41,27 @@ export default function SettingsUsersMain({
 
   const [data, setData] = useState<IUser[]>([]);
   const [isModalOpen, setModalOpen] = useState(false);
-  const [isModalResetPassOpen, setModalResetPassOpen] = useState(false);
   const [title, setTitle] = useState("");
   const [modalType, setModalType] = useState<
     "create" | "edit" | "detail" | null
   >(null);
 
   const [id, setId] = useState("");
-  const [name, setName] = useState("");
-  const [employeeNumber, setEmployeeNumber] = useState("");
-  const [email, setEmail] = useState("");
-  const [nik, setNik] = useState("");
+  const [, setName] = useState("");
+  const [, setEmployeeNumber] = useState("");
+  const [, setEmail] = useState("");
+  const [, setNik] = useState("");
   const [selectedData, setSelectedData] = useState<IUser | null>(null);
-  const [selectedIdUser, setSelectedIdUser] = useState<string>("");
-  const [newPassword, setNewPassword] = useState("");
-  const [showPassword, setShowPassword] = useState(false);
-  const [username, setUsername] = useState<string>("");
+  const [, setSelectedIdUser] = useState<string>("");
+  const [, setNewPassword] = useState("");
+  const [, setUsername] = useState<string>("");
   const [form, setForm] = useState<UserUpsertForm>(initialForm);
 
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [metadata, setMetadata] = useState<IMeta>();
-  const [cookies, setCookie] = useState<any>(null);
   const [detailModalOpen, setDetailModalOpen] = useState(false);
 
-  const togglePasswordVisibility = () => {
-    setShowPassword((prev) => !prev);
-  };
 
   const handleFormChange = <K extends keyof UserUpsertForm>(
     field: K,
@@ -80,13 +73,13 @@ export default function SettingsUsersMain({
     }));
   };
 
-  const getData = async (
+  const getData = useCallback(async (
     currentPage?: number,
     currentPageSize?: number,
     search?: string,
-    payload?: any,
+    payload?: unknown,
   ): Promise<IUser[]> => {
-    let filterParams: Record<string, any> = {};
+    let filterParams: Record<string, unknown> = {};
 
     if (currentPageSize || currentPage) {
       filterParams = { page: currentPage, limit: currentPageSize };
@@ -106,41 +99,69 @@ export default function SettingsUsersMain({
     setData(data.data);
     setMetadata(data.meta);
     return data.data;
-  };
-
-  useEffect(() => {
-    getData(page, pageSize);
-    const user = getUser();
-    if (user) {
-      setCookie(user);
-    }
-    /*************  ✨ Windsurf Command ⭐  *************/
-    /**
-     * Build a payload object for adding or updating a user.
-     * @param {string} password - password for the user, optional
-     * @returns {object} payload - the payload object
-     */
-    /*******  3251e3ee-d366-4959-9ef3-7c87fe044a4a  *******/ setIsLoading(
-      false,
-    );
   }, []);
 
+  useEffect(() => {
+    setIsLoading(false);
+  }, [setIsLoading]);
+
   const buildPayload = () => {
-    const payload: any = {
+    const userDetail: {
+      fullName: string;
+      phoneNumber?: string;
+      address?: string;
+      city?: string;
+      country?: string;
+      postalCode?: string;
+      bio?: string;
+      dateOfBirth?: string;
+      gender?: string;
+    } = {
+      fullName: form.fullName,
+    };
+
+    if (form.phone.trim()) {
+      userDetail.phoneNumber = form.phone;
+    }
+
+    if (form.address.trim()) {
+      userDetail.address = form.address;
+    }
+
+    if (form.city.trim()) {
+      userDetail.city = form.city;
+    }
+
+    if (form.country.trim()) {
+      userDetail.country = form.country;
+    }
+
+    if (form.postalCode.trim()) {
+      userDetail.postalCode = form.postalCode;
+    }
+
+    if (form.bio.trim()) {
+      userDetail.bio = form.bio;
+    }
+
+    if (form.dob.trim()) {
+      userDetail.dateOfBirth = form.dob;
+    }
+
+    if (form.gender.trim()) {
+      userDetail.gender = form.gender;
+    }
+
+    const payload: {
+      email: string;
+      username: string;
+      roleId: string;
+      userDetail: typeof userDetail;
+    } = {
       email: form.email,
       username: form.username,
       roleId: form.roleId,
-      userDetail: {
-        fullName: form.fullName,
-        phoneNumber: form.phone,
-        address: form.address,
-        city: form.city,
-        country: form.country,
-        postalCode: form.postalCode,
-        bio: form.bio,
-        dateOfBirth: form.dob,
-        gender: form.gender,
-      },
+      userDetail,
     };
 
     return payload;
@@ -172,12 +193,11 @@ export default function SettingsUsersMain({
 
   const handlePageChange = (newPage: number) => {
     setPage(newPage);
-    getData(newPage, pageSize, debouncedSearch, filterPayload);
   };
 
   const handlePageSizeChange = (newPageSize: number) => {
     setPageSize(newPageSize);
-    getData(page, newPageSize, debouncedSearch, filterPayload);
+    setPage(1);
   };
 
   const getUserDetail = async (item: IUser) => {
@@ -199,8 +219,8 @@ export default function SettingsUsersMain({
       if (result.isConfirmed) {
         setIsLoading(true);
         try {
-          const response = await userService.deleteUser(userId);
-          getData(page, pageSize, debouncedSearch, filterPayload);
+          await userService.deleteUser(userId);
+          await getData(page, pageSize, debouncedSearch, filterPayload);
           setIsLoading(false);
           Swal.fire({
             icon: "success",
@@ -254,7 +274,6 @@ export default function SettingsUsersMain({
           try {
             setIsLoading(true);
 
-            const response = await userService.updateUser(id, payload);
 
             if (form.avatarFile) {
               await uploadUserImage(id, form.avatarFile);
@@ -422,77 +441,44 @@ export default function SettingsUsersMain({
 
   const handleResetPassword = (userId: string) => {
     setSelectedIdUser(userId);
-    setModalResetPassOpen(true);
-  };
-
-  const handleSubmitResetPassword = async (e: React.FormEvent) => {
-    e.preventDefault();
-
     Swal.fire({
-      icon: "warning",
-      text: "Apakah anda ingin Mengubah Password?",
-      showDenyButton: true,
-      confirmButtonText: "Ya",
-      confirmButtonColor: "#493628",
-      denyButtonText: "Tidak",
-      position: "center",
-      showConfirmButton: true,
+      title: "Reset Password",
+      input: "password",
+      inputPlaceholder: "Masukkan password baru",
+      showCancelButton: true,
+      confirmButtonText: "Simpan",
+      cancelButtonText: "Batal",
     }).then(async (result) => {
-      if (result.isConfirmed) {
-        try {
-          setIsLoading(true);
-          setModalResetPassOpen(false);
-
-          const response = await userService.resetPassword(
-            selectedIdUser,
-            newPassword,
-          );
-
-          getData(page, pageSize, debouncedSearch, filterPayload);
-
-          if (response.status_code === 200) {
-            setIsLoading(false);
-            clearInput();
-            Swal.fire({
-              icon: "success",
-              title: `${response.message}`,
-              position: "top-right",
-              toast: true,
-              showConfirmButton: false,
-              timer: 2000,
-            });
-          }
-        } catch (e) {
-          setIsLoading(false);
-          clearInput();
-
-          if (axios.isAxiosError(e)) {
-            const message = e.response?.data?.message ?? "";
-            Swal.fire({
-              icon: "error",
-              title: `Terjadi Kesalahan ${message}`,
-              position: "top-right",
-              toast: true,
-              showConfirmButton: false,
-              timer: 2500,
-            });
-          }
-        }
-
-        clearInput();
-      } else if (result.isConfirmed === false) {
-        clearInput();
+      if (!result.isConfirmed || !result.value) return;
+      try {
+        setIsLoading(true);
+        await userService.resetPassword(userId, String(result.value));
         Swal.fire({
-          icon: "warning",
-          title: "Batal Hapus Data",
+          icon: "success",
+          title: "Password berhasil direset",
           position: "top-right",
           toast: true,
           showConfirmButton: false,
           timer: 2000,
         });
+      } catch (e) {
+        if (axios.isAxiosError(e)) {
+          const message = e.response?.data?.message ?? "Terjadi kesalahan";
+          Swal.fire({
+            icon: "error",
+            title: `Terjadi Kesalahan ${message}`,
+            position: "top-right",
+            toast: true,
+            showConfirmButton: false,
+            timer: 2500,
+          });
+        }
+      } finally {
+        setIsLoading(false);
       }
     });
   };
+
 
   const setFormFromData = (item: IUser) => {
     setForm({
@@ -535,28 +521,24 @@ export default function SettingsUsersMain({
 
   const [search, setSearch] = useState("");
   const debouncedSearch = useDebounce(search, 800);
-  const [filterPayload, setFilterPayload] = useState<any>("");
+  const [filterPayload, setFilterPayload] = useState<unknown>(undefined);
 
   const handleSearchChange = (searchValue: string) => {
     setSearch(searchValue);
   };
 
   useEffect(() => {
-    getData(page, pageSize, debouncedSearch, filterPayload);
-  }, [debouncedSearch]);
+    void getData(page, pageSize, debouncedSearch, filterPayload);
+  }, [page, pageSize, debouncedSearch, filterPayload, getData]);
 
-  useEffect(() => {
-    getData(page, pageSize);
-  }, []);
-
-  const handleFilterChange = (payload: any) => {
+  const handleFilterChange = (payload: unknown) => {
     setFilterPayload(payload);
     getData(page, pageSize, debouncedSearch, payload);
   };
 
   const handleClearPayload = () => {
-    setFilterPayload("");
-    getData(page, pageSize);
+    setFilterPayload(undefined);
+    setPage(1);
 
     Swal.fire({
       icon: "success",

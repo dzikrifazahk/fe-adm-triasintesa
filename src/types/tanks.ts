@@ -1,3 +1,5 @@
+export type TankType = "raw_material" | "softener" | "output_water";
+
 export interface ITank {
   version: number;
   createdAt: string;
@@ -12,6 +14,7 @@ export interface ITank {
   totalCapacity: string;
   currentVolume: string;
   location: string;
+  tankType: TankType;
   status: string;
   lastRefillDate: string;
   lastUpdated: string;
@@ -23,6 +26,7 @@ export interface ITankUpsert {
   tankName: string;
   totalCapacity: number;
   location: string;
+  tankType: TankType;
   status: string;
   notes: string;
 }
@@ -69,3 +73,4 @@ export interface ITankLog {
   volumeIn: number;
   volumeOut: number;
 }
+

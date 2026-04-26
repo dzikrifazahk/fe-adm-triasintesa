@@ -5,7 +5,7 @@ import axios from "axios";
 import Swal from "sweetalert2";
 import { getDictionary } from "../../../get-dictionary";
 import { useLoading } from "@/context/loadingContext";
-import { salesOrderService } from "@/services";
+import { codeGeneratorService, salesOrderService } from "@/services";
 import {
   ICancelSalesOrderPayload,
   ICompleteSalesOrderPayload,
@@ -39,10 +39,6 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-
-type Envelope<T> = {
-  data: T;
-};
 
 type ListPayload<T> = {
   data: T[];
@@ -152,6 +148,7 @@ export default function SalesOrderMain({
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
+  const [isGeneratingSoNumber, setIsGeneratingSoNumber] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState<ISalesOrder | null>(null);
   const [form, setForm] = useState<FormState>(emptyForm);
 
@@ -266,6 +263,22 @@ export default function SalesOrderMain({
     setIsFormOpen(false);
     setSelectedOrder(null);
     setForm(emptyForm);
+  };
+
+  const handleGenerateSoNumber = async () => {
+    try {
+      setIsGeneratingSoNumber(true);
+      const response = await codeGeneratorService.preview("sales_order");
+      setField("soNumber", response.value ?? "");
+    } catch (error) {
+      Swal.fire({
+        icon: "error",
+        title: "Gagal generate nomor SO",
+        text: getErrorMessage(error),
+      });
+    } finally {
+      setIsGeneratingSoNumber(false);
+    }
   };
 
   const setField = (field: keyof FormState, value: string) => {
@@ -700,11 +713,23 @@ export default function SalesOrderMain({
             </div>
             <div className="space-y-2">
               <Label htmlFor="soNumber">SO Number</Label>
-              <Input
-                id="soNumber"
-                value={form.soNumber}
-                onChange={(event) => setField("soNumber", event.target.value)}
-              />
+              <div className="flex gap-2">
+                <Input
+                  id="soNumber"
+                  value={form.soNumber}
+                  onChange={(event) => setField("soNumber", event.target.value)}
+                />
+                {!isEditMode ? (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={handleGenerateSoNumber}
+                    disabled={isGeneratingSoNumber}
+                  >
+                    {isGeneratingSoNumber ? "Generating..." : "Generate"}
+                  </Button>
+                ) : null}
+              </div>
             </div>
             <div className="space-y-2">
               <Label htmlFor="orderDate">Order Date</Label>

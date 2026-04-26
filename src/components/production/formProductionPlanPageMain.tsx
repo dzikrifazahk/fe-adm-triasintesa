@@ -146,7 +146,7 @@ export default function FormProductionPlanMain({
     };
 
     loadData();
-  }, [planId]);
+  }, [planId, formDictionary.load_error]);
 
   const handleChange = <K extends keyof IAddOrUpdateProductionPlan>(
     key: K,
@@ -275,7 +275,7 @@ export default function FormProductionPlanMain({
 
   useEffect(() => {
     setIsLoading(false);
-  }, []);
+  }, [setIsLoading]);
   return (
     <div className="h-full w-full rounded-lg border bg-muted/30 p-2">
       <div className="flex h-full min-h-0 flex-col rounded-lg border bg-white shadow-sm">
@@ -484,7 +484,7 @@ export default function FormProductionPlanMain({
                     <div className="flex h-full items-end justify-center px-10 pb-6">
                       <div className="relative h-full w-full max-w-28 overflow-hidden rounded-t-[28px] border-4 border-slate-300 bg-white">
                         <div
-                          className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-blue-600 to-cyan-400 transition-all duration-500"
+                          className="absolute bottom-0 left-0 right-0 bg-linear-to-t from-blue-600 to-cyan-400 transition-all duration-500"
                           style={{ height: `${tankVolumePercentage}%` }}
                         />
                         <div className="absolute inset-x-0 top-3 text-center text-xs font-semibold text-slate-500">

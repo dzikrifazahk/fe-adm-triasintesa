@@ -9,7 +9,7 @@ export interface IInventoryLocation {
   id: number;
   locationCode: string;
   locationName: string;
-  status: "aktif" | "nonaktif";
+  status: "active" | "inactive";
   notes?: string | null;
 }
 

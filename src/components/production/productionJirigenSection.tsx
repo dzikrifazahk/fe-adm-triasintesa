@@ -17,6 +17,7 @@ type Props = {
   loading: boolean;
   jirigens: IProductionJirigen[];
   batchesCount: number;
+  eligibleBatchesCount: number;
   hasLoadedBatches: boolean;
   onToggle: () => void;
   onCreate: () => void;
@@ -34,6 +35,7 @@ export function ProductionJirigenSection({
   loading,
   jirigens,
   batchesCount,
+  eligibleBatchesCount,
   hasLoadedBatches,
   onToggle,
   onCreate,
@@ -71,7 +73,7 @@ export function ProductionJirigenSection({
           type="button"
           onClick={onCreate}
           className="bg-iprimary-blue text-white hover:bg-iprimary-blue/90"
-          disabled={hasLoadedBatches ? batchesCount === 0 : false}
+          disabled={hasLoadedBatches ? eligibleBatchesCount === 0 : false}
         >
           <Plus className="mr-2 h-4 w-4" />
           {dictionary.jirigen_button}
@@ -80,6 +82,11 @@ export function ProductionJirigenSection({
 
       {isOpen ? (
         <div className="mt-4 space-y-2">
+          {hasLoadedBatches && batchesCount > 0 && eligibleBatchesCount === 0 ? (
+            <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+              Batch harus lolos QC terlebih dahulu sebelum production jirigen bisa dibuat.
+            </div>
+          ) : null}
           <div className="flex items-center justify-end gap-2">
             <Button
               type="button"

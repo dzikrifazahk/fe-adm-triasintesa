@@ -2,7 +2,7 @@
 
 import { Modal } from "@/components/custom/modal";
 import { MobileContext } from "@/hooks/use-mobile-ssr";
-import { productionPlanService } from "@/services";
+import { codeGeneratorService, productionPlanService } from "@/services";
 import {
   IAddProductionBatch,
   IAddProductionJirigen,
@@ -11,7 +11,8 @@ import {
   IProductionPlan,
 } from "@/types/production";
 import { getDictionary } from "../../../get-dictionary";
-import { useContext, useEffect, useRef, useState } from "react";
+import { useCallback, useContext, useEffect, useRef, useState } from "react";
+import { usePathname, useRouter } from "next/navigation";
 import {
   ModalFilterProductionBatches,
   ProductionDateFilterPayload,
@@ -97,8 +98,30 @@ function normalizeNumber(value?: string | number | null) {
   return Number.isNaN(parsed) ? 0 : parsed;
 }
 
-function toList<T>(response: any): T[] {
-  return response?.data?.data ?? response?.data ?? [];
+function toList<T>(response: unknown): T[] {
+  const payload = response as {
+    data?: {
+      data?: T[];
+    } | T[];
+  };
+  if (Array.isArray(payload?.data)) return payload.data;
+  if (Array.isArray(payload?.data?.data)) return payload.data.data;
+  return [];
+}
+
+function getEligibleBatches(list: IProductionBatch[]) {
+  return list.filter(
+    (batch) => batch.productionStatus === "qc_approved" || batch.hasApprovedQc,
+  );
+}
+
+function getQcSummaryText(plan: IProductionPlan | null) {
+  const summary = plan?.qcSummary;
+  if (!summary || summary.totalBatches === 0) {
+    return "Belum ada batch QC";
+  }
+
+  return `${summary.approved}/${summary.totalBatches} approved, ${summary.pending} pending, ${summary.rejected} rejected`;
 }
 
 function SectionEmpty({ text }: { text: string }) {
@@ -113,6 +136,9 @@ export default function ProductionPlanDetailMain({
   dictionary,
   planId,
 }: Props) {
+  const pathname = usePathname();
+  const router = useRouter();
+  const locale = pathname.split("/")[1] || "id";
   const detailDictionary = dictionary.production_plan.detail;
   const layoutDictionary = dictionary.production_plan.layout;
   const formDictionary = dictionary.production_plan.form;
@@ -123,6 +149,7 @@ export default function ProductionPlanDetailMain({
   const [submittingBatch, setSubmittingBatch] = useState(false);
   const [submittingJirigen, setSubmittingJirigen] = useState(false);
   const [updatingStatus, setUpdatingStatus] = useState(false);
+  const [isGeneratingBatchNumber, setIsGeneratingBatchNumber] = useState(false);
   const [isEditingStatus, setIsEditingStatus] = useState(false);
 
   const [plan, setPlan] = useState<IProductionPlan | null>(null);
@@ -161,6 +188,7 @@ export default function ProductionPlanDetailMain({
   const barcodePreviewFrameRef = useRef<HTMLIFrameElement | null>(null);
 
   const tankCurrentVolume = normalizeNumber(plan?.tank?.currentVolume);
+  const eligibleBatches = getEligibleBatches(batches);
   const tankTotalCapacity = normalizeNumber(plan?.tank?.totalCapacity);
   const tankVolumePercentage =
     tankTotalCapacity > 0
@@ -189,7 +217,7 @@ export default function ProductionPlanDetailMain({
     },
   ];
 
-  const loadPlan = async () => {
+  const loadPlan = useCallback(async () => {
     try {
       setLoadingPlan(true);
       const planResponse =
@@ -220,7 +248,7 @@ export default function ProductionPlanDetailMain({
     } finally {
       setLoadingPlan(false);
     }
-  };
+  }, [planId, detailDictionary.load_detail_error]);
 
   const loadBatches = async (filters?: ProductionDateFilterPayload) => {
     try {
@@ -230,18 +258,22 @@ export default function ProductionPlanDetailMain({
         await productionPlanService.getProductionBatchesByPlanID(
           planId,
           activeFilters,
-        );
+      );
       const batchData = toList<IProductionBatch>(batchResponse);
+      const eligibleBatchData = getEligibleBatches(batchData);
       setBatches(batchData);
       setHasLoadedBatches(true);
 
       setJirigenForm((prev) => ({
         ...prev,
-        batchId: batchData[0]?.id ?? prev.batchId ?? 0,
+        batchId:
+          eligibleBatchData[0]?.id ?? batchData[0]?.id ?? prev.batchId ?? 0,
         productionDatetime:
           prev.productionDatetime ||
           formatDateTimeLocal(new Date().toISOString()),
       }));
+
+      return batchData;
     } catch (error) {
       console.error(error);
       Swal.fire({
@@ -255,6 +287,8 @@ export default function ProductionPlanDetailMain({
     } finally {
       setLoadingBatches(false);
     }
+
+    return [];
   };
 
   const loadJirigens = async (filters?: ProductionJirigenFilterPayload) => {
@@ -287,7 +321,7 @@ export default function ProductionPlanDetailMain({
 
   useEffect(() => {
     loadPlan();
-  }, [planId]);
+  }, [loadPlan, planId]);
 
   useEffect(() => {
     return () => {
@@ -314,9 +348,25 @@ export default function ProductionPlanDetailMain({
   };
 
   const handleOpenJirigenModal = async () => {
+    let eligible = eligibleBatches;
     if (!hasLoadedBatches) {
-      await loadBatches();
+      const loadedBatches = await loadBatches();
+      eligible = getEligibleBatches(loadedBatches);
     }
+
+    if (eligible.length === 0) {
+      Swal.fire({
+        icon: "warning",
+        title: "QC belum selesai",
+        text: "Production jirigen hanya bisa dibuat untuk batch yang sudah lolos QC.",
+        toast: true,
+        position: "top-right",
+        showConfirmButton: false,
+        timer: 2600,
+      });
+      return;
+    }
+
     setIsJirigenModalOpen(true);
   };
 
@@ -349,6 +399,19 @@ export default function ProductionPlanDetailMain({
       notes: batch.notes ?? "",
     });
     setIsBatchModalOpen(true);
+  };
+
+  const handleOpenBatchQc = (batch: IProductionBatch) => {
+    router.push(
+      `/${locale}/dashboard/qc/inspections?batchId=${batch.id}&action=create`,
+    );
+  };
+
+  const handleOpenBatchQcDetail = (batch: IProductionBatch) => {
+    const inspectionId = batch.latestQcInspection?.id;
+    if (!inspectionId) return;
+
+    router.push(`/${locale}/dashboard/qc/inspections/${inspectionId}`);
   };
 
   const handleBatchSubmit = async (event: React.FormEvent) => {
@@ -395,6 +458,7 @@ export default function ProductionPlanDetailMain({
       resetBatchForm();
       setIsBatchModalOpen(false);
       setIsBatchOpen(true);
+      await loadPlan();
       await loadBatches();
     } catch (error) {
       console.error(error);
@@ -413,9 +477,50 @@ export default function ProductionPlanDetailMain({
     }
   };
 
+  const handleGenerateBatchNumber = async () => {
+    try {
+      setIsGeneratingBatchNumber(true);
+      const response = await codeGeneratorService.preview("production_batch");
+      setBatchForm((prev) => ({
+        ...prev,
+        batchNumber: response.value ?? "",
+      }));
+    } catch (error) {
+      console.error(error);
+      Swal.fire({
+        icon: "error",
+        title: "Gagal generate nomor batch",
+        toast: true,
+        position: "top-right",
+        showConfirmButton: false,
+        timer: 2200,
+      });
+    } finally {
+      setIsGeneratingBatchNumber(false);
+    }
+  };
+
   const handleJirigenSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
     if (!jirigenForm.batchId || !jirigenForm.productionDatetime) {
+      return;
+    }
+
+    const selectedBatch = batches.find((batch) => batch.id === jirigenForm.batchId);
+    const isEligible =
+      selectedBatch?.productionStatus === "qc_approved" ||
+      selectedBatch?.hasApprovedQc;
+
+    if (!isEligible) {
+      Swal.fire({
+        icon: "warning",
+        title: "Batch belum lolos QC",
+        text: "Selesaikan approval QC batch terlebih dahulu sebelum membuat production jirigen.",
+        toast: true,
+        position: "top-right",
+        showConfirmButton: false,
+        timer: 2600,
+      });
       return;
     }
 
@@ -686,7 +791,7 @@ export default function ProductionPlanDetailMain({
                     <div className="flex h-full items-end justify-center px-6 pb-4">
                       <div className="relative h-full w-full max-w-16 overflow-hidden rounded-t-[20px] border-4 border-slate-300 bg-white dark:border-slate-600 dark:bg-[#26282D]">
                         <div
-                          className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-blue-600 to-cyan-400 transition-all duration-500"
+                          className="absolute bottom-0 left-0 right-0 bg-linear-to-t from-blue-600 to-cyan-400 transition-all duration-500"
                           style={{ height: `${tankVolumePercentage}%` }}
                         />
                         <div className="absolute inset-x-0 top-2 text-center text-[10px] font-semibold text-slate-500 dark:text-slate-300">
@@ -702,7 +807,7 @@ export default function ProductionPlanDetailMain({
                   </div>
                   <div className="mt-1 h-2 overflow-hidden rounded-full bg-slate-200 dark:bg-slate-700">
                     <div
-                      className="h-full rounded-full bg-gradient-to-r from-blue-600 to-cyan-400 transition-all duration-500"
+                      className="h-full rounded-full bg-linear-to-r from-blue-600 to-cyan-400 transition-all duration-500"
                       style={{ width: `${tankVolumePercentage}%` }}
                     />
                   </div>
@@ -722,6 +827,14 @@ export default function ProductionPlanDetailMain({
                 </div>
                 <div className="mt-1 text-sm font-semibold text-slate-900 dark:text-slate-100">
                   {plan.targetJirigenTotal.toLocaleString("id-ID")}
+                </div>
+              </div>
+              <div className="rounded-xl border bg-white p-3 dark:border-[#34363B] dark:bg-[#26282D]">
+                <div className="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                  QC Summary
+                </div>
+                <div className="mt-1 text-sm font-semibold text-slate-900 dark:text-slate-100">
+                  {getQcSummaryText(plan)}
                 </div>
               </div>
               <div className="rounded-xl border bg-white p-3 dark:border-[#34363B] dark:bg-[#26282D]">
@@ -777,6 +890,8 @@ export default function ProductionPlanDetailMain({
               onToggle={handleToggleBatches}
               onCreate={handleOpenCreateBatchModal}
               onEdit={handleEditBatch}
+              onOpenQc={handleOpenBatchQc}
+              onOpenQcDetail={handleOpenBatchQcDetail}
               onOpenFilter={() => setIsBatchFilterModalOpen(true)}
               onRefresh={() => loadBatches()}
               formatDate={formatDate}
@@ -789,6 +904,7 @@ export default function ProductionPlanDetailMain({
               loading={loadingJirigens}
               jirigens={jirigens}
               batchesCount={batches.length}
+              eligibleBatchesCount={eligibleBatches.length}
               hasLoadedBatches={hasLoadedBatches}
               onToggle={handleToggleJirigens}
               onCreate={handleOpenJirigenModal}
@@ -836,17 +952,29 @@ export default function ProductionPlanDetailMain({
               <Label htmlFor="batchNumber">
                 {detailDictionary.batch_number}
               </Label>
-              <Input
-                id="batchNumber"
-                value={batchForm.batchNumber}
-                onChange={(event) =>
-                  setBatchForm((prev) => ({
-                    ...prev,
-                    batchNumber: event.target.value,
-                  }))
-                }
-                placeholder="B-202603-001"
-              />
+              <div className="flex gap-2">
+                <Input
+                  id="batchNumber"
+                  value={batchForm.batchNumber}
+                  onChange={(event) =>
+                    setBatchForm((prev) => ({
+                      ...prev,
+                      batchNumber: event.target.value,
+                    }))
+                  }
+                  placeholder="B-202603-001"
+                />
+                {!editingBatchId ? (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={handleGenerateBatchNumber}
+                    disabled={isGeneratingBatchNumber}
+                  >
+                    {isGeneratingBatchNumber ? "Generating..." : "Generate"}
+                  </Button>
+                ) : null}
+              </div>
             </div>
             <div className="grid gap-3 sm:grid-cols-2">
               <div className="space-y-2">
@@ -972,6 +1100,9 @@ export default function ProductionPlanDetailMain({
             <div className="text-sm text-slate-500 dark:text-slate-400">
               {detailDictionary.jirigen_modal_description}
             </div>
+            <div className="mt-2 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">
+              Hanya batch dengan status QC approved yang bisa dipilih.
+            </div>
           </div>
 
           <div className="space-y-3">
@@ -994,7 +1125,7 @@ export default function ProductionPlanDetailMain({
                   />
                 </SelectTrigger>
                 <SelectContent>
-                  {batches.map((batch) => (
+                  {eligibleBatches.map((batch) => (
                     <SelectItem key={batch.id} value={String(batch.id)}>
                       {batch.batchNumber}
                     </SelectItem>
@@ -1073,7 +1204,7 @@ export default function ProductionPlanDetailMain({
             <Button
               type="submit"
               className="w-full bg-iprimary-blue text-white hover:bg-iprimary-blue/90"
-              disabled={submittingJirigen || batches.length === 0}
+              disabled={submittingJirigen || eligibleBatches.length === 0}
             >
               {submittingJirigen
                 ? detailDictionary.jirigen_submit_loading
