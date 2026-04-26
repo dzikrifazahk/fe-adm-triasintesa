@@ -24,12 +24,12 @@ export interface ICustomerQuery {
 export interface ICreateCustomerPayload {
   customerCode: string;
   companyName: string;
-  contactPerson: string;
-  email: string;
-  phone: string;
-  address: string;
+  contactPerson?: string;
+  email?: string;
+  phone?: string;
+  address?: string;
   status?: CustomerStatus;
   notes?: string;
 }
 
-export interface IUpdateCustomerPayload extends Partial<ICreateCustomerPayload> {}
+export type IUpdateCustomerPayload = Partial<ICreateCustomerPayload>;

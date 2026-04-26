@@ -203,26 +203,19 @@ export default function CustomerMain({ dictionary }: { dictionary: Dictionary })
     const payload: ICreateCustomerPayload | IUpdateCustomerPayload = {
       customerCode: form.customerCode.trim(),
       companyName: form.companyName.trim(),
-      contactPerson: form.contactPerson.trim(),
-      email: form.email.trim(),
-      phone: form.phone.trim(),
-      address: form.address.trim(),
+      contactPerson: form.contactPerson.trim() || undefined,
+      email: form.email.trim() || undefined,
+      phone: form.phone.trim() || undefined,
+      address: form.address.trim() || undefined,
       status: form.status,
       notes: form.notes.trim() || undefined,
     };
 
-    if (
-      !payload.customerCode ||
-      !payload.companyName ||
-      !payload.contactPerson ||
-      !payload.email ||
-      !payload.phone ||
-      !payload.address
-    ) {
+    if (!payload.customerCode || !payload.companyName) {
       Swal.fire({
         icon: "warning",
         title: "Field wajib belum lengkap",
-        text: "Lengkapi kode, perusahaan, PIC, email, telepon, dan alamat.",
+        text: "Lengkapi kode customer dan nama perusahaan.",
       });
       return;
     }
