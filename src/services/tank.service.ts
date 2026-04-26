@@ -1,17 +1,10 @@
 import { BaseHttpService } from "./base.service";
-import { ITank, ITankUpsert } from "@/types/tanks";
-
-type TankIncreasePayload = {
-  tankId: number;
-  volumeAdded: number;
-  notes?: string;
-};
-
-type TankDecreasePayload = {
-  tankId: number;
-  volumeReduced: number;
-  notes?: string;
-};
+import {
+  ITank,
+  ITankDecreasePayload,
+  ITankIncreasePayload,
+  ITankUpsert,
+} from "@/types/tanks";
 
 export class TanksService extends BaseHttpService {
   constructor() {
@@ -45,7 +38,7 @@ export class TanksService extends BaseHttpService {
     return response.data;
   }
 
-  async increaseTankVolume(payload: TankIncreasePayload) {
+  async increaseTankVolume(payload: ITankIncreasePayload) {
     const response = await this.httpClient.post(
       "/tank-refills/increase",
       payload,
@@ -53,11 +46,18 @@ export class TanksService extends BaseHttpService {
     return response.data;
   }
 
-  async decreaseTankVolume(payload: TankDecreasePayload) {
+  async decreaseTankVolume(payload: ITankDecreasePayload) {
     const response = await this.httpClient.post(
       "/tank-refills/decrease",
       payload,
     );
+    return response.data;
+  }
+
+  async tankLogs(queryParams = {}) {
+    const response = await this.httpClient.get(`/tank-monitoring`, {
+      params: queryParams,
+    });
     return response.data;
   }
 }

@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useMemo, useState } from "react";
 import { useLoading } from "@/context/loadingContext";
-import { ITank } from "@/types/tanks";
+import { ITank, ITankLog } from "@/types/tanks";
 import { tanksService } from "@/services";
 import Swal from "sweetalert2";
 import { getDictionary } from "../../../get-dictionary";
@@ -16,7 +16,8 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Clock3, Droplets, Minus, Plus, RotateCw } from "lucide-react";
+import { ChevronLeft, ChevronRight, Clock3, Droplets, Minus, Plus, RotateCw, User } from "lucide-react";
+import { IMeta } from "@/types/common";
 
 type RefillMode = "logs" | "increase" | "decrease";
 
@@ -43,6 +44,17 @@ function normalizeNumber(value?: string | number | null) {
 
 function formatNumber(value?: string | number | null) {
   return normalizeNumber(value).toLocaleString("id-ID");
+}
+
+function formatDate(dateString?: string) {
+  if (!dateString) return "-";
+  return new Date(dateString).toLocaleString("id-ID", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
 }
 
 function getTankPercent(tank?: ITank | null) {
@@ -75,6 +87,9 @@ export default function TanksRefillMain({
   const { setIsLoading } = useLoading();
   const [tanks, setTanks] = useState<ITank[]>([]);
   const [search, setSearch] = useState("");
+  const [tankLogs, setTankLogs] = useState<ITankLog[]>([]);
+  const [metaTankLogs, setMetaTankLogs] = useState<IMeta>();
+
   const [actionState, setActionState] =
     useState<VolumeActionState>(initialActionState);
 
@@ -88,6 +103,48 @@ export default function TanksRefillMain({
         icon: "error",
         title: dictionary.toast.fetch_error_title,
         text: dictionary.toast.fetch_error_text,
+        position: "top-right",
+        toast: true,
+        showConfirmButton: false,
+        timer: 2000,
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const getTankLogs = async (
+    tankId: number,
+    page: number = 1,
+    pageSize: number = 10,
+    search: string = "",
+    payload: Record<string, any> = {},
+  ) => {
+    try {
+      let filterParams: Record<string, any> = {};
+      if (tankId) {
+        filterParams.tankId = tankId;
+      }
+      
+      if (page) {
+        filterParams.page = page;
+      }
+      if (pageSize) {
+        filterParams.limit = pageSize;
+      }
+      if (search) {
+        filterParams.search = search;
+      }
+      filterParams = { ...filterParams, ...payload };
+
+      setIsLoading(true);
+      const response = await tanksService.tankLogs(filterParams);
+      setTankLogs(response?.data?.data ?? response?.data ?? []);
+      setMetaTankLogs(response?.data?.meta ?? null);
+    } catch (error) {
+      Swal.fire({
+        icon: "error",
+        title: dictionary.toast.fetch_error_title,
         position: "top-right",
         toast: true,
         showConfirmButton: false,
@@ -114,8 +171,12 @@ export default function TanksRefillMain({
   }, [search, tanks]);
 
   const selectedTank = actionState.tank;
-  const selectedTankCurrentVolume = normalizeNumber(selectedTank?.currentVolume);
-  const selectedTankTotalCapacity = normalizeNumber(selectedTank?.totalCapacity);
+  const selectedTankCurrentVolume = normalizeNumber(
+    selectedTank?.currentVolume,
+  );
+  const selectedTankTotalCapacity = normalizeNumber(
+    selectedTank?.totalCapacity,
+  );
 
   const projectedVolume = useMemo(() => {
     if (!selectedTank) return 0;
@@ -142,6 +203,10 @@ export default function TanksRefillMain({
   ]);
 
   const openActionModal = (tank: ITank, mode: RefillMode) => {
+    if (mode === "logs") {
+      getTankLogs(tank.id, 1);
+    }
+
     setActionState({
       open: true,
       tank,
@@ -151,7 +216,8 @@ export default function TanksRefillMain({
     });
   };
 
-  const closeActionModal = () => setActionState(initialActionState);
+  const closeActionModal = () =>
+    setActionState((prev) => ({ ...prev, open: false }));
 
   const handleSubmitAction = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -330,9 +396,9 @@ export default function TanksRefillMain({
                     </div>
                   </div>
 
-                    <div className="space-y-4">
-                      <div className="grid gap-3 sm:grid-cols-2">
-                        <MetricCard
+                  <div className="space-y-4">
+                    <div className="grid gap-3 sm:grid-cols-2">
+                      <MetricCard
                         label={dictionary.current_volume}
                         value={`${formatNumber(currentVolume)} L`}
                       />
@@ -362,7 +428,7 @@ export default function TanksRefillMain({
                       <Button
                         type="button"
                         variant="outline"
-                        className="border-slate-200 text-slate-700 hover:bg-slate-50 dark:border-[#434854] dark:text-slate-200 dark:hover:bg-[#1F2023]"
+                        className="cursor-pointer border-slate-200 text-slate-700 hover:bg-slate-50 dark:border-[#434854] dark:text-slate-200 dark:hover:bg-[#1F2023]"
                         onClick={() => openActionModal(tank, "logs")}
                       >
                         {dictionary.button_logs}
@@ -370,7 +436,7 @@ export default function TanksRefillMain({
                       <Button
                         type="button"
                         variant="outline"
-                        className="border-green-200 text-green-700 hover:bg-green-50 dark:border-green-900 dark:text-green-300 dark:hover:bg-green-950/30"
+                        className="cursor-pointer border-green-200 text-green-700 hover:bg-green-50 dark:border-green-900 dark:text-green-300 dark:hover:bg-green-950/30"
                         onClick={() => openActionModal(tank, "increase")}
                       >
                         <Plus className="mr-1 h-4 w-4" />
@@ -378,7 +444,7 @@ export default function TanksRefillMain({
                       <Button
                         type="button"
                         variant="outline"
-                        className="border-red-200 text-red-700 hover:bg-red-50 dark:border-red-900 dark:text-red-300 dark:hover:bg-red-950/30"
+                        className="cursor-pointer border-red-200 text-red-700 hover:bg-red-50 dark:border-red-900 dark:text-red-300 dark:hover:bg-red-950/30"
                         onClick={() => openActionModal(tank, "decrease")}
                       >
                         <Minus className="mr-1 h-4 w-4" />
@@ -396,7 +462,10 @@ export default function TanksRefillMain({
         )}
       </div>
 
-      <Dialog open={actionState.open} onOpenChange={(open) => !open && closeActionModal()}>
+      <Dialog
+        open={actionState.open}
+        onOpenChange={(open) => !open && closeActionModal()}
+      >
         <DialogContent className="sm:max-w-xl">
           <DialogHeader>
             <DialogTitle className="capitalize">
@@ -429,31 +498,78 @@ export default function TanksRefillMain({
 
             {actionState.mode === "logs" ? (
               <div className="space-y-3">
-                <div className="rounded-2xl border bg-slate-50 p-4 dark:border-[#34363B] dark:bg-[#1F2023]">
-                  <div className="mb-2 flex items-center gap-2 text-sm font-semibold text-slate-700 dark:text-slate-200">
-                    <Clock3 className="h-4 w-4 text-sky-500" />
-                    {dictionary.modal.snapshot_title}
-                  </div>
-                  <div className="grid gap-3 sm:grid-cols-2">
-                    <MetricCard
-                      label={dictionary.last_refill}
-                      value={selectedTank?.lastRefillDate || "-"}
-                    />
-                    <MetricCard
-                      label={dictionary.modal.last_updated}
-                      value={selectedTank?.lastUpdated || "-"}
-                    />
-                  </div>
-                  <div className="mt-3 rounded-xl border border-dashed px-4 py-3 text-sm text-slate-600 dark:border-[#434854] dark:text-slate-300">
-                    {selectedTank?.notes ||
-                      dictionary.modal.empty_logs}
-                  </div>
+                <div className="max-h-[450px] overflow-y-auto pr-1 space-y-3 custom-scrollbar">
+                  {tankLogs.length > 0 ? (
+                    tankLogs.map((log) => (
+                      <div 
+                        key={log.id} 
+                        className="rounded-xl border border-slate-100 bg-white p-4 shadow-sm dark:border-[#34363B] dark:bg-[#26282D]"
+                      >
+                        <div className="flex items-center justify-between mb-2">
+                          <div className="flex items-center gap-2 text-xs font-medium text-slate-500">
+                            <Clock3 className="h-3 w-3" />
+                            {formatDate(log.refillDatetime)}
+                          </div>
+                          <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${
+                            log.direction === 'IN' 
+                              ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' 
+                              : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
+                          }`}>
+                            {log.direction === 'IN' ? '+' : '-'}{formatNumber(log.direction === 'IN' ? log.volumeIn : log.volumeOut)} L
+                          </span>
+                        </div>
+                        <div className="text-sm font-medium text-slate-700 dark:text-slate-200">
+                          {log.notes || "-"}
+                        </div>
+                        <div className="mt-3 flex items-center gap-1 text-[10px] text-slate-400 border-t pt-2 dark:border-[#34363B]">
+                          <User className="h-3 w-3" />
+                          {log.operator?.username || 'System'}
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="rounded-xl border border-dashed p-10 text-center text-sm text-slate-500">
+                      {dictionary.modal.empty_logs}
+                    </div>
+                  )}
                 </div>
+
+                {metaTankLogs && (metaTankLogs as any).totalPages > 1 && (
+                  <div className="flex items-center justify-between border-t border-slate-100 pt-3 dark:border-[#34363B]">
+                    <div className="text-xs text-slate-500">
+                      Halaman {(metaTankLogs as any).page} dari {(metaTankLogs as any).totalPages}
+                    </div>
+                    <div className="flex gap-2">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className="h-8 px-3 text-xs cursor-pointer"
+                        disabled={(metaTankLogs as any).page <= 1}
+                        onClick={() => getTankLogs(selectedTank!.id, (metaTankLogs as any).page - 1)}
+                      >
+                        <ChevronLeft className="mr-1 h-3 w-3" />
+                        Previous
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className="h-8 px-3 text-xs cursor-pointer"
+                        disabled={(metaTankLogs as any).page >= (metaTankLogs as any).totalPages}
+                        onClick={() => getTankLogs(selectedTank!.id, (metaTankLogs as any).page + 1)}
+                      >
+                        Next
+                        <ChevronRight className="ml-1 h-3 w-3" />
+                      </Button>
+                    </div>
+                  </div>
+                )}
 
                 <Button
                   type="button"
                   variant="outline"
-                  className="w-full"
+                  className="w-full cursor-pointer bg-red-500 text-white hover:bg-red-600 hover:text-white"
                   onClick={closeActionModal}
                 >
                   {dictionary.modal.close}
@@ -461,47 +577,51 @@ export default function TanksRefillMain({
               </div>
             ) : (
               <>
-              <div className="space-y-2">
-                <Label htmlFor="adjustAmount">{dictionary.modal.amount_label}</Label>
-                <Input
-                  id="adjustAmount"
-                  type="number"
-                  min={0}
-                  value={actionState.amount}
-                  onChange={(event) =>
-                    setActionState((prev) => ({
-                      ...prev,
-                      amount: Number(event.target.value),
-                    }))
-                  }
-                />
-              </div>
+                <div className="space-y-2">
+                  <Label htmlFor="adjustAmount">
+                    {dictionary.modal.amount_label}
+                  </Label>
+                  <Input
+                    id="adjustAmount"
+                    type="number"
+                    min={0}
+                    value={actionState.amount}
+                    onChange={(event) =>
+                      setActionState((prev) => ({
+                        ...prev,
+                        amount: Number(event.target.value),
+                      }))
+                    }
+                  />
+                </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="refillNotes">{dictionary.modal.notes_label}</Label>
-                <Textarea
-                  id="refillNotes"
-                  value={actionState.notes}
-                  onChange={(event) =>
-                    setActionState((prev) => ({
-                      ...prev,
-                      notes: event.target.value,
-                    }))
-                  }
-                  placeholder={
-                    actionState.mode === "increase"
-                      ? dictionary.modal.notes_increase_placeholder
-                      : dictionary.modal.notes_decrease_placeholder
-                  }
-                />
-              </div>
+                <div className="space-y-2">
+                  <Label htmlFor="refillNotes">
+                    {dictionary.modal.notes_label}
+                  </Label>
+                  <Textarea
+                    id="refillNotes"
+                    value={actionState.notes}
+                    onChange={(event) =>
+                      setActionState((prev) => ({
+                        ...prev,
+                        notes: event.target.value,
+                      }))
+                    }
+                    placeholder={
+                      actionState.mode === "increase"
+                        ? dictionary.modal.notes_increase_placeholder
+                        : dictionary.modal.notes_decrease_placeholder
+                    }
+                  />
+                </div>
 
-              <Button
-                type="submit"
-                className="w-full bg-iprimary-blue text-white hover:bg-iprimary-blue/90"
-              >
-                {dictionary.modal.submit}
-              </Button>
+                <Button
+                  type="submit"
+                  className="w-full bg-iprimary-blue text-white hover:bg-iprimary-blue/90 cursor-pointer"
+                >
+                  {dictionary.modal.submit}
+                </Button>
               </>
             )}
           </form>
