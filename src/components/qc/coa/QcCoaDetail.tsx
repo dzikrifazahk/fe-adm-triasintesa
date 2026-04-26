@@ -75,23 +75,17 @@ export default function QcCoaDetail({
     setIsLoading(false);
   }, [setIsLoading]);
 
-  const handleGeneratePdf = useCallback(async () => {
+  const handlePrint = useCallback(async () => {
     try {
       setIsLoading(true);
-      await qcCoaService.generateCoaPdf(coaId);
-      await loadCoa();
-      Swal.fire({
-        icon: "success",
-        title: "PDF COA dibuat",
-        toast: true,
-        position: "top-right",
-        timer: 2000,
-        showConfirmButton: false,
-      });
+      const pdfBlob = await qcCoaService.getCoaPrintBlob(coaId);
+      const blobUrl = URL.createObjectURL(pdfBlob);
+      window.open(blobUrl, "_blank");
+      setTimeout(() => URL.revokeObjectURL(blobUrl), 60_000);
     } catch {
       Swal.fire({
         icon: "error",
-        title: "Gagal generate PDF",
+        title: "Gagal membuka print preview",
         toast: true,
         position: "top-right",
         timer: 2000,
@@ -100,12 +94,7 @@ export default function QcCoaDetail({
     } finally {
       setIsLoading(false);
     }
-  }, [coaId, setIsLoading, loadCoa]);
-
-  const handlePrint = useCallback(() => {
-    const url = qcCoaService.getCoaPrintUrl(coaId);
-    window.open(url, "_blank");
-  }, [coaId]);
+  }, [coaId, setIsLoading]);
 
   if (loading) {
     return <p className="text-sm text-slate-500">Memuat COA...</p>;
@@ -128,9 +117,6 @@ export default function QcCoaDetail({
         <CardHeader className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
           <CardTitle>Ringkasan COA</CardTitle>
           <div className="flex flex-wrap gap-2">
-            <Button variant="outline" onClick={handleGeneratePdf}>
-              Generate PDF
-            </Button>
             <Button variant="outline" onClick={handlePrint}>
               Print Preview
             </Button>
@@ -139,7 +125,7 @@ export default function QcCoaDetail({
         <CardContent className="grid gap-4 md:grid-cols-2">
           <div>
             <p className="text-xs text-slate-500">Product</p>
-            <p className="font-medium">{coa.productName}</p>
+            <p className="font-medium">GRH Water Aquadest</p>
           </div>
           <div>
             <p className="text-xs text-slate-500">Batch</p>

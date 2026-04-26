@@ -170,6 +170,7 @@ export default function QcInspectionDetail({
   const [approvalStatus, setApprovalStatus] = useState<IQcApprovalStatus | null>(null);
   const [loading, setLoading] = useState(true);
   const [resultRows, setResultRows] = useState<ResultRow[]>([]);
+  const [interpretationNotes, setInterpretationNotes] = useState("");
 
   const [rejectModalOpen, setRejectModalOpen] = useState(false);
   const [rejectReason, setRejectReason] = useState("");
@@ -187,6 +188,10 @@ export default function QcInspectionDetail({
   const missingParameters = Math.max(totalParameters - filledParameters, 0);
   const hasNoParameters = totalParameters === 0;
   const allParametersFilled = hasNoParameters || missingParameters === 0;
+  const interpretationFilled = interpretationNotes.trim().length > 0;
+  const savedInterpretation = inspection?.interpretationNotes?.trim() ?? "";
+  const currentInterpretation = interpretationNotes.trim();
+  const interpretationDirty = currentInterpretation !== savedInterpretation;
 
   const loadInspection = useCallback(async () => {
     setLoading(true);
@@ -194,6 +199,7 @@ export default function QcInspectionDetail({
       const response = await qcCoaService.getQcInspection(inspectionId);
       const data = response?.data ?? response;
       setInspection(data);
+      setInterpretationNotes(data?.interpretationNotes ?? "");
 
       const templateItems = normalizeTemplateParameters(data?.template?.parameters);
       const existingResults: IQcInspectionResult[] = data?.results ?? [];
@@ -286,6 +292,9 @@ export default function QcInspectionDetail({
           notes: row.notes || undefined,
         })),
       });
+      await qcCoaService.updateQcInspection(inspectionId, {
+        interpretationNotes,
+      });
       loadInspection();
       Swal.fire({
         icon: "success",
@@ -310,11 +319,36 @@ export default function QcInspectionDetail({
   };
 
   const handleApprovePjtQc = async () => {
+    if (interpretationDirty) {
+      Swal.fire({
+        icon: "warning",
+        title: "Simpan Hasil terlebih dahulu",
+        text: "Perubahan interpretasi belum disimpan.",
+        toast: true,
+        position: "top-right",
+        timer: 2200,
+        showConfirmButton: false,
+      });
+      return;
+    }
+
     if (!allParametersFilled) {
       Swal.fire({
         icon: "warning",
         title: "Approve hanya bisa jika semua parameter terisi",
         text: `Masih ada ${missingParameters} parameter yang belum diisi.`,
+        toast: true,
+        position: "top-right",
+        timer: 2200,
+        showConfirmButton: false,
+      });
+      return;
+    }
+
+    if (!savedInterpretation) {
+      Swal.fire({
+        icon: "warning",
+        title: "Interpretasi wajib diisi sebelum approve",
         toast: true,
         position: "top-right",
         timer: 2200,
@@ -329,6 +363,7 @@ export default function QcInspectionDetail({
       html: `
         <div style="text-align:left">
           <p>Status parameter terisi: <strong>${filledParameters}/${totalParameters}</strong></p>
+          <p>Status interpretasi: <strong>${savedInterpretation ? "Terisi" : "Belum diisi"}</strong></p>
           <p>${hasNoParameters ? "Template tidak memiliki parameter." : "Semua parameter sudah terisi."} Lanjutkan approve?</p>
         </div>
       `,
@@ -470,11 +505,6 @@ export default function QcInspectionDetail({
               {inspection.finalStatus ?? "-"}
             </Badge>
           </InfoItem>
-          <InfoItem label="Interpretation Notes">
-            <span className="text-slate-500 dark:text-slate-400">
-              {inspection.interpretationNotes?.trim() || "—"}
-            </span>
-          </InfoItem>
         </div>
       </SectionCard>
 
@@ -493,6 +523,27 @@ export default function QcInspectionDetail({
           ) : null
         }
       >
+        <div className="mb-4 rounded-lg border border-slate-100 bg-slate-50 p-3 dark:border-slate-700 dark:bg-slate-800">
+          <div className="mb-1 flex items-center justify-between">
+            <p className="text-[11px] font-medium uppercase tracking-wide text-slate-400">
+              Interpretasi
+            </p>
+            {canEditResults && interpretationDirty ? (
+              <span className="text-[11px] font-medium text-amber-600 dark:text-amber-400">
+                Perubahan belum disimpan
+              </span>
+            ) : null}
+          </div>
+          <Textarea
+            value={interpretationNotes}
+            placeholder="Tulis interpretasi hasil QC..."
+            rows={3}
+            className="border-slate-200 text-sm focus-visible:ring-1 focus-visible:ring-slate-400 dark:border-slate-600"
+            disabled={!canEditResults}
+            onChange={(e) => setInterpretationNotes(e.target.value)}
+          />
+        </div>
+
         {/* overflow-x-auto agar tabel bisa scroll horizontal di layar kecil */}
         <div className="overflow-x-auto rounded-lg border border-slate-100 dark:border-slate-700">
           <Table className="min-w-[640px] text-sm">
@@ -580,7 +631,7 @@ export default function QcInspectionDetail({
                 size="sm"
                 className="h-8 bg-slate-900 px-4 text-xs font-medium text-white hover:bg-slate-700 dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-slate-300"
                 onClick={handleApprovePjtQc}
-                disabled={!allParametersFilled}
+                disabled={!allParametersFilled || !interpretationFilled || interpretationDirty}
               >
                 Approve PJT QC
               </Button>
@@ -661,6 +712,11 @@ export default function QcInspectionDetail({
                 : allParametersFilled
                   ? "Semua parameter sudah terisi."
                   : `Belum lengkap, kurang ${missingParameters} parameter.`}
+            </p>
+            <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+              {interpretationFilled
+                ? "Interpretasi terisi."
+                : "Interpretasi belum diisi."}
             </p>
           </div>
 

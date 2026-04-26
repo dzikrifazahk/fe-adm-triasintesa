@@ -137,14 +137,12 @@ export class QcCoaService extends BaseHttpService {
     return response.data;
   }
 
-  async generateCoaPdf(id: string) {
-    const response = await this.httpClient.post(
-      `/qc-coa/coa-certificates/${id}/generate-pdf`,
+  async getCoaPrintBlob(id: string) {
+    const response = await this.httpClient.get(
+      `/qc-coa/coa-certificates/${id}/print`,
+      { responseType: "blob" },
     );
-    return response.data;
+    return response.data as Blob;
   }
 
-  getCoaPrintUrl(id: string) {
-    return `${this.baseURL}/qc-coa/coa-certificates/${id}/print`;
-  }
 }
