@@ -163,6 +163,7 @@ export function ModalUpsertInventoryItems({
                 <InfoCard label="Item Name" value={detailData.itemName} />
                 <InfoCard label="UOM" value={detailData.uom || "-"} />
                 <InfoCard label="Category" value={detailData.category || "-"} />
+                <InfoCard label="Stock" value={detailData.stock ?? 0} />
                 <InfoCard label="Status" value={detailData.isActive ? "active" : "inactive"} />
                 <InfoCard label="Created At" value={formatDate(detailData.createdAt)} />
                 <InfoCard label="Updated At" value={formatDate(detailData.updatedAt)} />
@@ -208,6 +209,7 @@ export function ModalUpsertInventoryItems({
                 disabled={isReadOnly}
               />
             </Field>
+
           </div>
 
           {type === "detail" && !isDetailEditing ? (

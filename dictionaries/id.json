@@ -388,7 +388,7 @@
     "hero_description": "Scan item ke inventory dengan cepat, pilih lokasi penyimpanan, lalu monitor hasil scan terbaru.",
     "stats": {
       "available": "Available",
-      "qc_pass": "QC Pass",
+      "qc_pass": "Valid Stock",
       "locations": "Locations"
     },
     "scanner": {
@@ -411,7 +411,7 @@
     "form": {
       "location_label": "Master Location",
       "location_placeholder": "Pilih lokasi",
-      "qc_status_label": "QC Status",
+      "qc_status_label": "Status",
       "expiry_date_label": "Expiry Date",
       "item_label": "Master Item",
       "item_placeholder": "Pilih item",
@@ -423,7 +423,7 @@
       "title": "Petunjuk Operasi",
       "step_1": "Gunakan webcam untuk scan barcode item.",
       "step_2": "Pilih master location penyimpanan.",
-      "step_3": "Tentukan QC status dan expiry date sebelum simpan."
+      "step_3": "Tentukan expiry date sebelum simpan."
     },
     "locations": {
       "title": "Master Location Aktif",
@@ -442,7 +442,7 @@
         "batch": "Batch",
         "location": "Location",
         "status": "Status",
-        "qc_status": "QC",
+        "qc_status": "Status",
         "entry_date": "Entry",
         "expiry_date": "Expiry"
       }
@@ -453,7 +453,7 @@
     },
     "toast": {
       "load_error_title": "Gagal memuat data inventory",
-      "validation_warning": "Lengkapi barcode, lokasi, dan QC status.",
+      "validation_warning": "Lengkapi barcode dan lokasi.",
       "barcode_detected_title": "Barcode berhasil terdeteksi",
       "camera_access_error": "Kamera tidak bisa diakses. Gunakan input manual.",
       "scan_success_title": "Scan-in berhasil",

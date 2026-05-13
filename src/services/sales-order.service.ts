@@ -77,11 +77,10 @@ export class SalesOrderService extends BaseHttpService {
     return response.data;
   }
 
-  async getProductionBatches(queryParams: Record<string, unknown> = {}) {
-    const response = await this.httpClient.get("/production-batches", {
+  async getInventoryItems(queryParams: Record<string, unknown> = {}) {
+    const response = await this.httpClient.get("/inventory-items", {
       params: queryParams,
     });
     return response.data;
   }
 }
-

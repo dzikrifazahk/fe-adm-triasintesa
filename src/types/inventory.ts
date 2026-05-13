@@ -19,6 +19,7 @@ export interface IInventoryItemMaster {
   itemName: string;
   uom?: string | null;
   category?: string | null;
+  stock: number;
   isActive: boolean;
 }
 
@@ -32,7 +33,6 @@ export interface IInvJirigen {
   locationId: number;
   entryDate: string;
   entryBy: string;
-  qcStatus?: string | null;
   expiryDate?: string | null;
   lastUpdated?: string | null;
   location?: IInventoryLocation;
@@ -67,7 +67,6 @@ export interface IScanInPayload {
   itemId?: number;
   barcode: string;
   locationId: number;
-  qcStatus?: string;
   expiryDate?: string;
 }
 

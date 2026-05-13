@@ -12,8 +12,8 @@ import {
   ICreateSalesOrderPayload,
   IProcessShipmentPayload,
   ISalesOrder,
-  ISalesOrderBatch,
   ISalesOrderCustomer,
+  ISalesOrderItem,
   SalesOrderStatus,
   IUpdateSalesOrderPayload,
 } from "@/types/sales-order";
@@ -46,8 +46,8 @@ type ListPayload<T> = {
 };
 
 type DetailDraft = {
-  batchId: string;
-  quantityJirigen: string;
+  itemId: string;
+  quantity: string;
   pricePerJirigen: string;
 };
 
@@ -74,7 +74,7 @@ const emptyForm: FormState = {
   shippingCost: "0",
   shippingAddress: "",
   notes: "",
-  details: [{ batchId: "", quantityJirigen: "1", pricePerJirigen: "0" }],
+  details: [{ itemId: "", quantity: "1", pricePerJirigen: "0" }],
 };
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -141,7 +141,7 @@ export default function SalesOrderMain({
 
   const [orders, setOrders] = useState<ISalesOrder[]>([]);
   const [customers, setCustomers] = useState<ISalesOrderCustomer[]>([]);
-  const [batches, setBatches] = useState<ISalesOrderBatch[]>([]);
+  const [items, setItems] = useState<ISalesOrderItem[]>([]);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
 
@@ -158,6 +158,9 @@ export default function SalesOrderMain({
     "Kelola sales order dari input hingga penyelesaian pengiriman.";
 
   const canCreate = useMemo(() => !isEditMode, [isEditMode]);
+  const itemById = useMemo(() => {
+    return new Map(items.map((item) => [String(item.id), item]));
+  }, [items]);
 
   const fetchOrders = async () => {
     try {
@@ -194,14 +197,14 @@ export default function SalesOrderMain({
     }
 
     try {
-      const batchResponse = await salesOrderService.getProductionBatches({
+      const ItemResponse = await salesOrderService.getInventoryItems({
         page: 1,
         limit: 200,
       });
-      const batchPayload = unwrapData<ListPayload<ISalesOrderBatch>>(batchResponse);
-      setBatches(Array.isArray(batchPayload.data) ? batchPayload.data : []);
+      const ItemPayload = unwrapData<ListPayload<ISalesOrderItem>>(ItemResponse);
+      setItems(Array.isArray(ItemPayload.data) ? ItemPayload.data : []);
     } catch {
-      setBatches([]);
+      setItems([]);
     }
   };
 
@@ -233,8 +236,8 @@ export default function SalesOrderMain({
       notes: order.notes ?? "",
       details:
         order.details?.map((item) => ({
-          batchId: String(item.batchId),
-          quantityJirigen: String(item.quantityJirigen),
+          itemId: String(item.itemId),
+          quantity: String(item.quantity),
           pricePerJirigen: String(item.pricePerJirigen),
         })) ?? emptyForm.details,
     });
@@ -311,7 +314,7 @@ export default function SalesOrderMain({
       ...prev,
       details: [
         ...prev.details,
-        { batchId: "", quantityJirigen: "1", pricePerJirigen: "0" },
+        { itemId: "", quantity: "1", pricePerJirigen: "0" },
       ],
     }));
   };
@@ -337,8 +340,8 @@ export default function SalesOrderMain({
     shippingAddress: form.shippingAddress.trim() || undefined,
     notes: form.notes.trim() || undefined,
     details: form.details.map((item) => ({
-      batchId: toNumber(item.batchId),
-      quantityJirigen: toNumber(item.quantityJirigen),
+      itemId: toNumber(item.itemId),
+      quantity: toNumber(item.quantity),
       pricePerJirigen: toNumber(item.pricePerJirigen),
     })),
   });
@@ -366,10 +369,21 @@ export default function SalesOrderMain({
 
     const hasInvalid = payload.details.some(
       (item) =>
-        !item.batchId || item.quantityJirigen <= 0 || item.pricePerJirigen <= 0,
+        !item.itemId || item.quantity <= 0 || item.pricePerJirigen <= 0,
     );
     if (hasInvalid) {
-      return "Batch, quantity, dan price pada detail wajib valid.";
+      return "Item, quantity, dan price pada detail wajib valid.";
+    }
+
+    const hasOverStock = payload.details.some((detail, index) => {
+      const draft = form.details[index];
+      const selectedItem = itemById.get(String(draft?.itemId || detail.itemId));
+      const stock = selectedItem?.stock ?? 0;
+      return detail.quantity > stock;
+    });
+
+    if (hasOverStock) {
+      return "Quantity melebihi stok item yang tersedia.";
     }
 
     return null;
@@ -810,21 +824,21 @@ export default function SalesOrderMain({
                 <div key={`detail-${index}`} className="grid grid-cols-1 gap-2 rounded-md border p-3 md:grid-cols-4">
                   <select
                     className="h-9 rounded-md border bg-background px-3 text-sm"
-                    value={detail.batchId}
-                    onChange={(event) => setDetailField(index, "batchId", event.target.value)}
+                    value={detail.itemId}
+                    onChange={(event) => setDetailField(index, "itemId", event.target.value)}
                   >
-                    <option value="">Pilih Batch</option>
-                    {batches.map((batch) => (
-                      <option key={batch.id} value={batch.id}>
-                        {batch.batchNumber}
+                    <option value="">Pilih Item</option>
+                    {items.map((item) => (
+                      <option key={item.id} value={item.id}>
+                        {item.itemName} (stok: {item.stock ?? 0})
                       </option>
                     ))}
                   </select>
                   <Input
                     type="number"
-                    placeholder="Qty Jirigen"
-                    value={detail.quantityJirigen}
-                    onChange={(event) => setDetailField(index, "quantityJirigen", event.target.value)}
+                    placeholder="Quantity"
+                    value={detail.quantity}
+                    onChange={(event) => setDetailField(index, "quantity", event.target.value)}
                   />
                   <Input
                     type="number"
@@ -897,7 +911,7 @@ export default function SalesOrderMain({
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Batch</TableHead>
+                      <TableHead>Item</TableHead>
                       <TableHead>Qty</TableHead>
                       <TableHead>Harga</TableHead>
                       <TableHead>Subtotal</TableHead>
@@ -907,8 +921,8 @@ export default function SalesOrderMain({
                     {selectedOrder.details?.length ? (
                       selectedOrder.details.map((detail) => (
                         <TableRow key={detail.id}>
-                          <TableCell>{detail.batch?.batchNumber ?? detail.batchId}</TableCell>
-                          <TableCell>{detail.quantityJirigen}</TableCell>
+                          <TableCell>{detail.item?.itemName ?? detail.itemId}</TableCell>
+                          <TableCell>{detail.quantity}</TableCell>
                           <TableCell>{formatCurrency(detail.pricePerJirigen)}</TableCell>
                           <TableCell>{formatCurrency(detail.subtotal)}</TableCell>
                         </TableRow>
@@ -930,3 +944,5 @@ export default function SalesOrderMain({
     </div>
   );
 }
+
+

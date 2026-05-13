@@ -3,6 +3,7 @@ export interface IAddOrUpdateInventoryItem {
   itemName: string;
   uom?: string;
   category?: string;
+  stock?: number;
 }
 
 export interface IInventoryItem {
@@ -11,6 +12,7 @@ export interface IInventoryItem {
   itemName: string;
   uom?: string | null;
   category?: string | null;
+  stock: number;
   isActive: boolean;
   createdAt?: string;
   updatedAt?: string;

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import axios from "axios";
 import Swal from "sweetalert2";
 import { getDictionary } from "../../../get-dictionary";
@@ -138,6 +138,20 @@ export default function ShippingMain({
   const description =
     dictionary?.description ??
     "Kelola delivery order, proses pengiriman, dan bukti kirim.";
+  const eligibleSalesOrders = useMemo(() => {
+    const filtered = salesOrders.filter((order) =>
+      ["approved", "processing", "ready_to_ship"].includes(order.status),
+    );
+    if (!form.salesOrderId) return filtered;
+    const existsInFiltered = filtered.some(
+      (order) => String(order.id) === form.salesOrderId,
+    );
+    if (existsInFiltered) return filtered;
+    const selected = salesOrders.find(
+      (order) => String(order.id) === form.salesOrderId,
+    );
+    return selected ? [selected, ...filtered] : filtered;
+  }, [salesOrders, form.salesOrderId]);
 
   const fetchDeliveries = async () => {
     try {
@@ -661,9 +675,9 @@ export default function ShippingMain({
                 onChange={(event) => setField("salesOrderId", event.target.value)}
               >
                 <option value="">Pilih sales order</option>
-                {salesOrders.map((order) => (
+                {eligibleSalesOrders.map((order) => (
                   <option key={order.id} value={order.id}>
-                    {order.soNumber}
+                    {order.soNumber} ({order.status.replaceAll("_", " ")})
                   </option>
                 ))}
               </select>

@@ -112,6 +112,19 @@ export class InventoryService extends BaseHttpService {
     return response.data;
   }
 
+  async updateInvItemEntry(
+    id: number,
+    payload: { itemId?: number; locationId?: number; expiryDate?: string },
+  ) {
+    const response = await this.httpClient.patch(`/inv-items/${id}`, payload);
+    return response.data;
+  }
+
+  async deleteInvItemEntry(id: number) {
+    const response = await this.httpClient.delete(`/inv-items/${id}`);
+    return response.data;
+  }
+
   async getInventoryItems(queryParams: Record<string, unknown> = {}) {
     const response = await this.httpClient.get("/inventory-items", {
       params: queryParams,

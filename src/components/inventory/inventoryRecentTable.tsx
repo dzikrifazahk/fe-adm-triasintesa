@@ -26,6 +26,9 @@ type Props = {
   onSearchBarcodeChange: (value: string) => void;
   onSearch: () => void;
   onRefresh: () => void;
+  onChangeStatus: (id: number, status: IInvJirigen["status"]) => void;
+  onEditRow: (row: IInvJirigen) => void;
+  onDeleteRow: (row: IInvJirigen) => void;
   formatDate: (value?: string | null) => string;
   getStatusClassName: (status?: string) => string;
 };
@@ -38,9 +41,36 @@ export function InventoryRecentTable({
   onSearchBarcodeChange,
   onSearch,
   onRefresh,
+  onChangeStatus,
+  onEditRow,
+  onDeleteRow,
   formatDate,
   getStatusClassName,
 }: Props) {
+  const getBatchLabel = (row: IInvJirigen): string => {
+    const itemCode = row.item?.itemCode?.toLowerCase() ?? "";
+    const itemName = row.item?.itemName?.toLowerCase() ?? "";
+    const itemCategory = row.item?.category?.toLowerCase() ?? "";
+    const isJirigenItem =
+      itemCode.startsWith("jirigen") ||
+      itemName.includes("jirigen") ||
+      itemCategory.includes("jirigen");
+
+    if (!isJirigenItem) {
+      return "-";
+    }
+
+    if (row.batch?.batchNumber) {
+      return row.batch.batchNumber;
+    }
+
+    if (row.batchId) {
+      return String(row.batchId);
+    }
+
+    return "-";
+  };
+
   return (
     <Card className="border-[#DCE3F1] shadow-sm dark:border-[#34363B] dark:bg-[#26282D]">
       <CardHeader className="space-y-4">
@@ -82,9 +112,9 @@ export function InventoryRecentTable({
                 <TableHead>{dictionary.table.columns.batch}</TableHead>
                 <TableHead>{dictionary.table.columns.location}</TableHead>
                 <TableHead>{dictionary.table.columns.status}</TableHead>
-                <TableHead>{dictionary.table.columns.qc_status}</TableHead>
                 <TableHead>{dictionary.table.columns.entry_date}</TableHead>
                 <TableHead>{dictionary.table.columns.expiry_date}</TableHead>
+                <TableHead>Aksi</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -101,7 +131,7 @@ export function InventoryRecentTable({
                       {row.item?.itemName || "-"}
                     </TableCell>
                     <TableCell className="font-medium">{row.barcode}</TableCell>
-                    <TableCell>{row.batch?.batchNumber || row.batchId}</TableCell>
+                    <TableCell>{getBatchLabel(row)}</TableCell>
                     <TableCell>
                       {row.location?.locationName ||
                         `${dictionary.table.location_fallback_prefix} #${row.locationId}`}
@@ -111,9 +141,44 @@ export function InventoryRecentTable({
                         {row.status}
                       </Badge>
                     </TableCell>
-                    <TableCell>{row.qcStatus}</TableCell>
                     <TableCell>{formatDate(row.entryDate)}</TableCell>
                     <TableCell>{formatDate(row.expiryDate)}</TableCell>
+                    <TableCell>
+                      <div className="flex flex-wrap gap-2">
+                        <select
+                          className="h-9 rounded-md border bg-background px-2 text-sm"
+                          value={row.status}
+                          onChange={(event) =>
+                            onChangeStatus(
+                              row.id,
+                              event.target.value as IInvJirigen["status"],
+                            )
+                          }
+                        >
+                          <option value="available">available</option>
+                          <option value="reserved">reserved</option>
+                          <option value="shipped">shipped</option>
+                          <option value="sold">sold</option>
+                          <option value="returned">returned</option>
+                        </select>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => onEditRow(row)}
+                          disabled={row.status !== "available"}
+                        >
+                          Edit
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="destructive"
+                          onClick={() => onDeleteRow(row)}
+                          disabled={row.status !== "available"}
+                        >
+                          Hapus
+                        </Button>
+                      </div>
+                    </TableCell>
                   </TableRow>
                 ))
               )}

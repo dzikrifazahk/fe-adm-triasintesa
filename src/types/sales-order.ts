@@ -7,9 +7,11 @@ export type SalesOrderStatus =
   | "completed"
   | "cancelled";
 
-export interface ISalesOrderBatch {
+export interface ISalesOrderItem {
   id: number;
-  batchNumber: string;
+  itemCode: string;
+  itemName: string;
+  stock?: number;
 }
 
 export interface ISalesOrderCustomer {
@@ -21,11 +23,11 @@ export interface ISalesOrderCustomer {
 
 export interface ISalesOrderDetail {
   id: number;
-  batchId: number;
-  quantityJirigen: number;
+  itemId: number;
+  quantity: number;
   pricePerJirigen: number;
   subtotal: number;
-  batch?: ISalesOrderBatch;
+  item?: ISalesOrderItem;
 }
 
 export interface ISalesOrder {
@@ -55,8 +57,8 @@ export interface ISalesOrder {
 }
 
 export interface ISalesOrderDetailPayload {
-  batchId: number;
-  quantityJirigen: number;
+  itemId: number;
+  quantity: number;
   pricePerJirigen: number;
 }
 
@@ -78,6 +80,7 @@ export interface IUpdateSalesOrderPayload {
   customerId?: number;
   soNumber?: string;
   orderDate?: string;
+  details?: ISalesOrderDetailPayload[];
   paymentMethod?: string;
   paymentTermDays?: number;
   paymentTermDetail?: unknown;

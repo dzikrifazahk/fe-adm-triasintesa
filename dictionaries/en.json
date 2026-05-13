@@ -392,7 +392,7 @@
     "hero_description": "Scan items into inventory quickly, choose the storage location, and monitor the latest scan results.",
     "stats": {
       "available": "Available",
-      "qc_pass": "QC Pass",
+      "qc_pass": "Valid Stock",
       "locations": "Locations"
     },
     "scanner": {
@@ -415,7 +415,7 @@
     "form": {
       "location_label": "Master Location",
       "location_placeholder": "Select location",
-      "qc_status_label": "QC Status",
+      "qc_status_label": "Status",
       "expiry_date_label": "Expiry Date",
       "item_label": "Master Item",
       "item_placeholder": "Select item",
@@ -427,7 +427,7 @@
       "title": "Operating Guide",
       "step_1": "Use the webcam to scan the item barcode.",
       "step_2": "Choose the storage master location.",
-      "step_3": "Set the QC status and expiry date before saving."
+      "step_3": "Set the expiry date before saving."
     },
     "locations": {
       "title": "Active Master Locations",
@@ -446,7 +446,7 @@
         "batch": "Batch",
         "location": "Location",
         "status": "Status",
-        "qc_status": "QC",
+        "qc_status": "Status",
         "entry_date": "Entry",
         "expiry_date": "Expiry"
       }
@@ -457,7 +457,7 @@
     },
     "toast": {
       "load_error_title": "Failed to load inventory data",
-      "validation_warning": "Complete barcode, location, and QC status.",
+      "validation_warning": "Complete barcode and location.",
       "barcode_detected_title": "Barcode detected successfully",
       "camera_access_error": "Camera cannot be accessed. Use manual input instead.",
       "scan_success_title": "Scan-in successful",

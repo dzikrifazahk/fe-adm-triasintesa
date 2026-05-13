@@ -13,6 +13,7 @@ import {
   IInvMovement,
   IInventoryItemMaster,
   IInventoryLocation,
+  InventoryStatus,
   IScanInPayload,
 } from "@/types/inventory";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -25,7 +26,6 @@ import {
   MapPin,
   PackageCheck,
   ScanLine,
-  ShieldCheck,
   Warehouse,
 } from "lucide-react";
 
@@ -37,17 +37,13 @@ type ScanInForm = {
   itemId: string;
   barcode: string;
   locationId: string;
-  qcStatus: string;
   expiryDate: string;
 };
-
-const qcStatusOptions = ["PASS", "HOLD", "REJECT"] as const;
 
 const emptyScanInForm: ScanInForm = {
   itemId: "",
   barcode: "",
   locationId: "",
-  qcStatus: "PASS",
   expiryDate: "",
 };
 
@@ -218,11 +214,6 @@ export default function InventoryMain({ dictionary }: { dictionary: Dictionary }
     [stocks],
   );
 
-  const passCount = useMemo(
-    () => stocks.filter((item) => item.qcStatus === "PASS").length,
-    [stocks],
-  );
-
   const recentStocks = useMemo(() => {
     return [...stocks]
       .sort((a, b) => {
@@ -236,7 +227,7 @@ export default function InventoryMain({ dictionary }: { dictionary: Dictionary }
   const submitScanIn = async (event?: React.FormEvent) => {
     event?.preventDefault();
 
-    if (!scanInForm.barcode || !scanInForm.locationId || !scanInForm.qcStatus) {
+    if (!scanInForm.barcode || !scanInForm.locationId) {
       Swal.fire({
         icon: "warning",
         title: dictionary.toast.validation_warning,
@@ -248,7 +239,6 @@ export default function InventoryMain({ dictionary }: { dictionary: Dictionary }
       itemId: scanInForm.itemId ? toNumber(scanInForm.itemId) : undefined,
       barcode: scanInForm.barcode.trim(),
       locationId: toNumber(scanInForm.locationId),
-      qcStatus: scanInForm.qcStatus,
       expiryDate: scanInForm.expiryDate || undefined,
     };
 
@@ -286,6 +276,152 @@ export default function InventoryMain({ dictionary }: { dictionary: Dictionary }
     await loadAll(searchBarcode);
   };
 
+  const handleChangeStatus = async (id: number, status: InventoryStatus) => {
+    try {
+      setIsLoading(true);
+      await inventoryService.updateInvJirigenStatus(id, status);
+      await loadAll(searchBarcode);
+      Swal.fire({
+        icon: "success",
+        title: "Status inventory berhasil diperbarui",
+        toast: true,
+        position: "top-right",
+        timer: 1800,
+        showConfirmButton: false,
+      });
+    } catch (error) {
+      Swal.fire({
+        icon: "error",
+        title: "Gagal memperbarui status inventory",
+        text: getErrorMessage(error),
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleEditRow = async (row: IInvJirigen) => {
+    if (row.status !== "available") {
+      Swal.fire({
+        icon: "warning",
+        title: "Hanya item status available yang bisa diedit",
+      });
+      return;
+    }
+
+    const itemOptions = itemMasters
+      .map((item) => {
+        const selected = row.itemId === item.id ? "selected" : "";
+        return `<option value="${item.id}" ${selected}>${item.itemCode} - ${item.itemName}</option>`;
+      })
+      .join("");
+    const locationOptions = locations
+      .map((location) => {
+        const selected = row.locationId === location.id ? "selected" : "";
+        return `<option value="${location.id}" ${selected}>${location.locationCode} - ${location.locationName}</option>`;
+      })
+      .join("");
+    const expiryValue = row.expiryDate ? row.expiryDate.slice(0, 10) : "";
+
+    const result = await Swal.fire({
+      title: "Edit Inventory Item",
+      html: `
+        <div style="display:flex;flex-direction:column;gap:10px;text-align:left">
+          <label>Item</label>
+          <select id="inv-item-id" class="swal2-input" style="margin:0">${itemOptions}</select>
+          <label>Location</label>
+          <select id="inv-location-id" class="swal2-input" style="margin:0">${locationOptions}</select>
+          <label>Expiry Date</label>
+          <input id="inv-expiry-date" type="date" class="swal2-input" style="margin:0" value="${expiryValue}" />
+        </div>
+      `,
+      showCancelButton: true,
+      confirmButtonText: "Simpan",
+      cancelButtonText: "Batal",
+      preConfirm: () => {
+        const itemId = Number(
+          (document.getElementById("inv-item-id") as HTMLSelectElement)?.value || 0,
+        );
+        const locationId = Number(
+          (document.getElementById("inv-location-id") as HTMLSelectElement)?.value || 0,
+        );
+        const expiryDate =
+          (document.getElementById("inv-expiry-date") as HTMLInputElement)?.value || undefined;
+        if (!itemId || !locationId) {
+          Swal.showValidationMessage("Item dan location wajib diisi.");
+          return null;
+        }
+        return { itemId, locationId, expiryDate };
+      },
+    });
+
+    if (!result.isConfirmed || !result.value) return;
+
+    try {
+      setIsLoading(true);
+      await inventoryService.updateInvItemEntry(row.id, result.value);
+      await loadAll(searchBarcode);
+      Swal.fire({
+        icon: "success",
+        title: "Inventory berhasil diperbarui",
+        toast: true,
+        position: "top-right",
+        timer: 1800,
+        showConfirmButton: false,
+      });
+    } catch (error) {
+      Swal.fire({
+        icon: "error",
+        title: "Gagal mengedit inventory",
+        text: getErrorMessage(error),
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleDeleteRow = async (row: IInvJirigen) => {
+    if (row.status !== "available") {
+      Swal.fire({
+        icon: "warning",
+        title: "Hanya item status available yang bisa dihapus",
+      });
+      return;
+    }
+
+    const confirmation = await Swal.fire({
+      icon: "warning",
+      title: "Hapus item inventory ini?",
+      text: `Barcode: ${row.barcode}`,
+      showCancelButton: true,
+      confirmButtonText: "Hapus",
+      cancelButtonText: "Batal",
+    });
+    if (!confirmation.isConfirmed) return;
+
+    try {
+      setIsLoading(true);
+      await inventoryService.deleteInvItemEntry(row.id);
+      await loadAll(searchBarcode);
+      Swal.fire({
+        icon: "success",
+        title: "Inventory berhasil dihapus",
+        toast: true,
+        position: "top-right",
+        timer: 1800,
+        showConfirmButton: false,
+      });
+    } catch (error) {
+      Swal.fire({
+        icon: "error",
+        title: "Gagal menghapus inventory",
+        text: getErrorMessage(error),
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return (
     <div className="flex h-full min-h-0 w-full flex-col gap-6 overflow-y-auto">
       <section className="rounded-[28px] border border-[#D9E1F2] bg-[linear-gradient(135deg,#F8FBFF_0%,#EEF5FF_50%,#FFFFFF_100%)] p-6 shadow-sm dark:border-[#34363B] dark:bg-[linear-gradient(135deg,#1F2430_0%,#202B3C_50%,#26282D_100%)]">
@@ -308,12 +444,6 @@ export default function InventoryMain({ dictionary }: { dictionary: Dictionary }
               value={availableCount}
               tone="bg-emerald-50 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300"
               icon={<PackageCheck className="h-5 w-5" />}
-            />
-            <StatCard
-              label={dictionary.stats.qc_pass}
-              value={passCount}
-              tone="bg-blue-50 text-blue-700 dark:bg-blue-500/15 dark:text-blue-300"
-              icon={<ShieldCheck className="h-5 w-5" />}
             />
             <StatCard
               label={dictionary.stats.locations}
@@ -399,28 +529,6 @@ export default function InventoryMain({ dictionary }: { dictionary: Dictionary }
                   {locations.map((location) => (
                     <option key={location.id} value={location.id}>
                       {location.locationCode} - {location.locationName}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label className="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-200">
-                  {dictionary.form.qc_status_label}
-                </label>
-                <select
-                  className="h-12 w-full rounded-md border border-slate-200 bg-white px-3 text-sm dark:border-[#34363B] dark:bg-[#1F2023]"
-                  value={scanInForm.qcStatus}
-                  onChange={(event) =>
-                    setScanInForm((prev) => ({
-                      ...prev,
-                      qcStatus: event.target.value,
-                    }))
-                  }
-                >
-                  {qcStatusOptions.map((status) => (
-                    <option key={status} value={status}>
-                      {status}
                     </option>
                   ))}
                 </select>
@@ -541,6 +649,9 @@ export default function InventoryMain({ dictionary }: { dictionary: Dictionary }
           onSearchBarcodeChange={setSearchBarcode}
           onSearch={handleSearch}
           onRefresh={handleRefresh}
+          onChangeStatus={handleChangeStatus}
+          onEditRow={handleEditRow}
+          onDeleteRow={handleDeleteRow}
           formatDate={formatDate}
           getStatusClassName={statusClassName}
         />

@@ -90,6 +90,16 @@ export const columns = (props: ChildProps): ColumnDef<IInventoryItem>[] => [
     ),
   },
   {
+    id: "Stock",
+    accessorFn: (row) => row.stock ?? 0,
+    header: ({ column }) => (
+      <Button variant="ghost" onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}>
+        Stock
+        <ArrowUpDown className="ml-2 h-4 w-4" />
+      </Button>
+    ),
+  },
+  {
     id: props.dictionary.column.is_active,
     accessorFn: (row) => (row.isActive ? "active" : "inactive"),
     header: ({ column }) => (
