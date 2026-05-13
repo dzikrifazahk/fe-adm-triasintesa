@@ -20,6 +20,39 @@
       "detail_title": "Detail Inventory Location"
     }
   },
+  "inventory_item_page_dic": {
+    "title": "Master Item Inventory",
+    "description": "Kelola master item untuk kebutuhan transaksi inventory.",
+    "search_item_placeholder": "Cari nama item...",
+    "column_filter": "Filter Kolom",
+    "button_add_item": "Tambah Item",
+    "column": {
+      "item_code": "Kode Item",
+      "item_name": "Nama Item",
+      "uom": "Satuan",
+      "category": "Kategori",
+      "is_active": "Status",
+      "created_at": "Dibuat",
+      "updated_at": "Diperbarui",
+      "actions": "Aksi"
+    },
+    "modal": {
+      "create_title": "Tambah Master Item",
+      "edit_title": "Ubah Master Item",
+      "detail_title": "Detail Master Item"
+    },
+    "action": {
+      "view_detail": "Lihat Detail",
+      "edit": "Edit",
+      "delete": "Nonaktifkan"
+    },
+    "toast": {
+      "refresh_success": "Data berhasil di refresh",
+      "delete_confirm": "Apakah anda ingin menonaktifkan item ini?",
+      "delete_success": "Success menonaktifkan item",
+      "delete_error": "Gagal menonaktifkan item"
+    }
+  },
   "financial_record_page_dic": {
     "title": "Financial Record",
     "description": "Kelola pengajuan expense, permintaan pembayaran, dan histori pembayaran dalam satu workspace yang rapi.",
@@ -351,16 +384,16 @@
   "inventory_page_dic": {
     "title": "Stok Barang",
     "description": "Kelola data persediaan secara efisien dan akurat.",
-    "hero_badge": "Inventory Jirigen",
-    "hero_description": "Scan jirigen hasil produksi ke inventory dengan cepat, pilih lokasi penyimpanan, lalu monitor hasil scan terbaru.",
+    "hero_badge": "Inventory Items",
+    "hero_description": "Scan item ke inventory dengan cepat, pilih lokasi penyimpanan, lalu monitor hasil scan terbaru.",
     "stats": {
       "available": "Available",
       "qc_pass": "QC Pass",
       "locations": "Locations"
     },
     "scanner": {
-      "title": "Scan Inventory Jirigen",
-      "description": "Input inventory dilakukan langsung dari barcode produk hasil produksi.",
+      "title": "Scan Inventory Item",
+      "description": "Input inventory dilakukan langsung dari barcode item.",
       "barcode_label": "Scan Barcode",
       "barcode_placeholder": "P202603001001",
       "camera_on_button": "Aktifkan Webcam",
@@ -380,13 +413,15 @@
       "location_placeholder": "Pilih lokasi",
       "qc_status_label": "QC Status",
       "expiry_date_label": "Expiry Date",
-      "submit_button": "Scan In Jirigen",
+      "item_label": "Master Item",
+      "item_placeholder": "Pilih item",
+      "submit_button": "Scan In Item",
       "submit_loading": "Memproses scan...",
       "reset_button": "Reset"
     },
     "instructions": {
       "title": "Petunjuk Operasi",
-      "step_1": "Gunakan webcam untuk scan barcode jirigen hasil produksi.",
+      "step_1": "Gunakan webcam untuk scan barcode item.",
       "step_2": "Pilih master location penyimpanan.",
       "step_3": "Tentukan QC status dan expiry date sebelum simpan."
     },
@@ -396,12 +431,13 @@
     },
     "table": {
       "title": "Hasil Scan Inventory Terbaru",
-      "description": "Verifikasi barcode yang sudah masuk ke inventory jirigen.",
+      "description": "Verifikasi barcode yang sudah masuk ke inventory item.",
       "search_placeholder": "Cari barcode...",
       "search_button": "Cari",
-      "empty": "Belum ada data inventory jirigen.",
+      "empty": "Belum ada data inventory item.",
       "location_fallback_prefix": "Location",
       "columns": {
+        "item": "Item",
         "barcode": "Barcode",
         "batch": "Batch",
         "location": "Location",
@@ -586,7 +622,8 @@
     "landing_publication_category": "Kategori Publikasi",
     "landing_publication": "Publikasi",
     "landing_products": "Produk",
-    "inventory_location": "Lokasi Stok"
+    "inventory_location": "Lokasi Stok",
+    "inventory_item": "Master Item"
   },
   "settings_projects": {
     "title": "Proyek",
@@ -877,3 +914,4 @@
     }
   }
 }
+

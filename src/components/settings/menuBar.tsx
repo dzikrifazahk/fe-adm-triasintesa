@@ -136,6 +136,12 @@ export function MenuBar({ dictionary, children }: Props) {
       icon: <ArchiveRestore size={20} />,
       to: "/dashboard/settings/inventory-locations",
     },
+    {
+      kind: "item",
+      title: (dictionary as any).inventory_item ?? "Master Item",
+      icon: <ArchiveRestore size={20} />,
+      to: "/dashboard/settings/inventory-items",
+    },
     // {
     //   kind: "item",
     //   title: dictionary.tax,

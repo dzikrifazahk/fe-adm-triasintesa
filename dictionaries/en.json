@@ -20,6 +20,39 @@
       "detail_title": "Inventory Location Detail"
     }
   },
+  "inventory_item_page_dic": {
+    "title": "Inventory Item Master",
+    "description": "Manage inventory item masters for inventory transactions.",
+    "search_item_placeholder": "Search item name...",
+    "column_filter": "Column Filter",
+    "button_add_item": "Add Item",
+    "column": {
+      "item_code": "Item Code",
+      "item_name": "Item Name",
+      "uom": "UOM",
+      "category": "Category",
+      "is_active": "Status",
+      "created_at": "Created At",
+      "updated_at": "Updated At",
+      "actions": "Actions"
+    },
+    "modal": {
+      "create_title": "Create Item Master",
+      "edit_title": "Update Item Master",
+      "detail_title": "Item Master Detail"
+    },
+    "action": {
+      "view_detail": "View Detail",
+      "edit": "Edit",
+      "delete": "Deactivate"
+    },
+    "toast": {
+      "refresh_success": "Data refreshed successfully",
+      "delete_confirm": "Do you want to deactivate this item?",
+      "delete_success": "Item deactivated successfully",
+      "delete_error": "Failed to deactivate item"
+    }
+  },
   "financial_record_page_dic": {
     "title": "Financial Record",
     "description": "Manage expense submissions, payment requests, and payment history in one clean workspace.",
@@ -355,16 +388,16 @@
   "inventory_page_dic": {
     "title": "Inventory",
     "description": "Manage inventory data efficiently and accurately.",
-    "hero_badge": "Jirigen Inventory",
-    "hero_description": "Scan finished-product jirigen into inventory quickly, choose the storage location, and monitor the latest scan results.",
+    "hero_badge": "Item Inventory",
+    "hero_description": "Scan items into inventory quickly, choose the storage location, and monitor the latest scan results.",
     "stats": {
       "available": "Available",
       "qc_pass": "QC Pass",
       "locations": "Locations"
     },
     "scanner": {
-      "title": "Scan Jirigen Inventory",
-      "description": "Inventory input is done directly from the finished product barcode.",
+      "title": "Scan Inventory Item",
+      "description": "Inventory input is done directly from the item barcode.",
       "barcode_label": "Scan Barcode",
       "barcode_placeholder": "P202603001001",
       "camera_on_button": "Enable Webcam",
@@ -384,13 +417,15 @@
       "location_placeholder": "Select location",
       "qc_status_label": "QC Status",
       "expiry_date_label": "Expiry Date",
-      "submit_button": "Scan In Jirigen",
+      "item_label": "Master Item",
+      "item_placeholder": "Select item",
+      "submit_button": "Scan In Item",
       "submit_loading": "Processing scan...",
       "reset_button": "Reset"
     },
     "instructions": {
       "title": "Operating Guide",
-      "step_1": "Use the webcam to scan the finished-product jirigen barcode.",
+      "step_1": "Use the webcam to scan the item barcode.",
       "step_2": "Choose the storage master location.",
       "step_3": "Set the QC status and expiry date before saving."
     },
@@ -400,12 +435,13 @@
     },
     "table": {
       "title": "Latest Inventory Scan Results",
-      "description": "Verify the barcodes that have already entered jirigen inventory.",
+      "description": "Verify the barcodes that have already entered item inventory.",
       "search_placeholder": "Search barcode...",
       "search_button": "Search",
-      "empty": "There is no jirigen inventory data yet.",
+      "empty": "There is no item inventory data yet.",
       "location_fallback_prefix": "Location",
       "columns": {
+        "item": "Item",
         "barcode": "Barcode",
         "batch": "Batch",
         "location": "Location",
@@ -590,7 +626,8 @@
     "landing_publication_category": "Publication Category",
     "landing_publication": "Publication",
     "landing_products": "Products",
-    "inventory_location": "Inventory Location"
+    "inventory_location": "Inventory Location",
+    "inventory_item": "Item Master"
   },
   "settings_projects": {
     "title": "Projects",
@@ -883,3 +920,4 @@
     }
   }
 }
+

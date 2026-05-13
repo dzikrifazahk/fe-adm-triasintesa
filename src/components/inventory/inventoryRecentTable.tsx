@@ -77,6 +77,7 @@ export function InventoryRecentTable({
           <Table>
             <TableHeader>
               <TableRow>
+                <TableHead>{dictionary.table.columns.item ?? "Item"}</TableHead>
                 <TableHead>{dictionary.table.columns.barcode}</TableHead>
                 <TableHead>{dictionary.table.columns.batch}</TableHead>
                 <TableHead>{dictionary.table.columns.location}</TableHead>
@@ -89,13 +90,16 @@ export function InventoryRecentTable({
             <TableBody>
               {rows.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={7} className="h-24 text-center">
+                  <TableCell colSpan={8} className="h-24 text-center">
                     {dictionary.table.empty}
                   </TableCell>
                 </TableRow>
               ) : (
                 rows.map((row) => (
                   <TableRow key={row.id}>
+                    <TableCell className="font-medium">
+                      {row.item?.itemName || "-"}
+                    </TableCell>
                     <TableCell className="font-medium">{row.barcode}</TableCell>
                     <TableCell>{row.batch?.batchNumber || row.batchId}</TableCell>
                     <TableCell>

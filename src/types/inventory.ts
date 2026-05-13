@@ -13,19 +13,30 @@ export interface IInventoryLocation {
   notes?: string | null;
 }
 
+export interface IInventoryItemMaster {
+  id: number;
+  itemCode: string;
+  itemName: string;
+  uom?: string | null;
+  category?: string | null;
+  isActive: boolean;
+}
+
 export interface IInvJirigen {
   id: number;
-  jirigenId: number;
-  batchId: number;
+  itemId?: number | null;
+  jirigenId?: number | null;
+  batchId?: number | null;
   barcode: string;
   status: InventoryStatus;
   locationId: number;
   entryDate: string;
   entryBy: string;
-  qcStatus: string;
+  qcStatus?: string | null;
   expiryDate?: string | null;
   lastUpdated?: string | null;
   location?: IInventoryLocation;
+  item?: IInventoryItemMaster;
   batch?: {
     id: number;
     batchNumber?: string;
@@ -34,7 +45,8 @@ export interface IInvJirigen {
 
 export interface IInvMovement {
   id: number;
-  jirigenId: number;
+  itemId?: number | null;
+  jirigenId?: number | null;
   invJirigenId?: number | null;
   movementType: string;
   fromStatus: string;
@@ -52,9 +64,10 @@ export interface IInvMovement {
 }
 
 export interface IScanInPayload {
+  itemId?: number;
   barcode: string;
   locationId: number;
-  qcStatus: string;
+  qcStatus?: string;
   expiryDate?: string;
 }
 

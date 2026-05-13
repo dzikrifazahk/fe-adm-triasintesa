@@ -11,6 +11,7 @@ import { InventoryRecentTable } from "@/components/inventory/inventoryRecentTabl
 import {
   IInvJirigen,
   IInvMovement,
+  IInventoryItemMaster,
   IInventoryLocation,
   IScanInPayload,
 } from "@/types/inventory";
@@ -33,6 +34,7 @@ type Dictionary = Awaited<ReturnType<typeof getDictionary>>["inventory_page_dic"
 type ListPayload<T> = { data: T[]; meta?: unknown };
 
 type ScanInForm = {
+  itemId: string;
   barcode: string;
   locationId: string;
   qcStatus: string;
@@ -42,6 +44,7 @@ type ScanInForm = {
 const qcStatusOptions = ["PASS", "HOLD", "REJECT"] as const;
 
 const emptyScanInForm: ScanInForm = {
+  itemId: "",
   barcode: "",
   locationId: "",
   qcStatus: "PASS",
@@ -133,6 +136,7 @@ export default function InventoryMain({ dictionary }: { dictionary: Dictionary }
   const [stocks, setStocks] = useState<IInvJirigen[]>([]);
   const [movements, setMovements] = useState<IInvMovement[]>([]);
   const [locations, setLocations] = useState<IInventoryLocation[]>([]);
+  const [itemMasters, setItemMasters] = useState<IInventoryItemMaster[]>([]);
   const [scanInForm, setScanInForm] = useState<ScanInForm>(emptyScanInForm);
   const [submittingScan, setSubmittingScan] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
@@ -143,7 +147,7 @@ export default function InventoryMain({ dictionary }: { dictionary: Dictionary }
   const description = dictionary?.hero_description ?? dictionary?.description ?? "";
 
   const fetchStocks = async (barcode?: string) => {
-    const response = await inventoryService.getInvJirigen({
+    const response = await inventoryService.getInvItems({
       page: 1,
       limit: 100,
       barcode: barcode || undefined,
@@ -172,11 +176,26 @@ export default function InventoryMain({ dictionary }: { dictionary: Dictionary }
     setLocations(Array.isArray(payload?.data) ? payload.data : []);
   };
 
+  const fetchItemMasters = async () => {
+    const response = await inventoryService.getInventoryItems({
+      page: 1,
+      limit: 200,
+      isActive: true,
+    });
+    const payload = unwrapData<ListPayload<IInventoryItemMaster>>(response);
+    setItemMasters(Array.isArray(payload?.data) ? payload.data : []);
+  };
+
   const loadAll = async (barcode?: string) => {
     try {
       setRefreshing(true);
       setIsLoading(true);
-      await Promise.all([fetchStocks(barcode), fetchMovements(), fetchLocations()]);
+      await Promise.all([
+        fetchStocks(barcode),
+        fetchMovements(),
+        fetchLocations(),
+        fetchItemMasters(),
+      ]);
     } catch (error) {
       Swal.fire({
         icon: "error",
@@ -226,6 +245,7 @@ export default function InventoryMain({ dictionary }: { dictionary: Dictionary }
     }
 
     const payload: IScanInPayload = {
+      itemId: scanInForm.itemId ? toNumber(scanInForm.itemId) : undefined,
       barcode: scanInForm.barcode.trim(),
       locationId: toNumber(scanInForm.locationId),
       qcStatus: scanInForm.qcStatus,
@@ -322,6 +342,31 @@ export default function InventoryMain({ dictionary }: { dictionary: Dictionary }
           </CardHeader>
           <CardContent className="p-6">
             <form onSubmit={submitScanIn} className="grid gap-4 md:grid-cols-2">
+              <div className="md:col-span-2">
+                <label className="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-200">
+                  {dictionary.form.item_label ?? "Item"}
+                </label>
+                <select
+                  className="h-12 w-full rounded-md border border-slate-200 bg-white px-3 text-sm dark:border-[#34363B] dark:bg-[#1F2023]"
+                  value={scanInForm.itemId}
+                  onChange={(event) =>
+                    setScanInForm((prev) => ({
+                      ...prev,
+                      itemId: event.target.value,
+                    }))
+                  }
+                >
+                  <option value="">
+                    {dictionary.form.item_placeholder ?? "Pilih item"}
+                  </option>
+                  {itemMasters.map((item) => (
+                    <option key={item.id} value={item.id}>
+                      {item.itemCode} - {item.itemName}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
               <div className="md:col-span-2">
                 <InventoryBarcodeScanner
                   dictionary={dictionary}
