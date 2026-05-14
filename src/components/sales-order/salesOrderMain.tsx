@@ -834,39 +834,52 @@ export default function SalesOrderMain({
               </div>
 
               {form.details.map((detail, index) => (
-                <div key={`detail-${index}`} className="grid grid-cols-1 gap-2 rounded-md border p-3 md:grid-cols-4">
-                  <select
-                    className="h-9 rounded-md border bg-background px-3 text-sm"
-                    value={detail.itemId}
-                    onChange={(event) => setDetailField(index, "itemId", event.target.value)}
-                  >
-                    <option value="">Pilih Item</option>
-                    {items.map((item) => (
-                      <option key={item.id} value={item.id}>
-                        {item.itemName} (stok: {item.stock ?? 0})
-                      </option>
-                    ))}
-                  </select>
-                  <Input
-                    type="number"
-                    placeholder="Quantity"
-                    value={detail.quantity}
-                    onChange={(event) => setDetailField(index, "quantity", event.target.value)}
-                  />
-                  <Input
-                    type="number"
-                    placeholder="Harga/Jirigen"
-                    value={detail.unitPrice}
-                    onChange={(event) => setDetailField(index, "unitPrice", event.target.value)}
-                  />
-                  <Button
-                    variant="destructive"
-                    type="button"
-                    onClick={() => removeDetailRow(index)}
-                    disabled={form.details.length === 1}
-                  >
-                    Hapus Item
-                  </Button>
+                <div key={`detail-${index}`} className="space-y-3 rounded-md border p-3">
+                  <p className="text-sm font-medium text-muted-foreground">Item #{index + 1}</p>
+                  <div className="grid grid-cols-1 gap-3 md:grid-cols-4">
+                    <div className="space-y-2">
+                      <Label>Item</Label>
+                      <select
+                        className="h-9 w-full rounded-md border bg-background px-3 text-sm"
+                        value={detail.itemId}
+                        onChange={(event) => setDetailField(index, "itemId", event.target.value)}
+                      >
+                        <option value="">Pilih Item</option>
+                        {items.map((item) => (
+                          <option key={item.id} value={item.id}>
+                            {item.itemName} (stok: {item.stock ?? 0})
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Quantity</Label>
+                      <Input
+                        type="number"
+                        value={detail.quantity}
+                        onChange={(event) => setDetailField(index, "quantity", event.target.value)}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Harga/Jirigen</Label>
+                      <Input
+                        type="number"
+                        value={detail.unitPrice}
+                        onChange={(event) => setDetailField(index, "unitPrice", event.target.value)}
+                      />
+                    </div>
+                    <div className="flex items-end">
+                      <Button
+                        variant="destructive"
+                        type="button"
+                        onClick={() => removeDetailRow(index)}
+                        disabled={form.details.length === 1}
+                        className="w-full"
+                      >
+                        Hapus Item
+                      </Button>
+                    </div>
+                  </div>
                 </div>
               ))}
             </div>
