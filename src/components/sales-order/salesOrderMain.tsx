@@ -48,7 +48,7 @@ type ListPayload<T> = {
 type DetailDraft = {
   itemId: string;
   quantity: string;
-  pricePerJirigen: string;
+  unitPrice: string;
 };
 
 type FormState = {
@@ -74,7 +74,7 @@ const emptyForm: FormState = {
   shippingCost: "0",
   shippingAddress: "",
   notes: "",
-  details: [{ itemId: "", quantity: "1", pricePerJirigen: "0" }],
+  details: [{ itemId: "", quantity: "1", unitPrice: "0" }],
 };
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -161,6 +161,19 @@ export default function SalesOrderMain({
   const itemById = useMemo(() => {
     return new Map(items.map((item) => [String(item.id), item]));
   }, [items]);
+  const allocationsByDetail = useMemo(() => {
+    const grouped = new Map<number, NonNullable<ISalesOrder["allocations"]>>();
+    if (!selectedOrder?.allocations?.length) return grouped;
+
+    selectedOrder.allocations.forEach((allocation) => {
+      const key = allocation.salesOrderDetailId;
+      const current = grouped.get(key) ?? [];
+      current.push(allocation);
+      grouped.set(key, current);
+    });
+
+    return grouped;
+  }, [selectedOrder]);
 
   const fetchOrders = async () => {
     try {
@@ -238,7 +251,7 @@ export default function SalesOrderMain({
         order.details?.map((item) => ({
           itemId: String(item.itemId),
           quantity: String(item.quantity),
-          pricePerJirigen: String(item.pricePerJirigen),
+          unitPrice: String(item.unitPrice),
         })) ?? emptyForm.details,
     });
     setIsFormOpen(true);
@@ -314,7 +327,7 @@ export default function SalesOrderMain({
       ...prev,
       details: [
         ...prev.details,
-        { itemId: "", quantity: "1", pricePerJirigen: "0" },
+        { itemId: "", quantity: "1", unitPrice: "0" },
       ],
     }));
   };
@@ -342,7 +355,7 @@ export default function SalesOrderMain({
     details: form.details.map((item) => ({
       itemId: toNumber(item.itemId),
       quantity: toNumber(item.quantity),
-      pricePerJirigen: toNumber(item.pricePerJirigen),
+      unitPrice: toNumber(item.unitPrice),
     })),
   });
 
@@ -369,7 +382,7 @@ export default function SalesOrderMain({
 
     const hasInvalid = payload.details.some(
       (item) =>
-        !item.itemId || item.quantity <= 0 || item.pricePerJirigen <= 0,
+        !item.itemId || item.quantity <= 0 || item.unitPrice <= 0,
     );
     if (hasInvalid) {
       return "Item, quantity, dan price pada detail wajib valid.";
@@ -843,8 +856,8 @@ export default function SalesOrderMain({
                   <Input
                     type="number"
                     placeholder="Harga/Jirigen"
-                    value={detail.pricePerJirigen}
-                    onChange={(event) => setDetailField(index, "pricePerJirigen", event.target.value)}
+                    value={detail.unitPrice}
+                    onChange={(event) => setDetailField(index, "unitPrice", event.target.value)}
                   />
                   <Button
                     variant="destructive"
@@ -915,6 +928,7 @@ export default function SalesOrderMain({
                       <TableHead>Qty</TableHead>
                       <TableHead>Harga</TableHead>
                       <TableHead>Subtotal</TableHead>
+                      <TableHead>Alokasi</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -923,13 +937,29 @@ export default function SalesOrderMain({
                         <TableRow key={detail.id}>
                           <TableCell>{detail.item?.itemName ?? detail.itemId}</TableCell>
                           <TableCell>{detail.quantity}</TableCell>
-                          <TableCell>{formatCurrency(detail.pricePerJirigen)}</TableCell>
+                          <TableCell>{formatCurrency(detail.unitPrice)}</TableCell>
                           <TableCell>{formatCurrency(detail.subtotal)}</TableCell>
+                          <TableCell>
+                            {allocationsByDetail.get(detail.id)?.length ? (
+                              <div className="space-y-1 text-xs">
+                                {(allocationsByDetail.get(detail.id) ?? []).map((allocation) => (
+                                  <div key={allocation.id} className="rounded border px-2 py-1">
+                                    <p className="font-medium">{allocation.barcode}</p>
+                                    <p className="text-muted-foreground">
+                                      {allocation.status.replaceAll("_", " ")} - {formatDate(allocation.allocatedAt)}
+                                    </p>
+                                  </div>
+                                ))}
+                              </div>
+                            ) : (
+                              <span className="text-muted-foreground">Belum ada alokasi</span>
+                            )}
+                          </TableCell>
                         </TableRow>
                       ))
                     ) : (
                       <TableRow>
-                        <TableCell colSpan={4} className="text-center">
+                        <TableCell colSpan={5} className="text-center">
                           Tidak ada detail item.
                         </TableCell>
                       </TableRow>
@@ -944,5 +974,6 @@ export default function SalesOrderMain({
     </div>
   );
 }
+
 
 

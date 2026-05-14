@@ -25,9 +25,17 @@ export interface ISalesOrderDetail {
   id: number;
   itemId: number;
   quantity: number;
-  pricePerJirigen: number;
+  unitPrice: number;
   subtotal: number;
   item?: ISalesOrderItem;
+}
+
+export interface ISalesOrderAllocation {
+  id: number;
+  salesOrderDetailId: number;
+  barcode: string;
+  allocatedAt: string;
+  status: "allocated" | "picked" | "shipped";
 }
 
 export interface ISalesOrder {
@@ -35,7 +43,7 @@ export interface ISalesOrder {
   soNumber: string;
   customerId: number;
   orderDate: string;
-  totalJirigen: number;
+  totalQuantity: number;
   subtotal: number;
   discountAmount: number;
   ppnAmount: number;
@@ -53,13 +61,13 @@ export interface ISalesOrder {
   notes?: string;
   customer?: ISalesOrderCustomer;
   details?: ISalesOrderDetail[];
-  allocations?: Array<{ id: number }>;
+  allocations?: ISalesOrderAllocation[];
 }
 
 export interface ISalesOrderDetailPayload {
   itemId: number;
   quantity: number;
-  pricePerJirigen: number;
+  unitPrice: number;
 }
 
 export interface ICreateSalesOrderPayload {
