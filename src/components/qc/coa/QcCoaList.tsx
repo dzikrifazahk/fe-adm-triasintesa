@@ -11,6 +11,13 @@ import { ICoaCertificate } from "@/types/qc-coa";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   Table,
@@ -21,6 +28,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import QcPagination from "@/components/qc/QcPagination";
+import { Eye, MoreHorizontal } from "lucide-react";
 
 type Dictionary = Awaited<
   ReturnType<typeof getDictionary>
@@ -63,6 +71,9 @@ export default function QcCoaList({
 }: {
   dictionary: Dictionary;
 }) {
+  const actionItemClassName =
+    "cursor-pointer rounded-md border px-3 py-2 focus:bg-slate-50 dark:focus:bg-[#1F2023]";
+
   const { setIsLoading } = useLoading();
   const pathname = usePathname();
   const locale = pathname.split("/")[1] || "";
@@ -208,13 +219,34 @@ export default function QcCoaList({
                       <TableCell>{formatDate(item.expiryDate)}</TableCell>
                       <TableCell>{item.conclusion}</TableCell>
                       <TableCell className="text-right">
-                        <Link
-                          href={`/${locale}/dashboard/qc/coa-certificates/${item.id}`}
-                        >
-                          <Button variant="outline" size="sm">
-                            Detail
-                          </Button>
-                        </Link>
+                        <div className="flex justify-end">
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" className="h-8 w-8 p-0">
+                                <span className="sr-only">Open actions</span>
+                                <MoreHorizontal className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" className="w-44">
+                              <DropdownMenuLabel className="text-center">
+                                Actions
+                              </DropdownMenuLabel>
+                              <div className="flex flex-col gap-2 p-1">
+                                <DropdownMenuItem
+                                  asChild
+                                  className={`${actionItemClassName} border-slate-300`}
+                                >
+                                  <Link
+                                    href={`/${locale}/dashboard/qc/coa-certificates/${item.id}`}
+                                  >
+                                    <Eye className="text-slate-600" />
+                                    Detail
+                                  </Link>
+                                </DropdownMenuItem>
+                              </div>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </div>
                       </TableCell>
                     </TableRow>
                   ))

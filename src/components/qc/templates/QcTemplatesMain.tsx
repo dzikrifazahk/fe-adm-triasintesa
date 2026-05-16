@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import Swal from "sweetalert2";
 import { getDictionary } from "../../../../get-dictionary";
 import { useLoading } from "@/context/loadingContext";
@@ -9,6 +9,13 @@ import { IQcTemplate } from "@/types/qc-coa";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import {
   Table,
   TableBody,
@@ -19,6 +26,7 @@ import {
 } from "@/components/ui/table";
 import { Modal } from "@/components/custom/modal";
 import QcPagination from "@/components/qc/QcPagination";
+import { Edit3, MoreHorizontal, Trash2 } from "lucide-react";
 
 type Dictionary = Awaited<
   ReturnType<typeof getDictionary>
@@ -30,42 +38,75 @@ type ParameterItem = {
   specification?: string;
 };
 
-function toList<T>(response: any): T[] {
-  return response?.data?.data ?? response?.data ?? [];
+function toList<T>(response: unknown): T[] {
+  const payload = response as {
+    data?: {
+      data?: T[];
+    } | T[];
+  };
+  if (Array.isArray(payload?.data)) return payload.data;
+  if (Array.isArray(payload?.data?.data)) return payload.data.data;
+  return [];
 }
 
-function toMeta(response: any) {
-  return response?.meta ?? response?.data?.meta ?? null;
+function toMeta(
+  response: unknown,
+): { totalPages?: number; total_items?: number; per_page?: number } | null {
+  const payload = response as {
+    meta?: { totalPages?: number; total_items?: number; per_page?: number };
+    data?: {
+      meta?: { totalPages?: number; total_items?: number; per_page?: number };
+    };
+  };
+  return payload?.meta ?? payload?.data?.meta ?? null;
 }
 
-function normalizeTemplateParameters(parameters: any): ParameterItem[] {
+function normalizeTemplateParameters(parameters: unknown): ParameterItem[] {
   if (!parameters) return [];
   if (Array.isArray(parameters)) {
     return parameters
-      .map((item) => ({
-        parameter:
-          item?.parameter ?? item?.name ?? item?.parameterName ?? "",
-        testMethod: item?.testMethod ?? item?.method ?? item?.metodeUji,
-        specification:
-          item?.specification ?? item?.spec ?? item?.limit ?? item?.batas,
-      }))
+      .map((item) => {
+        const row = item as Record<string, unknown>;
+        return {
+          parameter:
+            (typeof row.parameter === "string" && row.parameter) ||
+            (typeof row.name === "string" && row.name) ||
+            (typeof row.parameterName === "string" && row.parameterName) ||
+            "",
+          testMethod:
+            (typeof row.testMethod === "string" && row.testMethod) ||
+            (typeof row.method === "string" && row.method) ||
+            (typeof row.metodeUji === "string" && row.metodeUji) ||
+            undefined,
+          specification:
+            (typeof row.specification === "string" && row.specification) ||
+            (typeof row.spec === "string" && row.spec) ||
+            (typeof row.limit === "string" && row.limit) ||
+            (typeof row.batas === "string" && row.batas) ||
+            undefined,
+        };
+      })
       .filter((item) => Boolean(item.parameter));
   }
   if (typeof parameters === "object") {
     return Object.entries(parameters)
       .map(([key, value]) => {
         if (value && typeof value === "object") {
+          const row = value as Record<string, unknown>;
           return {
-            parameter: (value as any).parameter ?? key,
+            parameter:
+              (typeof row.parameter === "string" && row.parameter) || key,
             testMethod:
-              (value as any).testMethod ??
-              (value as any).method ??
-              (value as any).metodeUji,
+              (typeof row.testMethod === "string" && row.testMethod) ||
+              (typeof row.method === "string" && row.method) ||
+              (typeof row.metodeUji === "string" && row.metodeUji) ||
+              undefined,
             specification:
-              (value as any).specification ??
-              (value as any).spec ??
-              (value as any).limit ??
-              (value as any).batas,
+              (typeof row.specification === "string" && row.specification) ||
+              (typeof row.spec === "string" && row.spec) ||
+              (typeof row.limit === "string" && row.limit) ||
+              (typeof row.batas === "string" && row.batas) ||
+              undefined,
           };
         }
         return {
@@ -83,11 +124,14 @@ export default function QcTemplatesMain({
 }: {
   dictionary: Dictionary;
 }) {
+  const actionItemClassName =
+    "cursor-pointer rounded-md border px-3 py-2 focus:bg-slate-50 dark:focus:bg-[#1F2023]";
+
   const { setIsLoading } = useLoading();
   const [data, setData] = useState<IQcTemplate[]>([]);
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
-  const [limit, setLimit] = useState(10);
+  const [limit] = useState(10);
   const [totalPages, setTotalPages] = useState(1);
   const [loadingList, setLoadingList] = useState(false);
 
@@ -102,7 +146,7 @@ export default function QcTemplatesMain({
     [dictionary]
   );
 
-  const fetchTemplates = async () => {
+  const fetchTemplates = useCallback(async () => {
     setLoadingList(true);
     try {
       const response = await qcCoaService.getQcTemplates({
@@ -119,7 +163,7 @@ export default function QcTemplatesMain({
       } else {
         setTotalPages(1);
       }
-    } catch (error) {
+    } catch {
       Swal.fire({
         icon: "error",
         title: "Gagal memuat template",
@@ -131,20 +175,19 @@ export default function QcTemplatesMain({
     } finally {
       setLoadingList(false);
     }
-  };
+  }, [limit, page, search]);
 
   useEffect(() => {
-    fetchTemplates();
-  }, [page, limit]);
+    void fetchTemplates();
+  }, [fetchTemplates]);
 
   useEffect(() => {
     setIsLoading(false);
-  }, []);
+  }, [setIsLoading]);
 
   useEffect(() => {
     const delay = setTimeout(() => {
       setPage(1);
-      fetchTemplates();
     }, 500);
     return () => clearTimeout(delay);
   }, [search]);
@@ -240,7 +283,7 @@ export default function QcTemplatesMain({
         });
       }
       setModalOpen(false);
-      fetchTemplates();
+      void fetchTemplates();
       Swal.fire({
         icon: "success",
         title: "Template disimpan",
@@ -249,7 +292,7 @@ export default function QcTemplatesMain({
         timer: 2000,
         showConfirmButton: false,
       });
-    } catch (error) {
+    } catch {
       Swal.fire({
         icon: "error",
         title: "Gagal menyimpan template",
@@ -276,7 +319,7 @@ export default function QcTemplatesMain({
       try {
         setIsLoading(true);
         await qcCoaService.deleteQcTemplate(String(templateId));
-        fetchTemplates();
+        void fetchTemplates();
         Swal.fire({
           icon: "success",
           title: "Template dihapus",
@@ -285,7 +328,7 @@ export default function QcTemplatesMain({
           timer: 2000,
           showConfirmButton: false,
         });
-      } catch (error) {
+      } catch {
         Swal.fire({
           icon: "error",
           title: "Gagal menghapus template",
@@ -357,21 +400,36 @@ export default function QcTemplatesMain({
                         {normalizeTemplateParameters(item.parameters).length}
                       </TableCell>
                       <TableCell className="text-right">
-                        <div className="flex justify-end gap-2">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => openEdit(item)}
-                          >
-                            Edit
-                          </Button>
-                          <Button
-                            variant="destructive"
-                            size="sm"
-                            onClick={() => handleDelete(item.id)}
-                          >
-                            Hapus
-                          </Button>
+                        <div className="flex justify-end">
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" className="h-8 w-8 p-0">
+                                <span className="sr-only">Open actions</span>
+                                <MoreHorizontal className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" className="w-44">
+                              <DropdownMenuLabel className="text-center">
+                                Actions
+                              </DropdownMenuLabel>
+                              <div className="flex flex-col gap-2 p-1">
+                                <DropdownMenuItem
+                                  className={`${actionItemClassName} border-yellow-500`}
+                                  onClick={() => openEdit(item)}
+                                >
+                                  <Edit3 className="text-yellow-500" />
+                                  Edit
+                                </DropdownMenuItem>
+                                <DropdownMenuItem
+                                  className={`${actionItemClassName} border-red-500`}
+                                  onClick={() => handleDelete(item.id)}
+                                >
+                                  <Trash2 className="text-red-500" />
+                                  Hapus
+                                </DropdownMenuItem>
+                              </div>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
                         </div>
                       </TableCell>
                     </TableRow>

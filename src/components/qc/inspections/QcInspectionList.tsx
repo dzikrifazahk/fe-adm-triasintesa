@@ -13,6 +13,13 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import {
@@ -25,6 +32,7 @@ import {
 } from "@/components/ui/table";
 import { Modal } from "@/components/custom/modal";
 import QcPagination from "@/components/qc/QcPagination";
+import { Edit3, Eye, MoreHorizontal, RotateCcw, Trash2 } from "lucide-react";
 
 type Dictionary = Awaited<
   ReturnType<typeof getDictionary>
@@ -155,6 +163,9 @@ export default function QcInspectionList({
 }: {
   dictionary: Dictionary;
 }) {
+  const actionItemClassName =
+    "cursor-pointer rounded-md border px-3 py-2 focus:bg-slate-50 dark:focus:bg-[#1F2023]";
+
   const { setIsLoading } = useLoading();
   const pathname = usePathname();
   const router = useRouter();
@@ -626,41 +637,60 @@ export default function QcInspectionList({
                           )}
                         </TableCell>
                         <TableCell className="text-right">
-                          <div className="flex justify-end gap-2">
-                            <Link
-                              href={`/${locale}/dashboard/qc/inspections/${item.id}`}
-                            >
-                              <Button variant="outline" size="sm">
-                                Detail
-                              </Button>
-                            </Link>
-                            {item.finalStatus === "pending" && (
-                              <>
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  onClick={() => openEdit(item)}
-                                >
-                                  Edit
+                          <div className="flex justify-end">
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" className="h-8 w-8 p-0">
+                                  <span className="sr-only">Open actions</span>
+                                  <MoreHorizontal className="h-4 w-4" />
                                 </Button>
-                                <Button
-                                  variant="destructive"
-                                  size="sm"
-                                  onClick={() => handleDelete(item.id)}
-                                >
-                                  Hapus
-                                </Button>
-                              </>
-                            )}
-                            {item.finalStatus === "rejected" &&
-                              !item.hasNewerInspectionInBatch && (
-                              <Button
-                                size="sm"
-                                onClick={() => handleResubmit(item)}
-                              >
-                                Ajukan Ulang
-                              </Button>
-                            )}
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end" className="w-44">
+                                <DropdownMenuLabel className="text-center">
+                                  Actions
+                                </DropdownMenuLabel>
+                                <div className="flex flex-col gap-2 p-1">
+                                  <DropdownMenuItem
+                                    asChild
+                                    className={`${actionItemClassName} border-slate-300`}
+                                  >
+                                    <Link
+                                      href={`/${locale}/dashboard/qc/inspections/${item.id}`}
+                                    >
+                                      <Eye className="text-slate-600" />
+                                      Detail
+                                    </Link>
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem
+                                    className={`${actionItemClassName} border-yellow-500`}
+                                    onClick={() => openEdit(item)}
+                                    disabled={item.finalStatus !== "pending"}
+                                  >
+                                    <Edit3 className="text-yellow-500" />
+                                    Edit
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem
+                                    className={`${actionItemClassName} border-red-500`}
+                                    onClick={() => handleDelete(item.id)}
+                                    disabled={item.finalStatus !== "pending"}
+                                  >
+                                    <Trash2 className="text-red-500" />
+                                    Hapus
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem
+                                    className={`${actionItemClassName} border-blue-500`}
+                                    onClick={() => handleResubmit(item)}
+                                    disabled={
+                                      item.finalStatus !== "rejected" ||
+                                      item.hasNewerInspectionInBatch
+                                    }
+                                  >
+                                    <RotateCcw className="text-blue-500" />
+                                    Ajukan Ulang
+                                  </DropdownMenuItem>
+                                </div>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
                           </div>
                         </TableCell>
                       </TableRow>
