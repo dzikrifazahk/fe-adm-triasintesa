@@ -15,6 +15,13 @@ import {
 } from "@/types/shipping";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -35,6 +42,17 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import {
+  BellRing,
+  Check,
+  Edit3,
+  Eye,
+  MoreHorizontal,
+  RotateCcw,
+  Send,
+  Trash2,
+  Upload,
+} from "lucide-react";
 
 type ListPayload<T> = {
   data: T[];
@@ -117,6 +135,9 @@ export default function ShippingMain({
 }: {
   dictionary: Awaited<ReturnType<typeof getDictionary>>["shipping_page_dic"];
 }) {
+  const actionItemClassName =
+    "cursor-pointer rounded-md border px-3 py-2 focus:bg-slate-50 dark:focus:bg-[#1F2023]";
+
   const { setIsLoading } = useLoading();
 
   const [deliveries, setDeliveries] = useState<IDeliveryOrder[]>([]);
@@ -601,51 +622,86 @@ export default function ShippingMain({
                           {statusLabel(delivery.status)}
                         </Badge>
                       </TableCell>
-                      <TableCell className="flex flex-wrap justify-end gap-2">
-                        <Button size="sm" variant="outline" onClick={() => openDetail(delivery.id)}>
-                          Detail
-                        </Button>
-                        {delivery.status === "pending" && (
-                          <>
-                            <Button size="sm" variant="outline" onClick={() => openEdit(delivery)}>
-                              Edit
-                            </Button>
-                            <Button size="sm" onClick={() => callAction(delivery.id, "in_transit")}>
-                              In Transit
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="destructive"
-                              onClick={() => deleteDelivery(delivery.id)}
-                            >
-                              Delete
-                            </Button>
-                          </>
-                        )}
-                        {delivery.status === "in_transit" && (
-                          <>
-                            <Button size="sm" variant="outline" onClick={() => openUploadProof(delivery)}>
-                              Upload Proof
-                            </Button>
-                            <Button size="sm" onClick={() => callAction(delivery.id, "delivered")}>
-                              Delivered
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="secondary"
-                              onClick={() => callAction(delivery.id, "returned")}
-                            >
-                              Returned
-                            </Button>
-                          </>
-                        )}
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => callAction(delivery.id, "reminder")}
-                        >
-                          Reminder
-                        </Button>
+                      <TableCell className="text-right">
+                        <div className="flex justify-end">
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" className="h-8 w-8 p-0">
+                                <span className="sr-only">Open actions</span>
+                                <MoreHorizontal className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" className="w-48">
+                              <DropdownMenuLabel className="text-center">
+                                Actions
+                              </DropdownMenuLabel>
+                              <div className="flex flex-col gap-2 p-1">
+                                <DropdownMenuItem
+                                  className={`${actionItemClassName} border-slate-300`}
+                                  onClick={() => openDetail(delivery.id)}
+                                >
+                                  <Eye className="text-slate-600" />
+                                  Detail
+                                </DropdownMenuItem>
+                                <DropdownMenuItem
+                                  className={`${actionItemClassName} border-yellow-500`}
+                                  onClick={() => openEdit(delivery)}
+                                  disabled={delivery.status !== "pending"}
+                                >
+                                  <Edit3 className="text-yellow-500" />
+                                  Edit
+                                </DropdownMenuItem>
+                                <DropdownMenuItem
+                                  className={`${actionItemClassName} border-blue-500`}
+                                  onClick={() => callAction(delivery.id, "in_transit")}
+                                  disabled={delivery.status !== "pending"}
+                                >
+                                  <Send className="text-blue-500" />
+                                  In Transit
+                                </DropdownMenuItem>
+                                <DropdownMenuItem
+                                  className={`${actionItemClassName} border-cyan-500`}
+                                  onClick={() => openUploadProof(delivery)}
+                                  disabled={delivery.status !== "in_transit"}
+                                >
+                                  <Upload className="text-cyan-500" />
+                                  Upload Proof
+                                </DropdownMenuItem>
+                                <DropdownMenuItem
+                                  className={`${actionItemClassName} border-emerald-500`}
+                                  onClick={() => callAction(delivery.id, "delivered")}
+                                  disabled={delivery.status !== "in_transit"}
+                                >
+                                  <Check className="text-emerald-600" />
+                                  Delivered
+                                </DropdownMenuItem>
+                                <DropdownMenuItem
+                                  className={`${actionItemClassName} border-amber-500`}
+                                  onClick={() => callAction(delivery.id, "returned")}
+                                  disabled={delivery.status !== "in_transit"}
+                                >
+                                  <RotateCcw className="text-amber-500" />
+                                  Returned
+                                </DropdownMenuItem>
+                                <DropdownMenuItem
+                                  className={`${actionItemClassName} border-violet-500`}
+                                  onClick={() => callAction(delivery.id, "reminder")}
+                                >
+                                  <BellRing className="text-violet-500" />
+                                  Reminder
+                                </DropdownMenuItem>
+                                <DropdownMenuItem
+                                  className={`${actionItemClassName} border-red-500`}
+                                  onClick={() => deleteDelivery(delivery.id)}
+                                  disabled={delivery.status !== "pending"}
+                                >
+                                  <Trash2 className="text-red-500" />
+                                  Delete
+                                </DropdownMenuItem>
+                              </div>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </div>
                       </TableCell>
                     </TableRow>
                   ))
