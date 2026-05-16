@@ -627,7 +627,8 @@
     "landing_publication": "Publication",
     "landing_products": "Products",
     "inventory_location": "Inventory Location",
-    "inventory_item": "Item Master"
+    "inventory_item": "Item Master",
+    "customer": "Customer"
   },
   "settings_projects": {
     "title": "Projects",
@@ -920,4 +921,3 @@
     }
   }
 }
-

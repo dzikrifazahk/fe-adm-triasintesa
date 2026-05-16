@@ -5,7 +5,6 @@ import {
   FaGears,
   FaChartPie,
   FaMoneyBills,
-  FaUsers,
 } from "react-icons/fa6";
 import { useState, useEffect } from "react";
 import { useSidebar } from "../ui/sidebar";
@@ -33,7 +32,7 @@ interface SideBarDashboardProps {
   dictionary: Awaited<ReturnType<typeof getDictionary>>["primary_sidebar"];
 }
 
-export function NavItems({ isOpen, dictionary }: SideBarDashboardProps) {
+export function NavItems({ dictionary }: SideBarDashboardProps) {
   const pathname = usePathname();
   const segments = pathname.split("/");
   const locale = isLocale(segments[1]) ? segments[1] : i18n.defaultLocale;
@@ -79,11 +78,6 @@ export function NavItems({ isOpen, dictionary }: SideBarDashboardProps) {
       title: `${dictionary.sales_order}`,
       icon: <SalesOrderIC className="w-5 h-5 hover:text-white transition" />,
       to: `/${locale}/dashboard/sales-order`,
-    },
-    {
-      title: `${dictionary.customer}`,
-      icon: <FaUsers className="hover:text-white" size={18} />,
-      to: `/${locale}/dashboard/customer`,
     },
     {
       title: `${dictionary.shipping}`,
@@ -155,8 +149,6 @@ export function NavItems({ isOpen, dictionary }: SideBarDashboardProps) {
           transition-all text-sm
           ${state === "expanded" ? "mx-2" : ""}
         `;
-        const inactiveClasses =
-          "text-iprimary-blue dark:text-gray-300 hover:bg-iprimary-blue dark:hover:bg-gray-800 hover:text-white";
         if (active) {
           return (
             <div

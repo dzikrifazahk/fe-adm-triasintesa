@@ -17,10 +17,6 @@ import { useLoading } from "@/context/loadingContext";
 import { useContext, useState } from "react";
 import {
   FaBottleWater,
-  FaChildReaching,
-  FaHelmetSafety,
-  FaHourglassHalf,
-  FaMoneyBillTransfer,
   FaPassport,
   FaPeopleGroup,
   FaPersonMilitaryToPerson,
@@ -39,6 +35,17 @@ interface Props {
   dictionary: Awaited<ReturnType<typeof getDictionary>>["menu_bar_settings"];
   children: React.ReactNode;
 }
+
+type SettingsDictionary = Awaited<
+  ReturnType<typeof getDictionary>
+>["menu_bar_settings"] & {
+  system_configuration?: string;
+  employee?: string;
+  resources?: string;
+  landing_page?: string;
+  inventory_item?: string;
+  customer?: string;
+};
 
 interface SubItems {
   name: string;
@@ -59,6 +66,7 @@ type NavNode =
 
 /* ─────────────────────────── Component ─────────────────────────── */
 export function MenuBar({ dictionary, children }: Props) {
+  const settingsDictionary = dictionary as SettingsDictionary;
   const pathname = usePathname();
   const { setIsLoading } = useLoading();
   const { isMobile } = useContext(MobileContext);
@@ -77,10 +85,10 @@ export function MenuBar({ dictionary, children }: Props) {
   );
 
   const SECTION = {
-    system: (dictionary as any)?.system_configuration ?? "System Configuration",
-    employee: (dictionary as any)?.employee ?? "Employee",
-    resources: (dictionary as any)?.resources ?? "Resources",
-    landingPage: (dictionary as any)?.landing_page ?? "Landing Page",
+    system: settingsDictionary.system_configuration ?? "System Configuration",
+    employee: settingsDictionary.employee ?? "Employee",
+    resources: settingsDictionary.resources ?? "Resources",
+    landingPage: settingsDictionary.landing_page ?? "Landing Page",
   };
 
   const menu: NavNode[] = [
@@ -138,9 +146,15 @@ export function MenuBar({ dictionary, children }: Props) {
     },
     {
       kind: "item",
-      title: (dictionary as any).inventory_item ?? "Master Item",
+      title: settingsDictionary.inventory_item ?? "Master Item",
       icon: <ArchiveRestore size={20} />,
       to: "/dashboard/settings/inventory-items",
+    },
+    {
+      kind: "item",
+      title: settingsDictionary.customer ?? "Customer",
+      icon: <FaPassport size={20} />,
+      to: "/dashboard/settings/customer",
     },
     // {
     //   kind: "item",

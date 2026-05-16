@@ -623,7 +623,8 @@
     "landing_publication": "Publikasi",
     "landing_products": "Produk",
     "inventory_location": "Lokasi Stok",
-    "inventory_item": "Master Item"
+    "inventory_item": "Master Item",
+    "customer": "Customer"
   },
   "settings_projects": {
     "title": "Proyek",
@@ -914,4 +915,3 @@
     }
   }
 }
-
