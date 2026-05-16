@@ -46,6 +46,8 @@ export function InventoryBarcodeScanner({
   const [barcodeSupported, setBarcodeSupported] = useState(false);
   const [cameraAccessSupported, setCameraAccessSupported] = useState(false);
   const [lastDetectedBarcode, setLastDetectedBarcode] = useState("");
+  const barcodeDetectedTitle = dictionary.toast.barcode_detected_title;
+  const cameraAccessErrorText = dictionary.toast.camera_access_error;
 
   useEffect(() => {
     setCameraAccessSupported(
@@ -122,7 +124,7 @@ export function InventoryBarcodeScanner({
           setIsCameraActive(false);
           Swal.fire({
             icon: "success",
-            title: dictionary.toast.barcode_detected_title,
+            title: barcodeDetectedTitle,
             toast: true,
             position: "top-right",
             timer: 1600,
@@ -192,7 +194,7 @@ export function InventoryBarcodeScanner({
           return;
         }
         console.error(error);
-        setCameraError(dictionary.toast.camera_access_error);
+        setCameraError(cameraAccessErrorText);
         setIsCameraActive(false);
       }
     };
@@ -203,7 +205,7 @@ export function InventoryBarcodeScanner({
       isDisposed = true;
       stopCamera();
     };
-  }, [isCameraActive, onChange]);
+  }, [barcodeDetectedTitle, cameraAccessErrorText, isCameraActive, onChange]);
 
   return (
     <div>

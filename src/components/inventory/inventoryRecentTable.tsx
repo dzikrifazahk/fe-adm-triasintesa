@@ -2,6 +2,13 @@
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import {
   Table,
@@ -12,9 +19,10 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Loader2, RefreshCcw } from "lucide-react";
+import { Eye, Loader2, MoreHorizontal, RefreshCcw, Search } from "lucide-react";
 import { getDictionary } from "../../../get-dictionary";
 import { IInvJirigen } from "@/types/inventory";
+import { FaPencil, FaTrash } from "react-icons/fa6";
 
 type Dictionary = Awaited<ReturnType<typeof getDictionary>>["inventory_page_dic"];
 
@@ -27,26 +35,32 @@ type Props = {
   onSearch: () => void;
   onRefresh: () => void;
   onChangeStatus: (id: number, status: IInvJirigen["status"]) => void;
+  onViewRow: (row: IInvJirigen) => void;
   onEditRow: (row: IInvJirigen) => void;
   onDeleteRow: (row: IInvJirigen) => void;
   formatDate: (value?: string | null) => string;
   getStatusClassName: (status?: string) => string;
 };
 
-export function InventoryRecentTable({
-  dictionary,
-  rows,
-  searchBarcode,
-  refreshing,
-  onSearchBarcodeChange,
-  onSearch,
-  onRefresh,
-  onChangeStatus,
-  onEditRow,
-  onDeleteRow,
-  formatDate,
-  getStatusClassName,
-}: Props) {
+export function InventoryRecentTable(props: Props) {
+  const {
+    dictionary,
+    rows,
+    searchBarcode,
+    refreshing,
+    onSearchBarcodeChange,
+    onSearch,
+    onRefresh,
+    onViewRow,
+    onEditRow,
+    onDeleteRow,
+    formatDate,
+    getStatusClassName,
+  } = props;
+
+  const actionItemClassName =
+    "cursor-pointer rounded-md border px-3 py-2 focus:bg-slate-50 dark:focus:bg-[#1F2023]";
+
   const getBatchLabel = (row: IInvJirigen): string => {
     const itemCode = row.item?.itemCode?.toLowerCase() ?? "";
     const itemName = row.item?.itemName?.toLowerCase() ?? "";
@@ -80,15 +94,23 @@ export function InventoryRecentTable({
             <p className="text-sm text-slate-500 dark:text-slate-400">
               {dictionary.table.description}
             </p>
+            <div className="mt-3">
+              <Badge variant="outline" className="rounded-full px-3 py-1 text-xs">
+                {rows.length} data ditampilkan
+              </Badge>
+            </div>
           </div>
 
           <div className="flex flex-col gap-2 sm:flex-row">
-            <Input
-              placeholder={dictionary.table.search_placeholder}
-              value={searchBarcode}
-              onChange={(event) => onSearchBarcodeChange(event.target.value)}
-              className="sm:w-[220px]"
-            />
+            <div className="relative">
+              <Search className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-slate-400" />
+              <Input
+                placeholder={dictionary.table.search_placeholder}
+                value={searchBarcode}
+                onChange={(event) => onSearchBarcodeChange(event.target.value)}
+                className="sm:w-[240px] pl-10"
+              />
+            </div>
             <Button variant="outline" onClick={onSearch}>
               {dictionary.table.search_button}
             </Button>
@@ -103,10 +125,10 @@ export function InventoryRecentTable({
         </div>
       </CardHeader>
       <CardContent>
-        <div className="overflow-hidden rounded-2xl border">
+        <div className="overflow-hidden rounded-2xl border border-[#DCE3F1] dark:border-[#34363B]">
           <Table>
             <TableHeader>
-              <TableRow>
+              <TableRow className="bg-slate-50/80 dark:bg-[#1F2023]">
                 <TableHead>{dictionary.table.columns.item ?? "Item"}</TableHead>
                 <TableHead>{dictionary.table.columns.barcode}</TableHead>
                 <TableHead>{dictionary.table.columns.batch}</TableHead>
@@ -126,9 +148,12 @@ export function InventoryRecentTable({
                 </TableRow>
               ) : (
                 rows.map((row) => (
-                  <TableRow key={row.id}>
+                  <TableRow key={row.id} className="align-top">
                     <TableCell className="font-medium">
-                      {row.item?.itemName || "-"}
+                      <div className="font-medium">{row.item?.itemName || "-"}</div>
+                      <div className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                        {row.item?.itemCode || "Tanpa kode item"}
+                      </div>
                     </TableCell>
                     <TableCell className="font-medium">{row.barcode}</TableCell>
                     <TableCell>{getBatchLabel(row)}</TableCell>
@@ -144,8 +169,8 @@ export function InventoryRecentTable({
                     <TableCell>{formatDate(row.entryDate)}</TableCell>
                     <TableCell>{formatDate(row.expiryDate)}</TableCell>
                     <TableCell>
-                      <div className="flex flex-wrap gap-2">
-                        <select
+                      <div className="flex justify-center">
+                        {/* <select
                           className="h-9 rounded-md border bg-background px-2 text-sm"
                           value={row.status}
                           onChange={(event) =>
@@ -160,23 +185,45 @@ export function InventoryRecentTable({
                           <option value="shipped">shipped</option>
                           <option value="sold">sold</option>
                           <option value="returned">returned</option>
-                        </select>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => onEditRow(row)}
-                          disabled={row.status !== "available"}
-                        >
-                          Edit
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="destructive"
-                          onClick={() => onDeleteRow(row)}
-                          disabled={row.status !== "available"}
-                        >
-                          Hapus
-                        </Button>
+                        </select> */}
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" className="h-8 w-8 p-0">
+                              <span className="sr-only">Open actions</span>
+                              <MoreHorizontal className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end" className="w-44">
+                            <DropdownMenuLabel className="text-center">
+                              Actions
+                            </DropdownMenuLabel>
+                            <div className="flex flex-col gap-2 p-1">
+                              <DropdownMenuItem
+                                className={`${actionItemClassName} border-slate-300`}
+                                onClick={() => onViewRow(row)}
+                              >
+                                <Eye className="text-slate-600" />
+                                Lihat Detail
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                className={`${actionItemClassName} border-yellow-500`}
+                                onClick={() => onEditRow(row)}
+                                disabled={row.status !== "available"}
+                              >
+                                <FaPencil className="text-yellow-400" />
+                                Edit
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                className={`${actionItemClassName} border-red-500`}
+                                onClick={() => onDeleteRow(row)}
+                                disabled={row.status !== "available"}
+                              >
+                                <FaTrash className="text-red-500" />
+                                Hapus
+                              </DropdownMenuItem>
+                            </div>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
                       </div>
                     </TableCell>
                   </TableRow>
