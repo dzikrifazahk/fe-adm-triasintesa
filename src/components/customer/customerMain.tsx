@@ -14,6 +14,13 @@ import {
 } from "@/types/customer";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -34,6 +41,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { Ban, Edit3, Eye, MoreHorizontal, Power, Trash2 } from "lucide-react";
 
 type Dictionary = Awaited<ReturnType<typeof getDictionary>>["customer_page_dic"];
 type ListPayload<T> = { data: T[]; meta?: unknown };
@@ -89,6 +97,9 @@ function statusClassName(status: CustomerStatus): string {
 }
 
 export default function CustomerMain({ dictionary }: { dictionary: Dictionary }) {
+  const actionItemClassName =
+    "cursor-pointer rounded-md border px-3 py-2 focus:bg-slate-50 dark:focus:bg-[#1F2023]";
+
   const { setIsLoading } = useLoading();
   const [customers, setCustomers] = useState<ICustomer[]>([]);
   const [search, setSearch] = useState("");
@@ -391,19 +402,54 @@ export default function CustomerMain({ dictionary }: { dictionary: Dictionary })
                         </Badge>
                       </TableCell>
                       <TableCell className="text-right">
-                        <div className="flex flex-wrap justify-end gap-1">
-                          <Button size="sm" variant="outline" onClick={() => openDetail(customer.id)}>
-                            Detail
-                          </Button>
-                          <Button size="sm" variant="outline" onClick={() => openEdit(customer)}>
-                            Edit
-                          </Button>
-                          <Button size="sm" variant="secondary" onClick={() => toggleStatus(customer)}>
-                            {customer.status === "aktif" ? "Deactivate" : "Activate"}
-                          </Button>
-                          <Button size="sm" variant="destructive" onClick={() => removeCustomer(customer.id)}>
-                            Delete
-                          </Button>
+                        <div className="flex justify-end">
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" className="h-8 w-8 p-0">
+                                <span className="sr-only">Open actions</span>
+                                <MoreHorizontal className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" className="w-48">
+                              <DropdownMenuLabel className="text-center">
+                                Actions
+                              </DropdownMenuLabel>
+                              <div className="flex flex-col gap-2 p-1">
+                                <DropdownMenuItem
+                                  className={`${actionItemClassName} border-slate-300`}
+                                  onClick={() => openDetail(customer.id)}
+                                >
+                                  <Eye className="text-slate-600" />
+                                  Detail
+                                </DropdownMenuItem>
+                                <DropdownMenuItem
+                                  className={`${actionItemClassName} border-yellow-500`}
+                                  onClick={() => openEdit(customer)}
+                                >
+                                  <Edit3 className="text-yellow-500" />
+                                  Edit
+                                </DropdownMenuItem>
+                                <DropdownMenuItem
+                                  className={`${actionItemClassName} border-blue-500`}
+                                  onClick={() => toggleStatus(customer)}
+                                >
+                                  {customer.status === "aktif" ? (
+                                    <Ban className="text-blue-500" />
+                                  ) : (
+                                    <Power className="text-blue-500" />
+                                  )}
+                                  {customer.status === "aktif" ? "Deactivate" : "Activate"}
+                                </DropdownMenuItem>
+                                <DropdownMenuItem
+                                  className={`${actionItemClassName} border-red-500`}
+                                  onClick={() => removeCustomer(customer.id)}
+                                >
+                                  <Trash2 className="text-red-500" />
+                                  Delete
+                                </DropdownMenuItem>
+                              </div>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
                         </div>
                       </TableCell>
                     </TableRow>

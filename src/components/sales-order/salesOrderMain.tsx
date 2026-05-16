@@ -19,6 +19,13 @@ import {
 } from "@/types/sales-order";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -39,6 +46,17 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import {
+  Ban,
+  Check,
+  Edit3,
+  Eye,
+  MoreHorizontal,
+  PackageCheck,
+  Send,
+  ShieldCheck,
+  Trash2,
+} from "lucide-react";
 
 type ListPayload<T> = {
   data: T[];
@@ -137,6 +155,9 @@ export default function SalesOrderMain({
 }: {
   dictionary: Awaited<ReturnType<typeof getDictionary>>["sales_order_page_dic"];
 }) {
+  const actionItemClassName =
+    "cursor-pointer rounded-md border px-3 py-2 focus:bg-slate-50 dark:focus:bg-[#1F2023]";
+
   const { setIsLoading } = useLoading();
 
   const [orders, setOrders] = useState<ISalesOrder[]>([]);
@@ -652,58 +673,101 @@ export default function SalesOrderMain({
                         <Badge className={statusClassName(order.status)}>{statusLabel(order.status)}</Badge>
                       </TableCell>
                       <TableCell>{formatCurrency(order.grandTotal)}</TableCell>
-                      <TableCell className="flex flex-wrap justify-end gap-2">
-                        <Button size="sm" variant="outline" onClick={() => openDetail(order.id)}>
-                          Detail
-                        </Button>
-                        {(order.status === "pending_approval" || order.status === "approved") && (
-                          <Button size="sm" variant="outline" onClick={() => openEdit(order)}>
-                            Edit
-                          </Button>
-                        )}
-                        {order.status === "pending_approval" && (
-                          <Button size="sm" onClick={() => callStatusAction(order.id, "approve")}>
-                            Approve
-                          </Button>
-                        )}
-                        {order.status === "approved" && (
-                          <Button size="sm" onClick={() => callStatusAction(order.id, "accept")}>
-                            Accept
-                          </Button>
-                        )}
-                        {order.status === "processing" && (
-                          <Button size="sm" onClick={() => callStatusAction(order.id, "ready")}>
-                            Ready
-                          </Button>
-                        )}
-                        {order.status === "ready_to_ship" && (
-                          <Button size="sm" onClick={() => callStatusAction(order.id, "shipment")}>
-                            Shipment
-                          </Button>
-                        )}
-                        {order.status === "shipped" && (
-                          <Button size="sm" onClick={() => callStatusAction(order.id, "complete")}>
-                            Complete
-                          </Button>
-                        )}
-                        {order.status !== "completed" && order.status !== "cancelled" && (
-                          <Button
-                            size="sm"
-                            variant="secondary"
-                            onClick={() => callStatusAction(order.id, "cancel")}
-                          >
-                            Cancel
-                          </Button>
-                        )}
-                        {order.status === "pending_approval" && (
-                          <Button
-                            size="sm"
-                            variant="destructive"
-                            onClick={() => deleteOrder(order.id)}
-                          >
-                            Delete
-                          </Button>
-                        )}
+                      <TableCell className="text-right">
+                        <div className="flex justify-end">
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" className="h-8 w-8 p-0">
+                                <span className="sr-only">Open actions</span>
+                                <MoreHorizontal className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" className="w-48">
+                              <DropdownMenuLabel className="text-center">
+                                Actions
+                              </DropdownMenuLabel>
+                              <div className="flex flex-col gap-2 p-1">
+                                <DropdownMenuItem
+                                  className={`${actionItemClassName} border-slate-300`}
+                                  onClick={() => openDetail(order.id)}
+                                >
+                                  <Eye className="text-slate-600" />
+                                  Detail
+                                </DropdownMenuItem>
+                                <DropdownMenuItem
+                                  className={`${actionItemClassName} border-yellow-500`}
+                                  onClick={() => openEdit(order)}
+                                  disabled={
+                                    order.status !== "pending_approval" &&
+                                    order.status !== "approved"
+                                  }
+                                >
+                                  <Edit3 className="text-yellow-500" />
+                                  Edit
+                                </DropdownMenuItem>
+                                <DropdownMenuItem
+                                  className={`${actionItemClassName} border-emerald-500`}
+                                  onClick={() => callStatusAction(order.id, "approve")}
+                                  disabled={order.status !== "pending_approval"}
+                                >
+                                  <ShieldCheck className="text-emerald-600" />
+                                  Approve
+                                </DropdownMenuItem>
+                                <DropdownMenuItem
+                                  className={`${actionItemClassName} border-blue-500`}
+                                  onClick={() => callStatusAction(order.id, "accept")}
+                                  disabled={order.status !== "approved"}
+                                >
+                                  <Check className="text-blue-500" />
+                                  Accept
+                                </DropdownMenuItem>
+                                <DropdownMenuItem
+                                  className={`${actionItemClassName} border-amber-500`}
+                                  onClick={() => callStatusAction(order.id, "ready")}
+                                  disabled={order.status !== "processing"}
+                                >
+                                  <PackageCheck className="text-amber-500" />
+                                  Ready
+                                </DropdownMenuItem>
+                                <DropdownMenuItem
+                                  className={`${actionItemClassName} border-cyan-500`}
+                                  onClick={() => callStatusAction(order.id, "shipment")}
+                                  disabled={order.status !== "ready_to_ship"}
+                                >
+                                  <Send className="text-cyan-500" />
+                                  Shipment
+                                </DropdownMenuItem>
+                                <DropdownMenuItem
+                                  className={`${actionItemClassName} border-emerald-600`}
+                                  onClick={() => callStatusAction(order.id, "complete")}
+                                  disabled={order.status !== "shipped"}
+                                >
+                                  <Check className="text-emerald-600" />
+                                  Complete
+                                </DropdownMenuItem>
+                                <DropdownMenuItem
+                                  className={`${actionItemClassName} border-slate-500`}
+                                  onClick={() => callStatusAction(order.id, "cancel")}
+                                  disabled={
+                                    order.status === "completed" ||
+                                    order.status === "cancelled"
+                                  }
+                                >
+                                  <Ban className="text-slate-600" />
+                                  Cancel
+                                </DropdownMenuItem>
+                                <DropdownMenuItem
+                                  className={`${actionItemClassName} border-red-500`}
+                                  onClick={() => deleteOrder(order.id)}
+                                  disabled={order.status !== "pending_approval"}
+                                >
+                                  <Trash2 className="text-red-500" />
+                                  Delete
+                                </DropdownMenuItem>
+                              </div>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </div>
                       </TableCell>
                     </TableRow>
                   ))
@@ -987,6 +1051,4 @@ export default function SalesOrderMain({
     </div>
   );
 }
-
-
 
