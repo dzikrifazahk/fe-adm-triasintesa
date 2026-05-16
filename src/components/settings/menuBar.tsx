@@ -3,11 +3,13 @@
 import { getDictionary } from "../../../get-dictionary";
 import InputWithIC from "@/components/custom/inputWithIC";
 import {
+  Boxes,
+  Building2,
   ChevronLeft,
   ChevronRight,
   ChevronDown,
   ChevronUp,
-  ArchiveRestore,
+  Warehouse,
 } from "lucide-react";
 import Image from "next/image";
 import SearchIc from "@/assets/ic/search-ic.svg";
@@ -17,7 +19,6 @@ import { useLoading } from "@/context/loadingContext";
 import { useContext, useState } from "react";
 import {
   FaBottleWater,
-  FaPassport,
   FaPeopleGroup,
   FaPersonMilitaryToPerson,
   FaScroll,
@@ -141,19 +142,19 @@ export function MenuBar({ dictionary, children }: Props) {
     {
       kind: "item",
       title: dictionary.inventory_location,
-      icon: <ArchiveRestore size={20} />,
+      icon: <Warehouse size={20} />,
       to: "/dashboard/settings/inventory-locations",
     },
     {
       kind: "item",
       title: settingsDictionary.inventory_item ?? "Master Item",
-      icon: <ArchiveRestore size={20} />,
+      icon: <Boxes size={20} />,
       to: "/dashboard/settings/inventory-items",
     },
     {
       kind: "item",
       title: settingsDictionary.customer ?? "Customer",
-      icon: <FaPassport size={20} />,
+      icon: <Building2 size={20} />,
       to: "/dashboard/settings/customer",
     },
     // {
