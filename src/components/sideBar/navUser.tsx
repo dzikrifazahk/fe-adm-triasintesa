@@ -18,7 +18,7 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from "@/components/ui/sidebar";
-import Swal from "sweetalert2";
+import { openSwal } from "@/lib/swal";
 import { deleteCookie, getCookies } from "cookies-next";
 import { useEffect, useState } from "react";
 import { getDictionary } from "../../../get-dictionary";
@@ -50,7 +50,7 @@ export function NavUser({
   }, []);
 
   const handleLogout = () => {
-    Swal.fire({
+    openSwal({
       icon: "warning",
       title: "Logout",
       text: "Are you sure you want to logout?",
@@ -67,7 +67,7 @@ export function NavUser({
           for (let key in cookies) {
             deleteCookie(key);
           }
-          Swal.fire({
+          openSwal({
             icon: "success",
             title: "Logout Success",
             position: "top-right",
@@ -78,7 +78,7 @@ export function NavUser({
             window.location.replace("/");
           });
         } catch (e) {
-          Swal.fire({
+          openSwal({
             icon: "error",
             title: "Logout Failed",
             position: "top-right",
@@ -88,7 +88,7 @@ export function NavUser({
           });
         }
       } else {
-        Swal.fire({
+        openSwal({
           icon: "warning",
           title: "Logout Cancelled",
           position: "top-right",

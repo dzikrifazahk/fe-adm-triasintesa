@@ -12,7 +12,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "./ui/dialog";
-import Swal from "sweetalert2";
+import { openSwal } from "@/lib/swal";
 import { useLoading } from "@/context/loadingContext";
 import { authService } from "@/services";
 import { deleteCookie, getCookies } from "cookies-next";
@@ -64,7 +64,7 @@ export function ChangePasswordAuthenticated({
 
   const handleSubmit = async (e?: React.FormEvent) => {
     e?.preventDefault();
-    Swal.fire({
+    openSwal({
       icon: "warning",
       text: "Apakah anda ingin mengubah password ini?",
       showDenyButton: true,
@@ -75,7 +75,7 @@ export function ChangePasswordAuthenticated({
       showConfirmButton: true,
     }).then(async (result) => {
       if (!result.isConfirmed)
-        Swal.fire({
+        openSwal({
           icon: "info",
           text: "Perubahan tidak disimpan",
           position: "center",
@@ -95,7 +95,7 @@ export function ChangePasswordAuthenticated({
             for (let key in cookies) {
               deleteCookie(key);
             }
-            Swal.fire({
+            openSwal({
               icon: "success",
               title: "Perubahan berhasil disimpan, Silahkan login kembali",
               position: "top-right",
@@ -120,7 +120,7 @@ export function ChangePasswordAuthenticated({
             }
           }
 
-          Swal.fire({
+          openSwal({
             icon: "error",
             text: errorMessage,
             position: "center",

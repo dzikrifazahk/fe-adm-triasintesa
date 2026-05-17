@@ -20,7 +20,7 @@ import { ArrowRight, ChevronLeft } from "lucide-react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
-import Swal from "sweetalert2";
+import { openSwal } from "@/lib/swal";
 import { columns } from "./columns";
 import { DataTable } from "./data-table";
 import { IPurchase } from "@/types/purchase";
@@ -56,7 +56,7 @@ export default function NotificationsMainDashboard() {
       setData(data);
       setMetadata(meta);
     } catch (error) {
-      Swal.fire({
+      openSwal({
         icon: "error",
         title: "Terjadi Kesalahan",
         text: "Gagal mendapatkan data proyek",
@@ -78,7 +78,7 @@ export default function NotificationsMainDashboard() {
 
       setNotificationSelected(response.data);
     } catch (error) {
-      Swal.fire({
+      openSwal({
         icon: "error",
         title: "Terjadi Kesalahan",
         text: "Gagal mendapatkan data proyek",

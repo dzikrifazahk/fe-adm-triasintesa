@@ -10,7 +10,7 @@ import useDebounce from "@/utils/useDebouncy";
 import { useLoading } from "@/context/loadingContext";
 import { IInventoryLocations } from "@/types/inventory-locations";
 import { inventoryLocationsService } from "@/services";
-import Swal from "sweetalert2";
+import { openSwal } from "@/lib/swal";
 import { ModalUpsertInventoryLocations } from "./modalInventoryLocations";
 
 export default function InventoryLocationsMain({
@@ -94,7 +94,7 @@ export default function InventoryLocationsMain({
   };
 
   const handleDeleteData = (locationId: string) => {
-    Swal.fire({
+    openSwal({
       icon: "warning",
       text: "Apakah anda ingin menghapus inventory location ini?",
       showDenyButton: true,
@@ -108,7 +108,7 @@ export default function InventoryLocationsMain({
         setIsLoading(true);
         await inventoryLocationsService.deleteInventoryLocation(locationId);
         await getData(page, pageSize, debouncedSearch);
-        Swal.fire({
+        openSwal({
           icon: "success",
           title: "Success menghapus inventory location",
           toast: true,
@@ -117,7 +117,7 @@ export default function InventoryLocationsMain({
           timer: 2000,
         });
       } catch {
-        Swal.fire({
+        openSwal({
           icon: "error",
           title: "Gagal menghapus inventory location",
           toast: true,
@@ -151,7 +151,7 @@ export default function InventoryLocationsMain({
     await getData(page, pageSize, debouncedSearch);
     setIsLoading(false);
 
-    Swal.fire({
+    openSwal({
       icon: "success",
       title: "Data berhasil di refresh",
       toast: true,

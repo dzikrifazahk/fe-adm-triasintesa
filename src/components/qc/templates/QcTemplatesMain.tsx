@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import Swal from "sweetalert2";
+import { openSwal } from "@/lib/swal";
 import { getDictionary } from "../../../../get-dictionary";
 import { useLoading } from "@/context/loadingContext";
 import { qcCoaService } from "@/services";
@@ -164,7 +164,7 @@ export default function QcTemplatesMain({
         setTotalPages(1);
       }
     } catch {
-      Swal.fire({
+      openSwal({
         icon: "error",
         title: "Gagal memuat template",
         toast: true,
@@ -238,7 +238,7 @@ export default function QcTemplatesMain({
   const handleSubmit = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
     if (!templateName.trim()) {
-      Swal.fire({
+      openSwal({
         icon: "warning",
         title: "Nama template wajib diisi",
         toast: true,
@@ -258,7 +258,7 @@ export default function QcTemplatesMain({
       .filter((item) => Boolean(item.parameter));
 
     if (normalizedParameters.length === 0) {
-      Swal.fire({
+      openSwal({
         icon: "warning",
         title: "Minimal satu parameter harus diisi",
         toast: true,
@@ -284,7 +284,7 @@ export default function QcTemplatesMain({
       }
       setModalOpen(false);
       void fetchTemplates();
-      Swal.fire({
+      openSwal({
         icon: "success",
         title: "Template disimpan",
         toast: true,
@@ -293,7 +293,7 @@ export default function QcTemplatesMain({
         showConfirmButton: false,
       });
     } catch {
-      Swal.fire({
+      openSwal({
         icon: "error",
         title: "Gagal menyimpan template",
         toast: true,
@@ -307,7 +307,7 @@ export default function QcTemplatesMain({
   };
 
   const handleDelete = (templateId: number) => {
-    Swal.fire({
+    openSwal({
       icon: "warning",
       text: "Hapus template ini?",
       showDenyButton: true,
@@ -320,7 +320,7 @@ export default function QcTemplatesMain({
         setIsLoading(true);
         await qcCoaService.deleteQcTemplate(String(templateId));
         void fetchTemplates();
-        Swal.fire({
+        openSwal({
           icon: "success",
           title: "Template dihapus",
           toast: true,
@@ -329,7 +329,7 @@ export default function QcTemplatesMain({
           showConfirmButton: false,
         });
       } catch {
-        Swal.fire({
+        openSwal({
           icon: "error",
           title: "Gagal menghapus template",
           toast: true,

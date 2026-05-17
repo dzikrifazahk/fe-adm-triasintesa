@@ -8,7 +8,7 @@ import { format } from "date-fns";
 import { useState } from "react";
 import { DateRange } from "react-day-picker";
 import { FaArrowRotateLeft } from "react-icons/fa6";
-import Swal from "sweetalert2";
+import { openSwal } from "@/lib/swal";
 
 type DetailDictionary = Awaited<
   ReturnType<typeof getDictionary>
@@ -49,7 +49,7 @@ export function ModalFilterProductionBatches({
       ];
     }
 
-    Swal.fire({
+    openSwal({
       icon: "success",
       title: dictionary.filter_apply_success,
       position: "top-right",

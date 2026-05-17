@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import Swal from "sweetalert2";
+import { openSwal } from "@/lib/swal";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -122,7 +122,7 @@ export function InventoryBarcodeScanner({
           setLastDetectedBarcode(barcodeValue);
           onChange(barcodeValue);
           setIsCameraActive(false);
-          Swal.fire({
+          openSwal({
             icon: "success",
             title: barcodeDetectedTitle,
             toast: true,

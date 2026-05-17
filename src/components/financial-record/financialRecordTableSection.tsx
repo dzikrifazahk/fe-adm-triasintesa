@@ -62,9 +62,15 @@ type Props = {
   categoryFilter: string;
   categories: string[];
   rows: FinancialRecordRow[];
+  page: number;
+  pageSize: number;
+  totalRows: number;
+  lastPage: number;
   onSearchChange: (value: string) => void;
   onCategoryFilterChange: (value: string) => void;
   onClearFilters: () => void;
+  onPageChange: (nextPage: number) => void;
+  onPageSizeChange: (nextPageSize: number) => void;
   onEdit: (recordId: string) => void;
   onAdvanceStage: (recordId: string) => void;
   formatCurrency: (amount: number) => string;
@@ -83,9 +89,15 @@ export function FinancialRecordTableSection({
   categoryFilter,
   categories,
   rows,
+  page,
+  pageSize,
+  totalRows,
+  lastPage,
   onSearchChange,
   onCategoryFilterChange,
   onClearFilters,
+  onPageChange,
+  onPageSizeChange,
   onEdit,
   onAdvanceStage,
   formatCurrency,
@@ -274,6 +286,35 @@ export function FinancialRecordTableSection({
               )}
             </TableBody>
           </Table>
+        </div>
+        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+          <p className="text-sm text-slate-500 dark:text-slate-400">
+            Menampilkan {rows.length} dari total {totalRows} data
+          </p>
+          <div className="flex items-center gap-2">
+            <select
+              className="h-9 rounded-md border bg-background px-2 text-sm"
+              value={String(pageSize)}
+              onChange={(event) => onPageSizeChange(Number(event.target.value))}
+            >
+              {[10, 20, 50, 100].map((size) => (
+                <option key={size} value={size}>
+                  {size} / halaman
+                </option>
+              ))}
+            </select>
+            <Button variant="outline" onClick={() => onPageChange(page - 1)} disabled={page <= 1}>
+              Prev
+            </Button>
+            <span className="text-sm">Halaman {page} / {lastPage}</span>
+            <Button
+              variant="outline"
+              onClick={() => onPageChange(page + 1)}
+              disabled={page >= lastPage}
+            >
+              Next
+            </Button>
+          </div>
         </div>
       </CardContent>
     </Card>

@@ -31,9 +31,15 @@ type Props = {
   rows: IInvJirigen[];
   searchBarcode: string;
   refreshing: boolean;
+  page: number;
+  pageSize: number;
+  lastPage: number;
+  totalRows: number;
   onSearchBarcodeChange: (value: string) => void;
   onSearch: () => void;
   onRefresh: () => void;
+  onPageChange: (nextPage: number) => void;
+  onPageSizeChange: (nextPageSize: number) => void;
   onChangeStatus: (id: number, status: IInvJirigen["status"]) => void;
   onViewRow: (row: IInvJirigen) => void;
   onEditRow: (row: IInvJirigen) => void;
@@ -48,9 +54,15 @@ export function InventoryRecentTable(props: Props) {
     rows,
     searchBarcode,
     refreshing,
+    page,
+    pageSize,
+    lastPage,
+    totalRows,
     onSearchBarcodeChange,
     onSearch,
     onRefresh,
+    onPageChange,
+    onPageSizeChange,
     onViewRow,
     onEditRow,
     onDeleteRow,
@@ -96,7 +108,7 @@ export function InventoryRecentTable(props: Props) {
             </p>
             <div className="mt-3">
               <Badge variant="outline" className="rounded-full px-3 py-1 text-xs">
-                {rows.length} data ditampilkan
+                {rows.length} data ditampilkan dari total {totalRows}
               </Badge>
             </div>
           </div>
@@ -231,6 +243,38 @@ export function InventoryRecentTable(props: Props) {
               )}
             </TableBody>
           </Table>
+        </div>
+        <div className="mt-4 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+          <div className="text-sm text-slate-500 dark:text-slate-400">
+            Halaman {page} dari {lastPage}
+          </div>
+          <div className="flex items-center gap-2">
+            <select
+              className="h-9 rounded-md border bg-background px-2 text-sm"
+              value={String(pageSize)}
+              onChange={(event) => onPageSizeChange(Number(event.target.value))}
+            >
+              {[10, 20, 50, 100].map((size) => (
+                <option key={size} value={size}>
+                  {size} / halaman
+                </option>
+              ))}
+            </select>
+            <Button
+              variant="outline"
+              onClick={() => onPageChange(page - 1)}
+              disabled={page <= 1}
+            >
+              Prev
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => onPageChange(page + 1)}
+              disabled={page >= lastPage}
+            >
+              Next
+            </Button>
+          </div>
         </div>
       </CardContent>
     </Card>

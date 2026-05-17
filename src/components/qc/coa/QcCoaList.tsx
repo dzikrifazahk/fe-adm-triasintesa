@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import Swal from "sweetalert2";
+import { openSwal } from "@/lib/swal";
 import { getDictionary } from "../../../../get-dictionary";
 import { qcCoaService } from "@/services";
 import { useLoading } from "@/context/loadingContext";
@@ -113,7 +113,7 @@ export default function QcCoaList({
         setTotalPages(1);
       }
     } catch {
-      Swal.fire({
+      openSwal({
         icon: "error",
         title: "Gagal memuat COA",
         toast: true,

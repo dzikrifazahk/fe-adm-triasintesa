@@ -7,7 +7,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "../ui/select";
-import { useState } from "react";
 
 interface DataTablePaginationProps<TData> {
   isSelectItem?: boolean;
@@ -15,6 +14,8 @@ interface DataTablePaginationProps<TData> {
   onPageChange?: (page: number) => void;
   onPageSizeChange?: (pageSize: number) => void;
   lastPage: number;
+  currentPage?: number;
+  currentPageSize?: number;
   layout?: string;
 }
 
@@ -24,25 +25,24 @@ export const DataTablePagination = <TData,>({
   onPageChange,
   onPageSizeChange,
   lastPage,
+  currentPage = 1,
+  currentPageSize = 10,
   layout = "horizontal",
 }: DataTablePaginationProps<TData>) => {
   const pageSizes = [5, 10, 20, 30, 40, 50];
-  const [page, setPage] = useState(1);
-  const [selectedPageSize, setSelectedPageSize] = useState("10");
   const handlePageChange = (actions: string) => {
-    let newPage: number = page;
+    let newPage: number = currentPage;
     if (actions === "prev") {
-      newPage = page - 1;
+      newPage = currentPage - 1;
     }
     if (actions === "next") {
       if (newPage > lastPage) {
         newPage = lastPage;
       } else {
-        newPage = page + 1;
+        newPage = currentPage + 1;
       }
     }
-
-    setPage(newPage);
+    if (newPage < 1) newPage = 1;
 
     if (onPageChange) {
       onPageChange(newPage);
@@ -51,7 +51,6 @@ export const DataTablePagination = <TData,>({
 
   const handlePageSizeChange = (value: string) => {
     const newPageSize = Number(value);
-    setSelectedPageSize(value);
     if (onPageSizeChange) {
       onPageSizeChange(newPageSize);
     }
@@ -71,10 +70,10 @@ export const DataTablePagination = <TData,>({
               )}
               <div className="flex items-center justify-between gap-2">
                 <span className="whitespace-nowrap text-xs">
-                  Halaman {page} dari {lastPage}
+                  Halaman {currentPage} dari {lastPage}
                 </span>
                 <Select
-                  value={selectedPageSize}
+                  value={String(currentPageSize)}
                   onValueChange={handlePageSizeChange}
                 >
                   <SelectTrigger className="w-auto shrink-0">
@@ -93,7 +92,7 @@ export const DataTablePagination = <TData,>({
                 variant="outline"
                 size="sm"
                 onClick={() => handlePageChange("prev")}
-                disabled={page === 1}
+                disabled={currentPage <= 1}
                 className="shrink-0 cursor-pointer"
               >
                 Previous
@@ -102,7 +101,7 @@ export const DataTablePagination = <TData,>({
                 variant="outline"
                 size="sm"
                 onClick={() => handlePageChange("next")}
-                disabled={page === lastPage}
+                disabled={currentPage >= lastPage}
                 className="shrink-0 cursor-pointer"
               >
                 Next
@@ -122,10 +121,10 @@ export const DataTablePagination = <TData,>({
                 </div>
               )}
               <span className="whitespace-nowrap text-xs">
-                Halaman {page} dari {lastPage}
+                Halaman {currentPage} dari {lastPage}
               </span>
               <Select
-                value={selectedPageSize}
+                value={String(currentPageSize)}
                 onValueChange={handlePageSizeChange}
               >
                 <SelectTrigger className="w-auto shrink-0">
@@ -143,7 +142,7 @@ export const DataTablePagination = <TData,>({
                 variant="outline"
                 size="sm"
                 onClick={() => handlePageChange("prev")}
-                disabled={page === 1}
+                disabled={currentPage <= 1}
                 className="shrink-0 cursor-pointer"
               >
                 Previous
@@ -152,7 +151,7 @@ export const DataTablePagination = <TData,>({
                 variant="outline"
                 size="sm"
                 onClick={() => handlePageChange("next")}
-                disabled={page === lastPage}
+                disabled={currentPage >= lastPage}
                 className="shrink-0 cursor-pointer"
               >
                 Next

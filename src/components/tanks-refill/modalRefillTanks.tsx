@@ -7,7 +7,7 @@ import { useContext, useEffect, useMemo, useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Pencil } from "lucide-react";
-import Swal from "sweetalert2";
+import { openSwal } from "@/lib/swal";
 import { useLoading } from "@/context/loadingContext";
 import { tanksService } from "@/services";
 
@@ -111,7 +111,7 @@ export function ModalUpsertTanks({
     }
 
     if (!tankType) {
-      Swal.fire({
+      openSwal({
         icon: "warning",
         title: "Tipe tank wajib dipilih",
         toast: true,
@@ -135,7 +135,7 @@ export function ModalUpsertTanks({
     const isEditMode =
       type === "edit" || (type === "detail" && isDetailEditing);
 
-    Swal.fire({
+    openSwal({
       icon: "warning",
       text: isEditMode
         ? "Apakah anda ingin mengubah Tank?"
@@ -155,7 +155,7 @@ export function ModalUpsertTanks({
           : await tanksService.createTank(payload);
 
         isGetData?.();
-        Swal.fire({
+        openSwal({
           icon: "success",
           title: "Berhasil menyimpan data tank",
           toast: true,
@@ -166,7 +166,7 @@ export function ModalUpsertTanks({
 
         clearInput();
       } catch (error) {
-        Swal.fire({
+        openSwal({
           icon: "error",
           title: "Gagal menyimpan data tank",
           toast: true,

@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { columns } from "./column";
 import { userService } from "@/services";
-import Swal from "sweetalert2";
+import { openSwal } from "@/lib/swal";
 import { IUser } from "@/types/user";
 import { IMeta } from "@/types/common";
 import axios from "axios";
@@ -206,7 +206,7 @@ export default function SettingsUsersMain({
   };
 
   const handleDeleteData = (userId: string) => {
-    Swal.fire({
+    openSwal({
       icon: "warning",
       text: "Apakah anda ingin menghapus Pengguna ini?",
       showDenyButton: true,
@@ -222,7 +222,7 @@ export default function SettingsUsersMain({
           await userService.deleteUser(userId);
           await getData(page, pageSize, debouncedSearch, filterPayload);
           setIsLoading(false);
-          Swal.fire({
+          openSwal({
             icon: "success",
             title: `Successfully Deleted Data`,
             position: "top-right",
@@ -232,7 +232,7 @@ export default function SettingsUsersMain({
           });
         } catch {
           setIsLoading(false);
-          Swal.fire({
+          openSwal({
             icon: "error",
             title: `Terjadi Kesalahan`,
             position: "top-right",
@@ -242,7 +242,7 @@ export default function SettingsUsersMain({
           });
         }
       } else if (result.isConfirmed === false) {
-        Swal.fire({
+        openSwal({
           icon: "warning",
           title: "Batal Hapus Data",
           position: "top-right",
@@ -260,7 +260,7 @@ export default function SettingsUsersMain({
     const payload = buildPayload();
 
     if (modalType === "edit") {
-      Swal.fire({
+      openSwal({
         icon: "warning",
         text: "Apakah anda ingin mengubah data Pengguna?",
         showDenyButton: true,
@@ -282,7 +282,7 @@ export default function SettingsUsersMain({
             await getData(page, pageSize, debouncedSearch, filterPayload);
 
             setIsLoading(false);
-            Swal.fire({
+            openSwal({
               icon: "success",
               title: `Successfully Updated Data`,
               position: "top-right",
@@ -320,7 +320,7 @@ export default function SettingsUsersMain({
                 errorMessages.push("Terjadi kesalahan.");
               }
 
-              Swal.fire({
+              openSwal({
                 icon: "error",
                 title: "Terjadi Kesalahan",
                 html: errorMessages.join("<br>"),
@@ -332,7 +332,7 @@ export default function SettingsUsersMain({
             }
           }
         } else if (result.isConfirmed === false) {
-          Swal.fire({
+          openSwal({
             icon: "warning",
             title: "Batal Ubah Data",
             position: "top-right",
@@ -343,7 +343,7 @@ export default function SettingsUsersMain({
         }
       });
     } else {
-      Swal.fire({
+      openSwal({
         icon: "warning",
         text: "Apakah anda ingin menambahkan Pengguna?",
         showDenyButton: true,
@@ -370,7 +370,7 @@ export default function SettingsUsersMain({
             await getData(page, pageSize, debouncedSearch, filterPayload);
 
             setIsLoading(false);
-            Swal.fire({
+            openSwal({
               icon: "success",
               title: `Successfully Created Data`,
               position: "top-right",
@@ -409,7 +409,7 @@ export default function SettingsUsersMain({
                 errorMessages.push("Terjadi kesalahan.");
               }
 
-              Swal.fire({
+              openSwal({
                 icon: "error",
                 title: "Terjadi Kesalahan",
                 html: errorMessages.join("<br>"),
@@ -422,7 +422,7 @@ export default function SettingsUsersMain({
           }
         } else if (result.isConfirmed === false) {
           clearInput();
-          Swal.fire({
+          openSwal({
             icon: "warning",
             title: "Batal Tambah Data",
             position: "top-right",
@@ -441,7 +441,7 @@ export default function SettingsUsersMain({
 
   const handleResetPassword = (userId: string) => {
     setSelectedIdUser(userId);
-    Swal.fire({
+    openSwal({
       title: "Reset Password",
       input: "password",
       inputPlaceholder: "Masukkan password baru",
@@ -453,7 +453,7 @@ export default function SettingsUsersMain({
       try {
         setIsLoading(true);
         await userService.resetPassword(userId, String(result.value));
-        Swal.fire({
+        openSwal({
           icon: "success",
           title: "Password berhasil direset",
           position: "top-right",
@@ -464,7 +464,7 @@ export default function SettingsUsersMain({
       } catch (e) {
         if (axios.isAxiosError(e)) {
           const message = e.response?.data?.message ?? "Terjadi kesalahan";
-          Swal.fire({
+          openSwal({
             icon: "error",
             title: `Terjadi Kesalahan ${message}`,
             position: "top-right",
@@ -540,7 +540,7 @@ export default function SettingsUsersMain({
     setFilterPayload(undefined);
     setPage(1);
 
-    Swal.fire({
+    openSwal({
       icon: "success",
       title: "Filter Berhasil Dihapus",
       position: "top-right",
@@ -553,7 +553,7 @@ export default function SettingsUsersMain({
   const handleUnActiveUser = (userId: string, status: string) => {
     const statusFormatted = status.toUpperCase();
 
-    Swal.fire({
+    openSwal({
       icon: "warning",
       text: `Apakah ${
         statusFormatted === "AKTIF" ? "menonaktifkan" : "mengaktifkan"
@@ -571,7 +571,7 @@ export default function SettingsUsersMain({
 
           if (statusFormatted === "AKTIF") {
             await userService.unActiveUser(userId);
-            Swal.fire({
+            openSwal({
               icon: "success",
               title: `Berhasil Menonaktifkan Pengguna`,
               position: "top-right",
@@ -581,7 +581,7 @@ export default function SettingsUsersMain({
             });
           } else {
             await userService.activateUser(userId);
-            Swal.fire({
+            openSwal({
               icon: "success",
               title: `Berhasil Mengaktifkan Pengguna`,
               position: "top-right",
@@ -600,7 +600,7 @@ export default function SettingsUsersMain({
 
           if (axios.isAxiosError(e)) {
             const message = e.response?.data?.message ?? "";
-            Swal.fire({
+            openSwal({
               icon: "error",
               title: `Terjadi Kesalahan ${message}`,
               position: "top-right",
@@ -614,7 +614,7 @@ export default function SettingsUsersMain({
         clearInput();
       } else if (result.isConfirmed === false) {
         clearInput();
-        Swal.fire({
+        openSwal({
           icon: "warning",
           title: "Batal",
           position: "top-right",
@@ -632,7 +632,7 @@ export default function SettingsUsersMain({
       await getData(page, pageSize, debouncedSearch, filterPayload);
       setIsLoading(false);
 
-      Swal.fire({
+      openSwal({
         icon: "success",
         title: "Data berhasil di refresh",
         position: "top-right",
@@ -648,7 +648,7 @@ export default function SettingsUsersMain({
 
       if (axios.isAxiosError(e)) {
         const message = e.response?.data?.message ?? "";
-        Swal.fire({
+        openSwal({
           icon: "error",
           title: `Terjadi Kesalahan ${message}`,
           position: "top-right",
@@ -661,7 +661,7 @@ export default function SettingsUsersMain({
   };
 
   const handleResendPassword = async (userId: string) => {
-    Swal.fire({
+    openSwal({
       icon: "warning",
       text: `Apakah anda ingin mengirim ulang password ke pengguna ini?`,
       showDenyButton: true,
@@ -677,7 +677,7 @@ export default function SettingsUsersMain({
           await userService.resendPassword(userId);
           setIsLoading(false);
 
-          Swal.fire({
+          openSwal({
             icon: "success",
             title: `Password berhasil dikirim ulang`,
             position: "top-right",
@@ -690,7 +690,7 @@ export default function SettingsUsersMain({
 
           if (axios.isAxiosError(e)) {
             const message = e.response?.data?.message ?? "";
-            Swal.fire({
+            openSwal({
               icon: "error",
               title: `Terjadi Kesalahan ${message}`,
               position: "top-right",
@@ -701,7 +701,7 @@ export default function SettingsUsersMain({
           }
         }
       } else if (result.isConfirmed === false) {
-        Swal.fire({
+        openSwal({
           icon: "warning",
           title: "Batal",
           position: "top-right",

@@ -15,7 +15,7 @@ import { ComboboxItem, ComboboxPopoverCustom } from "./comboboxProperCustom";
 import { IProject } from "@/types/project";
 import { IBudget } from "@/types/budget";
 import { projectService, budgetService, attendanceService } from "@/services";
-import Swal from "sweetalert2";
+import { openSwal } from "@/lib/swal";
 import CameraCaptureModal from "./CameraCaptureModal";
 import { useLoading } from "@/context/loadingContext";
 import { IOvertime } from "@/types/overtime";
@@ -130,7 +130,7 @@ export default function AttendanceActions({
   const getTasks = async (search?: string) => {
     const pid = selectedProject?.value;
     if (!pid) {
-      return Swal.fire({
+      return openSwal({
         target: drawerContainerRef.current || document.body,
         icon: "warning",
         title: "Pilih proyek dahulu",
@@ -248,7 +248,7 @@ export default function AttendanceActions({
   // ======= HANDLE SUBMIT (FormData) =======
   async function handleSubmit(mode: "REGULAR" | "OVERTIME") {
     if (mode === "REGULAR" && !canCheckInRegular) {
-      return Swal.fire({
+      return openSwal({
         target: drawerContainerRef.current || document.body,
         icon: "warning",
         title: "Lengkapi Data",
@@ -260,7 +260,7 @@ export default function AttendanceActions({
       });
     }
     if (mode === "OVERTIME" && !canClockOutOvertime) {
-      return Swal.fire({
+      return openSwal({
         target: drawerContainerRef.current || document.body,
         icon: "info",
         title: overtimeDone ? "Overtime sudah selesai" : "Lengkapi Data",
@@ -274,7 +274,7 @@ export default function AttendanceActions({
       });
     }
 
-    const confirm = await Swal.fire({
+    const confirm = await openSwal({
       target: drawerContainerRef.current || document.body,
       icon: "question",
       title:
@@ -325,7 +325,7 @@ export default function AttendanceActions({
       setIsLoading(true);
       const res = await attendanceService.createAttendance(fd);
 
-      Swal.fire({
+      openSwal({
         target: drawerContainerRef.current || document.body,
         icon: "success",
         title: res?.message ?? "Berhasil",
@@ -352,7 +352,7 @@ export default function AttendanceActions({
         }
       } else msgs = ["Terjadi kesalahan saat mengirim data."];
 
-      Swal.fire({
+      openSwal({
         target: drawerContainerRef.current || document.body,
         icon: "error",
         title: "Gagal",
@@ -698,7 +698,7 @@ function RightCameraBlock({
             onClick={() =>
               canOpenCamera
                 ? setIsCameraOpen(true)
-                : Swal.fire({
+                : openSwal({
                     target: (warnTarget?.current as any) || document.body,
                     icon: "info",
                     title: disabledReason ?? "Aksi tidak tersedia",
@@ -720,7 +720,7 @@ function RightCameraBlock({
           onClick={() =>
             canOpenCamera
               ? setIsCameraOpen(true)
-              : Swal.fire({
+              : openSwal({
                   target: (warnTarget?.current as any) || document.body,
                   icon: "info",
                   title: disabledReason ?? "Pilih data yang diperlukan dulu",

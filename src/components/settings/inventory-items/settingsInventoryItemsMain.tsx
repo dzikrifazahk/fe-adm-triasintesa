@@ -9,7 +9,7 @@ import useDebounce from "@/utils/useDebouncy";
 import { useLoading } from "@/context/loadingContext";
 import { IInventoryItem } from "@/types/inventory-item";
 import { inventoryService } from "@/services";
-import Swal from "sweetalert2";
+import { openSwal } from "@/lib/swal";
 import { ModalUpsertInventoryItems } from "./modalInventoryItems";
 
 type PaginationMeta = {
@@ -103,7 +103,7 @@ export default function SettingsInventoryItemsMain({
   };
 
   const handleDeleteData = (itemId: string) => {
-    Swal.fire({
+    openSwal({
       icon: "warning",
       text: dictionary?.toast?.delete_confirm ?? "Apakah anda ingin menonaktifkan item ini?",
       showDenyButton: true,
@@ -117,7 +117,7 @@ export default function SettingsInventoryItemsMain({
         setIsLoading(true);
         await inventoryService.deleteInventoryItem(itemId);
         await getData(page, pageSize, debouncedSearch);
-        Swal.fire({
+        openSwal({
           icon: "success",
           title: dictionary?.toast?.delete_success ?? "Success menonaktifkan item",
           toast: true,
@@ -126,7 +126,7 @@ export default function SettingsInventoryItemsMain({
           timer: 2000,
         });
       } catch {
-        Swal.fire({
+        openSwal({
           icon: "error",
           title: dictionary?.toast?.delete_error ?? "Gagal menonaktifkan item",
           toast: true,
@@ -160,7 +160,7 @@ export default function SettingsInventoryItemsMain({
     await getData(page, pageSize, debouncedSearch);
     setIsLoading(false);
 
-    Swal.fire({
+    openSwal({
       icon: "success",
       title: dictionary?.toast?.refresh_success ?? "Data berhasil di refresh",
       toast: true,

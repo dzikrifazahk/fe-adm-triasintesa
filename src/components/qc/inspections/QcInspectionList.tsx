@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import Swal from "sweetalert2";
+import { openSwal } from "@/lib/swal";
 import { getDictionary } from "../../../../get-dictionary";
 import { useLoading } from "@/context/loadingContext";
 import { codeGeneratorService, qcCoaService, productionPlanService } from "@/services";
@@ -236,7 +236,7 @@ export default function QcInspectionList({
         setTotalPages(1);
       }
     } catch {
-      Swal.fire({
+      openSwal({
         icon: "error",
         title: "Gagal memuat QC inspections",
         toast: true,
@@ -308,7 +308,7 @@ export default function QcInspectionList({
       );
 
       if (!selectedBatch) {
-        Swal.fire({
+        openSwal({
           icon: "warning",
           title: "Batch tidak ditemukan",
           toast: true,
@@ -340,7 +340,7 @@ export default function QcInspectionList({
       setTemplates(templateOptions);
       return { batchOptions, templateOptions };
     } catch {
-      Swal.fire({
+      openSwal({
         icon: "error",
         title: "Gagal memuat batch/template",
         toast: true,
@@ -385,7 +385,7 @@ export default function QcInspectionList({
   };
 
   const handleDelete = (inspectionId: number) => {
-    Swal.fire({
+    openSwal({
       icon: "warning",
       text: "Hapus QC inspection ini?",
       showDenyButton: true,
@@ -404,7 +404,7 @@ export default function QcInspectionList({
           batchId: filters.batchId || undefined,
           finalStatus: filters.finalStatus || undefined,
         });
-        Swal.fire({
+        openSwal({
           icon: "success",
           title: "QC inspection dihapus",
           toast: true,
@@ -413,7 +413,7 @@ export default function QcInspectionList({
           showConfirmButton: false,
         });
       } catch {
-        Swal.fire({
+        openSwal({
           icon: "error",
           title: "Gagal menghapus QC inspection",
           toast: true,
@@ -428,7 +428,7 @@ export default function QcInspectionList({
   };
 
   const handleResubmit = (inspection: IQcInspection) => {
-    Swal.fire({
+    openSwal({
       icon: "question",
       text: "Ajukan ulang inspection ini?",
       showCancelButton: true,
@@ -451,7 +451,7 @@ export default function QcInspectionList({
       }
       setFormState((prev) => ({ ...prev, qcNumber: response.value }));
     } catch {
-      Swal.fire({
+      openSwal({
         icon: "error",
         title: "Gagal generate QC Number",
         toast: true,
@@ -474,7 +474,7 @@ export default function QcInspectionList({
       !formState.inspectionDate ||
       !formState.inspectionTime
     ) {
-      Swal.fire({
+      openSwal({
         icon: "warning",
         title: "Lengkapi semua field wajib",
         toast: true,
@@ -509,7 +509,7 @@ export default function QcInspectionList({
         batchId: filters.batchId || undefined,
         finalStatus: filters.finalStatus || undefined,
       });
-      Swal.fire({
+      openSwal({
         icon: "success",
         title: "QC inspection disimpan",
         toast: true,
@@ -518,7 +518,7 @@ export default function QcInspectionList({
         showConfirmButton: false,
       });
     } catch {
-      Swal.fire({
+      openSwal({
         icon: "error",
         title: "Gagal menyimpan QC inspection",
         toast: true,

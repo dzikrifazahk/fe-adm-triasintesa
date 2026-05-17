@@ -3,7 +3,7 @@ import { DataTable } from "./data-table";
 import { useContext, useEffect, useState } from "react";
 import { columns } from "./column";
 
-import Swal from "sweetalert2";
+import { openSwal } from "@/lib/swal";
 
 import useDebounce from "@/utils/useDebouncy";
 import { getDictionary } from "../../../../get-dictionary";
@@ -176,7 +176,7 @@ export default function SettingsPublicationMain({
   };
 
   const handleDeleteData = (id: string) => {
-    Swal.fire({
+    openSwal({
       icon: "warning",
       text: "Apakah anda ingin menghapus post ini?",
       showDenyButton: true,
@@ -190,7 +190,7 @@ export default function SettingsPublicationMain({
           await publicationService.deletePost(id);
           await getData(page, pageSize, debouncedSearch);
 
-          Swal.fire({
+          openSwal({
             icon: "success",
             title: "Post berhasil dihapus",
             toast: true,
@@ -199,7 +199,7 @@ export default function SettingsPublicationMain({
             timer: 2000,
           });
         } catch (e) {
-          Swal.fire({
+          openSwal({
             icon: "error",
             title: "Gagal menghapus post",
             toast: true,
@@ -226,7 +226,7 @@ export default function SettingsPublicationMain({
         ? "Apakah anda ingin mengubah post?"
         : "Apakah anda ingin menambahkan post?";
 
-    Swal.fire({
+    openSwal({
       icon: "warning",
       text: text,
       showDenyButton: true,
@@ -275,7 +275,7 @@ export default function SettingsPublicationMain({
 
         await getData(page, pageSize, debouncedSearch);
 
-        Swal.fire({
+        openSwal({
           icon: "success",
           title: "Success",
           toast: true,
@@ -287,7 +287,7 @@ export default function SettingsPublicationMain({
         if (axios.isAxiosError(e)) {
           const message = e.response?.data?.message ?? "";
 
-          Swal.fire({
+          openSwal({
             icon: "error",
             title: `Error: ${JSON.stringify(message)}`,
             toast: true,
@@ -336,7 +336,7 @@ export default function SettingsPublicationMain({
     await getData(page, pageSize, debouncedSearch);
     setIsLoading(false);
 
-    Swal.fire({
+    openSwal({
       icon: "success",
       title: "Data berhasil di refresh",
       toast: true,
@@ -367,7 +367,7 @@ export default function SettingsPublicationMain({
 
     const allowedTypes = ["image/jpeg", "image/png", "image/webp"];
     if (!allowedTypes.includes(file.type)) {
-      Swal.fire({
+      openSwal({
         icon: "error",
         title: "Oops...",
         position: "top-right",
@@ -378,7 +378,7 @@ export default function SettingsPublicationMain({
     }
 
     if (file.size > 5_000_000) {
-      Swal.fire({
+      openSwal({
         icon: "error",
         title: "Oops...",
         position: "top-right",

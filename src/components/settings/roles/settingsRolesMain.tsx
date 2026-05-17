@@ -3,7 +3,7 @@ import { DataTable } from "./data-table";
 import { useContext, useEffect, useState } from "react";
 import { columns } from "./column";
 
-import Swal from "sweetalert2";
+import { openSwal } from "@/lib/swal";
 
 import { IMeta } from "@/types/common";
 import axios from "axios";
@@ -112,7 +112,7 @@ export default function SettingsRolesMain({
   };
 
   const handleDeleteData = (id: string) => {
-    Swal.fire({
+    openSwal({
       icon: "warning",
       text: "Apakah anda ingin menghapus Role ini?",
       showDenyButton: true,
@@ -128,7 +128,7 @@ export default function SettingsRolesMain({
 
         setIsLoading(false);
 
-        Swal.fire({
+        openSwal({
           icon: response.status_code === 200 ? "success" : "error",
           title: "Success",
           toast: true,
@@ -167,7 +167,7 @@ export default function SettingsRolesMain({
         ? "Apakah anda ingin mengubah Role?"
         : "Apakah anda ingin menambahkan Role?";
 
-    Swal.fire({
+    openSwal({
       icon: "warning",
       text: text,
       showDenyButton: true,
@@ -187,7 +187,7 @@ export default function SettingsRolesMain({
 
         getData();
 
-        Swal.fire({
+        openSwal({
           icon: "success",
           title: response.message,
           toast: true,
@@ -199,7 +199,7 @@ export default function SettingsRolesMain({
         if (axios.isAxiosError(e)) {
           const message = e.response?.data?.message ?? "";
 
-          Swal.fire({
+          openSwal({
             icon: "error",
             title: `Error: ${JSON.stringify(message)}`,
             toast: true,
@@ -242,7 +242,7 @@ export default function SettingsRolesMain({
     await getData(page, pageSize, debouncedSearch);
     setIsLoading(false);
 
-    Swal.fire({
+    openSwal({
       icon: "success",
       title: "Data berhasil di refresh",
       toast: true,

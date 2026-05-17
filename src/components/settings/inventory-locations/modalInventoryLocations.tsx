@@ -11,7 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Pencil } from "lucide-react";
-import Swal from "sweetalert2";
+import { openSwal } from "@/lib/swal";
 import { useLoading } from "@/context/loadingContext";
 import { codeGeneratorService, inventoryLocationsService } from "@/services";
 
@@ -82,7 +82,7 @@ export function ModalUpsertInventoryLocations({
       notes,
     };
 
-    Swal.fire({
+    openSwal({
       icon: "warning",
       text: isEditMode
         ? "Apakah anda ingin mengubah inventory location?"
@@ -107,7 +107,7 @@ export function ModalUpsertInventoryLocations({
         }
 
         await isGetData?.();
-        Swal.fire({
+        openSwal({
           icon: "success",
           title: "Berhasil menyimpan inventory location",
           toast: true,
@@ -118,7 +118,7 @@ export function ModalUpsertInventoryLocations({
 
         clearInput();
       } catch {
-        Swal.fire({
+        openSwal({
           icon: "error",
           title: "Gagal menyimpan inventory location",
           toast: true,
@@ -144,7 +144,7 @@ export function ModalUpsertInventoryLocations({
       const response = await codeGeneratorService.preview("inventory_location");
       setLocationCode(response.value ?? "");
     } catch {
-      Swal.fire({
+      openSwal({
         icon: "error",
         title: "Gagal generate kode lokasi",
         toast: true,

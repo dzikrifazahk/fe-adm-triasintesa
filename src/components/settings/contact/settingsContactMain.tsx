@@ -3,7 +3,7 @@ import { DataTable } from "./data-table";
 import { useContext, useEffect, useState } from "react";
 import { columns } from "./column";
 import { contactService } from "@/services";
-import Swal from "sweetalert2";
+import { openSwal } from "@/lib/swal";
 import { IAddOrUpdateContact, IContact } from "@/types/contact";
 import { IMeta } from "@/types/common";
 import useDebounce from "@/utils/useDebouncy";
@@ -103,7 +103,7 @@ export default function SettingsContactMain({
     ];
 
     if (!allowedTypes.includes(event.target.files?.[0]?.type || "")) {
-      Swal.fire({
+      openSwal({
         icon: "error",
         title: "Oops...",
         position: "top-right",
@@ -133,7 +133,7 @@ export default function SettingsContactMain({
     ];
 
     if (!allowedTypes.includes(event.target.files?.[0]?.type || "")) {
-      Swal.fire({
+      openSwal({
         icon: "error",
         title: "Oops...",
         position: "top-right",
@@ -200,7 +200,7 @@ export default function SettingsContactMain({
   };
 
   const handleDeleteData = (id: string) => {
-    Swal.fire({
+    openSwal({
       icon: "warning",
       text: "Apakah anda ingin menghapus Kontak ini?",
       showDenyButton: true,
@@ -216,7 +216,7 @@ export default function SettingsContactMain({
         getData(page, pageSize, debouncedSearch, filterPayload);
         if (response.status_code === 200) {
           setLoading(false);
-          Swal.fire({
+          openSwal({
             icon: "success",
             title: `${response.message}`,
             position: "top-right",
@@ -226,7 +226,7 @@ export default function SettingsContactMain({
           });
         } else {
           setLoading(false);
-          Swal.fire({
+          openSwal({
             icon: "error",
             title: `Terjadi Kesalahan ${response.message}`,
             position: "top-right",
@@ -236,7 +236,7 @@ export default function SettingsContactMain({
           });
         }
       } else if (result.isConfirmed === false) {
-        Swal.fire({
+        openSwal({
           icon: "warning",
           title: "Batal Hapus Data",
           position: "top-right",
@@ -299,7 +299,7 @@ export default function SettingsContactMain({
         formData.append(key, value as string);
       });
 
-      Swal.fire({
+      openSwal({
         icon: "warning",
         text: "Apakah anda ingin mengubah Kontak?",
         showDenyButton: true,
@@ -315,7 +315,7 @@ export default function SettingsContactMain({
           getData(page, pageSize, debouncedSearch, filterPayload);
           if (response.status_code === 200) {
             setLoading(false);
-            Swal.fire({
+            openSwal({
               icon: "success",
               title: `${response.message}`,
               position: "top-right",
@@ -325,7 +325,7 @@ export default function SettingsContactMain({
             });
           } else {
             setLoading(false);
-            Swal.fire({
+            openSwal({
               icon: "error",
               title: `Terjadi Kesalahan ${response.message}`,
               position: "top-right",
@@ -337,7 +337,7 @@ export default function SettingsContactMain({
           clearInput();
         } else if (result.isConfirmed === false) {
           clearInput();
-          Swal.fire({
+          openSwal({
             icon: "warning",
             title: "Batal Ubah Data",
             position: "top-right",
@@ -380,7 +380,7 @@ export default function SettingsContactMain({
         formData.append("attachment_file", attachment);
       }
 
-      Swal.fire({
+      openSwal({
         icon: "warning",
         text: "Apakah anda ingin menambahkan Kontak?",
         showDenyButton: true,
@@ -396,7 +396,7 @@ export default function SettingsContactMain({
           getData(page, pageSize, debouncedSearch, filterPayload);
           if (response.status_code === 200) {
             setLoading(false);
-            Swal.fire({
+            openSwal({
               icon: "success",
               title: `${response.message}`,
               position: "top-right",
@@ -405,7 +405,7 @@ export default function SettingsContactMain({
               timer: 2000,
             });
           } else {
-            Swal.fire({
+            openSwal({
               icon: "error",
               title: `Terjadi Kesalahan ${response.message}`,
               position: "top-right",
@@ -417,7 +417,7 @@ export default function SettingsContactMain({
           clearInput();
         } else if (result.isConfirmed === false) {
           clearInput();
-          Swal.fire({
+          openSwal({
             icon: "warning",
             title: "Batal Tambah Data",
             position: "top-right",
@@ -477,7 +477,7 @@ export default function SettingsContactMain({
   const handleClearPayload = () => {
     setFilterPayload("");
     getData(page, pageSize);
-    Swal.fire({
+    openSwal({
       icon: "success",
       title: "Filter Berhasil Dihapus",
       position: "top-right",
@@ -492,7 +492,7 @@ export default function SettingsContactMain({
       setIsLoading(true);
       await getData(page, pageSize, debouncedSearch, filterPayload);
       setIsLoading(false);
-      Swal.fire({
+      openSwal({
         icon: "success",
         title: "Data berhasil di refresh",
         position: "top-right",
@@ -506,7 +506,7 @@ export default function SettingsContactMain({
       clearInput();
       if (axios.isAxiosError(e)) {
         const message = e.response?.data?.message ?? "";
-        Swal.fire({
+        openSwal({
           icon: "error",
           title: `Terjadi Kesalahan ${message}`,
           position: "top-right",

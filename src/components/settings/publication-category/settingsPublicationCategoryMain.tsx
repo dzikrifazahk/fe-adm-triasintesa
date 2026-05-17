@@ -3,7 +3,7 @@ import { DataTable } from "./data-table";
 import { useContext, useEffect, useState } from "react";
 import { columns } from "./column";
 
-import Swal from "sweetalert2";
+import { openSwal } from "@/lib/swal";
 
 import useDebounce from "@/utils/useDebouncy";
 import { getDictionary } from "../../../../get-dictionary";
@@ -117,7 +117,7 @@ export default function SettingsPublicationCategoryMain({
   };
 
   const handleDeleteData = (id: string) => {
-    Swal.fire({
+    openSwal({
       icon: "warning",
       text: "Apakah anda ingin menghapus kategori ini?",
       showDenyButton: true,
@@ -131,7 +131,7 @@ export default function SettingsPublicationCategoryMain({
           await publicationCategoryService.deleteCategory(id);
           await getData(page, pageSize, debouncedSearch);
 
-          Swal.fire({
+          openSwal({
             icon: "success",
             title: "Kategori berhasil dihapus",
             toast: true,
@@ -140,7 +140,7 @@ export default function SettingsPublicationCategoryMain({
             timer: 2000,
           });
         } catch {
-          Swal.fire({
+          openSwal({
             icon: "error",
             title: "Gagal menghapus kategori",
             toast: true,
@@ -176,7 +176,7 @@ export default function SettingsPublicationCategoryMain({
         ? "Apakah anda ingin mengubah kategori?"
         : "Apakah anda ingin menambahkan kategori?";
 
-    Swal.fire({
+    openSwal({
       icon: "warning",
       text: text,
       showDenyButton: true,
@@ -197,7 +197,7 @@ export default function SettingsPublicationCategoryMain({
 
         await getData(page, pageSize, debouncedSearch);
 
-        Swal.fire({
+        openSwal({
           icon: "success",
           title: "Success",
           toast: true,
@@ -209,7 +209,7 @@ export default function SettingsPublicationCategoryMain({
         if (axios.isAxiosError(e)) {
           const message = e.response?.data?.message ?? "";
 
-          Swal.fire({
+          openSwal({
             icon: "error",
             title: `Error: ${JSON.stringify(message)}`,
             toast: true,
@@ -251,7 +251,7 @@ export default function SettingsPublicationCategoryMain({
     await getData(page, pageSize, debouncedSearch);
     setIsLoading(false);
 
-    Swal.fire({
+    openSwal({
       icon: "success",
       title: "Data berhasil di refresh",
       toast: true,

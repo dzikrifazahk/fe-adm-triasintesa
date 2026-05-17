@@ -12,7 +12,7 @@ import { productionPlanService } from "@/services";
 import { IMeta } from "@/types/common";
 import { useWorkspaceContext } from "@/context/workspaceContext";
 import { Button } from "@/components/ui/button";
-import Swal from "sweetalert2";
+import { openSwal } from "@/lib/swal";
 import useDebounce from "@/utils/useDebouncy";
 import { DateRange } from "react-day-picker";
 import { format } from "date-fns";
@@ -176,7 +176,7 @@ export default function ProductionLayoutMain({
   };
 
   const handleDeleteProject = async (id: string) => {
-    const confirm = await Swal.fire({
+    const confirm = await openSwal({
       icon: "warning",
       text: productionPlanDictionary.layout.delete_confirm_text,
       showDenyButton: true,
@@ -191,7 +191,7 @@ export default function ProductionLayoutMain({
         setLoading(true);
         const res = await productionPlanService.deleteProductionPlan(id);
 
-        Swal.fire({
+        openSwal({
           icon: "success",
           title: productionPlanDictionary.layout.delete_success,
           position: "top-right",
@@ -202,7 +202,7 @@ export default function ProductionLayoutMain({
 
         getData("", page, pageSize, search, selectedDateRange, filterPayload);
       } catch {
-        Swal.fire({
+        openSwal({
           icon: "error",
           title: productionPlanDictionary.layout.delete_error,
           position: "top-right",
@@ -217,7 +217,7 @@ export default function ProductionLayoutMain({
   };
 
   const handleResetPlanLink = async (id: string) => {
-    const confirm = await Swal.fire({
+    const confirm = await openSwal({
       icon: "warning",
       title: "Reset plan link?",
       text: "Plan akan ditutup dan batch kosong pada plan ini akan dilepas.",
@@ -234,7 +234,7 @@ export default function ProductionLayoutMain({
       setLoading(true);
       await productionPlanService.resetProductionPlanTankLink(id);
 
-      Swal.fire({
+      openSwal({
         icon: "success",
         title: "Plan link berhasil di-reset",
         position: "top-right",
@@ -249,7 +249,7 @@ export default function ProductionLayoutMain({
         error?.response?.data?.message ??
         "Gagal reset plan link. Pastikan batch belum memiliki produksi jirigen.";
 
-      Swal.fire({
+      openSwal({
         icon: "error",
         title: "Reset plan link gagal",
         text: Array.isArray(message) ? message.join(", ") : String(message),

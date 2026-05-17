@@ -12,7 +12,7 @@ import {
   ReportType,
 } from "@/types/report";
 import axios from "axios";
-import Swal from "sweetalert2";
+import { openSwal } from "@/lib/swal";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -135,7 +135,7 @@ export default function ReportMain({ dictionary }: Props) {
       const payload = unwrapData<IReportStats>(response);
       setStats(payload);
     } catch (error) {
-      Swal.fire({
+      openSwal({
         icon: "error",
         title: "Gagal memuat statistik report",
         text: getErrorMessage(error),
@@ -154,7 +154,7 @@ export default function ReportMain({ dictionary }: Props) {
       const payload = unwrapData<IReportPreview>(response);
       setPreview(payload);
     } catch (error) {
-      Swal.fire({
+      openSwal({
         icon: "error",
         title: "Gagal generate preview",
         text: getErrorMessage(error),
@@ -185,7 +185,7 @@ export default function ReportMain({ dictionary }: Props) {
       window.URL.revokeObjectURL(url);
       await fetchStats();
     } catch (error) {
-      Swal.fire({
+      openSwal({
         icon: "error",
         title: "Gagal download report",
         text: getErrorMessage(error),

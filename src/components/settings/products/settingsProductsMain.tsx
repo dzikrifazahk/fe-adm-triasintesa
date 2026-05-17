@@ -3,7 +3,7 @@
 import { DataTable } from "./data-table";
 import { useContext, useEffect, useState } from "react";
 import { columns } from "./column";
-import Swal from "sweetalert2";
+import { openSwal } from "@/lib/swal";
 import useDebounce from "@/utils/useDebouncy";
 import { getDictionary } from "../../../../get-dictionary";
 import { Modal } from "@/components/custom/modal";
@@ -134,7 +134,7 @@ export default function SettingsProductsMain({
   };
 
   const handleDeleteData = (id: string) => {
-    Swal.fire({
+    openSwal({
       icon: "warning",
       text: "Apakah anda ingin menghapus produk ini?",
       showDenyButton: true,
@@ -148,7 +148,7 @@ export default function SettingsProductsMain({
           await productService.deleteProduct(id);
           await getData(page, pageSize, debouncedSearch);
 
-          Swal.fire({
+          openSwal({
             icon: "success",
             title: "Produk berhasil dihapus",
             toast: true,
@@ -157,7 +157,7 @@ export default function SettingsProductsMain({
             timer: 2000,
           });
         } catch {
-          Swal.fire({
+          openSwal({
             icon: "error",
             title: "Gagal menghapus produk",
             toast: true,
@@ -194,7 +194,7 @@ export default function SettingsProductsMain({
         ? "Apakah anda ingin mengubah produk?"
         : "Apakah anda ingin menambahkan produk?";
 
-    Swal.fire({
+    openSwal({
       icon: "warning",
       text: text,
       showDenyButton: true,
@@ -237,7 +237,7 @@ export default function SettingsProductsMain({
 
         await getData(page, pageSize, debouncedSearch);
 
-        Swal.fire({
+        openSwal({
           icon: "success",
           title: "Success",
           toast: true,
@@ -249,7 +249,7 @@ export default function SettingsProductsMain({
         if (axios.isAxiosError(e)) {
           const message = e.response?.data?.message ?? "";
 
-          Swal.fire({
+          openSwal({
             icon: "error",
             title: `Error: ${JSON.stringify(message)}`,
             toast: true,
@@ -296,7 +296,7 @@ export default function SettingsProductsMain({
     await getData(page, pageSize, debouncedSearch);
     setIsLoading(false);
 
-    Swal.fire({
+    openSwal({
       icon: "success",
       title: "Data berhasil di refresh",
       toast: true,
@@ -327,7 +327,7 @@ export default function SettingsProductsMain({
 
     const allowedTypes = ["image/jpeg", "image/png", "image/webp"];
     if (!allowedTypes.includes(file.type)) {
-      Swal.fire({
+      openSwal({
         icon: "error",
         title: "Oops...",
         position: "top-right",
@@ -338,7 +338,7 @@ export default function SettingsProductsMain({
     }
 
     if (file.size > 5_000_000) {
-      Swal.fire({
+      openSwal({
         icon: "error",
         title: "Oops...",
         position: "top-right",
@@ -359,7 +359,7 @@ export default function SettingsProductsMain({
     }
 
     if (file.type !== "application/pdf") {
-      Swal.fire({
+      openSwal({
         icon: "error",
         title: "Oops...",
         position: "top-right",
@@ -370,7 +370,7 @@ export default function SettingsProductsMain({
     }
 
     if (file.size > CATALOG_MAX_SIZE) {
-      Swal.fire({
+      openSwal({
         icon: "error",
         title: "Oops...",
         position: "top-right",

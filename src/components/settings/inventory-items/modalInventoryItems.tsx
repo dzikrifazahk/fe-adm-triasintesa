@@ -7,7 +7,7 @@ import { useContext, useEffect, useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Pencil } from "lucide-react";
-import Swal from "sweetalert2";
+import { openSwal } from "@/lib/swal";
 import { useLoading } from "@/context/loadingContext";
 import { inventoryService } from "@/services";
 
@@ -73,7 +73,7 @@ export function ModalUpsertInventoryItems({
       category: category || undefined,
     };
 
-    Swal.fire({
+    openSwal({
       icon: "warning",
       text: isEditMode
         ? "Apakah anda ingin mengubah item?"
@@ -95,7 +95,7 @@ export function ModalUpsertInventoryItems({
         }
 
         await isGetData?.();
-        Swal.fire({
+        openSwal({
           icon: "success",
           title: "Berhasil menyimpan item",
           toast: true,
@@ -106,7 +106,7 @@ export function ModalUpsertInventoryItems({
 
         clearInput();
       } catch {
-        Swal.fire({
+        openSwal({
           icon: "error",
           title: "Gagal menyimpan item",
           toast: true,

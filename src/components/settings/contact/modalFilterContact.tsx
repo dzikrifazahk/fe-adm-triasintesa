@@ -10,7 +10,7 @@ import {
 import { useEffect, useState } from "react";
 import { DateRange } from "react-day-picker";
 import { format } from "date-fns";
-import Swal from "sweetalert2";
+import { openSwal } from "@/lib/swal";
 import { FaArrowRotateLeft } from "react-icons/fa6";
 import { ModalFilter } from "@/components/custom/modalFilter";
 import { getDictionary } from "../../../../get-dictionary";
@@ -56,7 +56,7 @@ export const ModalFilterContact = ({
     }
     // console.log(JSON.stringify(payload));
     if (onSubmit) {
-      Swal.fire({
+      openSwal({
         icon: "success",
         title: "Berhasil Menerapkan Filter",
         position: "top-right",

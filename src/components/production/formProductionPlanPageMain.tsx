@@ -20,7 +20,7 @@ import {
 } from "../ui/select";
 import { Textarea } from "../ui/textarea";
 import { Beaker, CalendarRange, Droplets, Package2 } from "lucide-react";
-import Swal from "sweetalert2";
+import { openSwal } from "@/lib/swal";
 import { useRouter } from "next/navigation";
 import { useLoading } from "@/context/loadingContext";
 
@@ -132,7 +132,7 @@ export default function FormProductionPlanMain({
         setLoading(false);
       } catch (error) {
         console.error(error);
-        Swal.fire({
+        openSwal({
           icon: "error",
           title: formDictionary.load_error,
           toast: true,
@@ -159,7 +159,7 @@ export default function FormProductionPlanMain({
     event.preventDefault();
 
     if (!form.startDate || !form.endDate || !form.tankId) {
-      Swal.fire({
+      openSwal({
         icon: "warning",
         title: formDictionary.required_warning,
         toast: true,
@@ -180,7 +180,7 @@ export default function FormProductionPlanMain({
       // status: form.status ?? "planned",
     };
 
-    const result = await Swal.fire({
+    const result = await openSwal({
       icon: "question",
       title: planId
         ? formDictionary.confirm_update
@@ -202,7 +202,7 @@ export default function FormProductionPlanMain({
         await productionPlanService.createProductionPlan(payload);
       }
 
-      Swal.fire({
+      openSwal({
         icon: "success",
         title: planId
           ? formDictionary.save_success_update
@@ -216,7 +216,7 @@ export default function FormProductionPlanMain({
       router.push(`/${lang}/dashboard/production`);
     } catch (error) {
       console.error(error);
-      Swal.fire({
+      openSwal({
         icon: "error",
         title: formDictionary.save_error,
         toast: true,
@@ -232,7 +232,7 @@ export default function FormProductionPlanMain({
   const handleDelete = async () => {
     if (!planId) return;
 
-    const result = await Swal.fire({
+    const result = await openSwal({
       icon: "warning",
       title: formDictionary.delete_confirm_title,
       text: formDictionary.delete_confirm_text,
@@ -248,7 +248,7 @@ export default function FormProductionPlanMain({
       setSubmitting(true);
       await productionPlanService.deleteProductionPlan(planId);
 
-      Swal.fire({
+      openSwal({
         icon: "success",
         title: formDictionary.delete_success,
         toast: true,
@@ -260,7 +260,7 @@ export default function FormProductionPlanMain({
       router.push(`/${lang}/dashboard/production`);
     } catch (error) {
       console.error(error);
-      Swal.fire({
+      openSwal({
         icon: "error",
         title: formDictionary.delete_error,
         toast: true,

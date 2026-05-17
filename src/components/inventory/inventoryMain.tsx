@@ -2,7 +2,7 @@
 
 import { type FormEvent, type ReactNode, useEffect, useMemo, useState } from "react";
 import axios from "axios";
-import Swal from "sweetalert2";
+import { openSwal, showSwalValidationMessage } from "@/lib/swal";
 import { getDictionary } from "../../../get-dictionary";
 import { useLoading } from "@/context/loadingContext";
 import { inventoryService } from "@/services";
@@ -43,6 +43,12 @@ import {
 type Dictionary = Awaited<ReturnType<typeof getDictionary>>["inventory_page_dic"];
 
 type ListPayload<T> = { data: T[]; meta?: unknown };
+type PaginatedMeta = {
+  current_page?: number;
+  last_page?: number;
+  per_page?: number;
+  total?: number;
+};
 
 type ScanInForm = {
   itemId: string;
@@ -178,6 +184,10 @@ export default function InventoryMain({ dictionary }: { dictionary: Dictionary }
   const [submittingScan, setSubmittingScan] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [searchBarcode, setSearchBarcode] = useState("");
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+  const [lastPage, setLastPage] = useState(1);
+  const [totalRows, setTotalRows] = useState(0);
   const [scannerRestartKey, setScannerRestartKey] = useState(0);
   const [isScanModalOpen, setIsScanModalOpen] = useState(false);
   const [isGuideModalOpen, setIsGuideModalOpen] = useState(false);
@@ -189,14 +199,23 @@ export default function InventoryMain({ dictionary }: { dictionary: Dictionary }
   const title = dictionary?.title ?? "Inventory";
   const description = dictionary?.hero_description ?? dictionary?.description ?? "";
 
-  const fetchStocks = async (barcode?: string) => {
+  const fetchStocks = async (
+    barcode?: string,
+    nextPage = page,
+    nextPageSize = pageSize,
+  ) => {
     const response = await inventoryService.getInvItems({
-      page: 1,
-      limit: 100,
+      page: nextPage,
+      limit: nextPageSize,
       barcode: barcode || undefined,
     });
     const payload = unwrapData<ListPayload<IInvJirigen>>(response);
     setStocks(Array.isArray(payload?.data) ? payload.data : []);
+    const meta = (payload?.meta as PaginatedMeta | undefined) ?? {};
+    setPage(meta.current_page ?? nextPage);
+    setPageSize(meta.per_page ?? nextPageSize);
+    setLastPage(meta.last_page ?? 1);
+    setTotalRows(meta.total ?? payload?.data?.length ?? 0);
   };
 
   const fetchMovements = async () => {
@@ -229,18 +248,18 @@ export default function InventoryMain({ dictionary }: { dictionary: Dictionary }
     setItemMasters(Array.isArray(payload?.data) ? payload.data : []);
   };
 
-  const loadAll = async (barcode?: string) => {
+  const loadAll = async (barcode?: string, nextPage = page, nextPageSize = pageSize) => {
     try {
       setRefreshing(true);
       setIsLoading(true);
       await Promise.all([
-        fetchStocks(barcode),
+        fetchStocks(barcode, nextPage, nextPageSize),
         fetchMovements(),
         fetchLocations(),
         fetchItemMasters(),
       ]);
     } catch (error) {
-      Swal.fire({
+      openSwal({
         icon: "error",
         title: dictionary.toast.load_error_title,
         text: getErrorMessage(error),
@@ -266,21 +285,11 @@ export default function InventoryMain({ dictionary }: { dictionary: Dictionary }
       .filter(Boolean).length;
   }, [scanInForm]);
 
-  const recentStocks = useMemo(() => {
-    return [...stocks]
-      .sort((a, b) => {
-        const first = new Date(b.entryDate || b.lastUpdated || 0).getTime();
-        const second = new Date(a.entryDate || a.lastUpdated || 0).getTime();
-        return first - second;
-      })
-      .slice(0, 12);
-  }, [stocks]);
-
   const submitScanIn = async (event?: FormEvent) => {
     event?.preventDefault();
 
     if (!scanInForm.barcode || !scanInForm.locationId) {
-      Swal.fire({
+      openSwal({
         icon: "warning",
         title: dictionary.toast.validation_warning,
       });
@@ -302,7 +311,7 @@ export default function InventoryMain({ dictionary }: { dictionary: Dictionary }
       setScannerRestartKey((prev) => prev + 1);
       setIsScanModalOpen(false);
 
-      Swal.fire({
+      openSwal({
         icon: "success",
         title: dictionary.toast.scan_success_title,
         toast: true,
@@ -311,7 +320,7 @@ export default function InventoryMain({ dictionary }: { dictionary: Dictionary }
         showConfirmButton: false,
       });
     } catch (error) {
-      Swal.fire({
+      openSwal({
         icon: "error",
         title: dictionary.toast.scan_error_title,
         text: getErrorMessage(error),
@@ -322,11 +331,12 @@ export default function InventoryMain({ dictionary }: { dictionary: Dictionary }
   };
 
   const handleRefresh = async () => {
-    await loadAll(searchBarcode);
+    await loadAll(searchBarcode, page, pageSize);
   };
 
   const handleSearch = async () => {
-    await loadAll(searchBarcode);
+    setPage(1);
+    await loadAll(searchBarcode, 1, pageSize);
   };
 
   const handleViewRow = (row: IInvJirigen) => {
@@ -338,8 +348,8 @@ export default function InventoryMain({ dictionary }: { dictionary: Dictionary }
     try {
       setIsLoading(true);
       await inventoryService.updateInvJirigenStatus(id, status);
-      await loadAll(searchBarcode);
-      Swal.fire({
+      await loadAll(searchBarcode, page, pageSize);
+      openSwal({
         icon: "success",
         title: "Status inventory berhasil diperbarui",
         toast: true,
@@ -348,7 +358,7 @@ export default function InventoryMain({ dictionary }: { dictionary: Dictionary }
         showConfirmButton: false,
       });
     } catch (error) {
-      Swal.fire({
+      openSwal({
         icon: "error",
         title: "Gagal memperbarui status inventory",
         text: getErrorMessage(error),
@@ -360,7 +370,7 @@ export default function InventoryMain({ dictionary }: { dictionary: Dictionary }
 
   const handleEditRow = async (row: IInvJirigen) => {
     if (row.status !== "available") {
-      Swal.fire({
+      openSwal({
         icon: "warning",
         title: "Hanya item status available yang bisa diedit",
       });
@@ -381,7 +391,7 @@ export default function InventoryMain({ dictionary }: { dictionary: Dictionary }
       .join("");
     const expiryValue = row.expiryDate ? row.expiryDate.slice(0, 10) : "";
 
-    const result = await Swal.fire({
+    const result = await openSwal({
       title: "Edit Inventory Item",
       html: `
         <div style="display:flex;flex-direction:column;gap:10px;text-align:left">
@@ -406,7 +416,7 @@ export default function InventoryMain({ dictionary }: { dictionary: Dictionary }
         const expiryDate =
           (document.getElementById("inv-expiry-date") as HTMLInputElement)?.value || undefined;
         if (!itemId || !locationId) {
-          Swal.showValidationMessage("Item dan location wajib diisi.");
+          showSwalValidationMessage("Item dan location wajib diisi.");
           return null;
         }
         return { itemId, locationId, expiryDate };
@@ -418,8 +428,8 @@ export default function InventoryMain({ dictionary }: { dictionary: Dictionary }
     try {
       setIsLoading(true);
       await inventoryService.updateInvItemEntry(row.id, result.value);
-      await loadAll(searchBarcode);
-      Swal.fire({
+      await loadAll(searchBarcode, page, pageSize);
+      openSwal({
         icon: "success",
         title: "Inventory berhasil diperbarui",
         toast: true,
@@ -428,7 +438,7 @@ export default function InventoryMain({ dictionary }: { dictionary: Dictionary }
         showConfirmButton: false,
       });
     } catch (error) {
-      Swal.fire({
+      openSwal({
         icon: "error",
         title: "Gagal mengedit inventory",
         text: getErrorMessage(error),
@@ -440,14 +450,14 @@ export default function InventoryMain({ dictionary }: { dictionary: Dictionary }
 
   const handleDeleteRow = async (row: IInvJirigen) => {
     if (row.status !== "available") {
-      Swal.fire({
+      openSwal({
         icon: "warning",
         title: "Hanya item status available yang bisa dihapus",
       });
       return;
     }
 
-    const confirmation = await Swal.fire({
+    const confirmation = await openSwal({
       icon: "warning",
       title: "Hapus item inventory ini?",
       text: `Barcode: ${row.barcode}`,
@@ -460,8 +470,8 @@ export default function InventoryMain({ dictionary }: { dictionary: Dictionary }
     try {
       setIsLoading(true);
       await inventoryService.deleteInvItemEntry(row.id);
-      await loadAll(searchBarcode);
-      Swal.fire({
+      await loadAll(searchBarcode, page, pageSize);
+      openSwal({
         icon: "success",
         title: "Inventory berhasil dihapus",
         toast: true,
@@ -470,7 +480,7 @@ export default function InventoryMain({ dictionary }: { dictionary: Dictionary }
         showConfirmButton: false,
       });
     } catch (error) {
-      Swal.fire({
+      openSwal({
         icon: "error",
         title: "Gagal menghapus inventory",
         text: getErrorMessage(error),
@@ -543,12 +553,24 @@ export default function InventoryMain({ dictionary }: { dictionary: Dictionary }
       <section>
         <InventoryRecentTable
           dictionary={dictionary}
-          rows={recentStocks}
+          rows={stocks}
           searchBarcode={searchBarcode}
           refreshing={refreshing}
+          page={page}
+          pageSize={pageSize}
+          lastPage={lastPage}
+          totalRows={totalRows}
           onSearchBarcodeChange={setSearchBarcode}
           onSearch={handleSearch}
           onRefresh={handleRefresh}
+          onPageChange={(nextPage) => {
+            void loadAll(searchBarcode, nextPage, pageSize);
+          }}
+          onPageSizeChange={(nextPageSize) => {
+            setPage(1);
+            setPageSize(nextPageSize);
+            void loadAll(searchBarcode, 1, nextPageSize);
+          }}
           onChangeStatus={handleChangeStatus}
           onViewRow={handleViewRow}
           onEditRow={handleEditRow}

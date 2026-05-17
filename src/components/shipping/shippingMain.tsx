@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import axios from "axios";
-import Swal from "sweetalert2";
+import { openSwal } from "@/lib/swal";
 import { getDictionary } from "../../../get-dictionary";
 import { useLoading } from "@/context/loadingContext";
 import { deliveryOrderService, salesOrderService } from "@/services";
@@ -56,7 +56,12 @@ import {
 
 type ListPayload<T> = {
   data: T[];
-  meta?: unknown;
+  meta?: {
+    current_page?: number;
+    last_page?: number;
+    per_page?: number;
+    total?: number;
+  };
 };
 
 type DeliveryFormState = {
@@ -144,6 +149,11 @@ export default function ShippingMain({
   const [salesOrders, setSalesOrders] = useState<ISalesOrder[]>([]);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
+  const [quickFilter, setQuickFilter] = useState<"all" | "pending" | "in_transit" | "today">("all");
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+  const [lastPage, setLastPage] = useState(1);
+  const [totalRows, setTotalRows] = useState(0);
 
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
@@ -174,19 +184,31 @@ export default function ShippingMain({
     return selected ? [selected, ...filtered] : filtered;
   }, [salesOrders, form.salesOrderId]);
 
-  const fetchDeliveries = async () => {
+  const fetchDeliveries = async (nextPage = page, nextPageSize = pageSize) => {
     try {
       setIsLoading(true);
+      const todayValue =
+        quickFilter === "today" ? new Date().toISOString().slice(0, 10) : undefined;
+      const effectiveStatus =
+        quickFilter === "pending" || quickFilter === "in_transit"
+          ? quickFilter
+          : (statusFilter as DeliveryOrderStatus) || undefined;
+
       const response = await deliveryOrderService.getDeliveryOrders({
-        page: 1,
-        limit: 100,
+        page: nextPage,
+        limit: nextPageSize,
         doNumber: search || undefined,
-        status: (statusFilter as DeliveryOrderStatus) || undefined,
+        status: effectiveStatus,
+        deliveryDate: todayValue,
       });
       const payload = unwrapData<ListPayload<IDeliveryOrder>>(response);
       setDeliveries(Array.isArray(payload.data) ? payload.data : []);
+      setPage(payload.meta?.current_page ?? nextPage);
+      setPageSize(payload.meta?.per_page ?? nextPageSize);
+      setLastPage(payload.meta?.last_page ?? 1);
+      setTotalRows(payload.meta?.total ?? payload.data?.length ?? 0);
     } catch (error) {
-      Swal.fire({
+      openSwal({
         icon: "error",
         title: "Gagal memuat delivery order",
         text: getErrorMessage(error),
@@ -198,57 +220,37 @@ export default function ShippingMain({
 
   const fetchSalesOrderOptions = async () => {
     try {
-      const response = await salesOrderService.getSalesOrders({
-        page: 1,
-        limit: 200,
-      });
-      const payload = unwrapData<ListPayload<ISalesOrder>>(response);
-      setSalesOrders(Array.isArray(payload.data) ? payload.data : []);
+      const collected: ISalesOrder[] = [];
+      let nextPage = 1;
+      let nextLastPage = 1;
+      const chunkSize = 100;
+
+      do {
+        const response = await salesOrderService.getSalesOrders({
+          page: nextPage,
+          limit: chunkSize,
+        });
+        const payload = unwrapData<ListPayload<ISalesOrder>>(response);
+        const rows = Array.isArray(payload.data) ? payload.data : [];
+        collected.push(...rows);
+        nextLastPage = payload.meta?.last_page ?? 1;
+        nextPage += 1;
+      } while (nextPage <= nextLastPage);
+
+      setSalesOrders(collected);
     } catch {
       setSalesOrders([]);
     }
   };
 
   useEffect(() => {
-    fetchDeliveries();
     fetchSalesOrderOptions();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const runQuickFilter = async (type: "all" | "pending" | "in_transit" | "today") => {
-    try {
-      setIsLoading(true);
-      if (type === "all") {
-        await fetchDeliveries();
-        return;
-      }
-
-      if (type === "pending") {
-        const response = await deliveryOrderService.getPendingDeliveries();
-        const payload = unwrapData<IDeliveryOrder[]>(response);
-        setDeliveries(Array.isArray(payload) ? payload : []);
-      }
-
-      if (type === "in_transit") {
-        const response = await deliveryOrderService.getInTransitDeliveries();
-        const payload = unwrapData<IDeliveryOrder[]>(response);
-        setDeliveries(Array.isArray(payload) ? payload : []);
-      }
-
-      if (type === "today") {
-        const response = await deliveryOrderService.getTodayDeliveries();
-        const payload = unwrapData<IDeliveryOrder[]>(response);
-        setDeliveries(Array.isArray(payload) ? payload : []);
-      }
-    } catch (error) {
-      Swal.fire({
-        icon: "error",
-        title: "Gagal memuat quick filter pengiriman",
-        text: getErrorMessage(error),
-      });
-    } finally {
-      setIsLoading(false);
-    }
+  const runQuickFilter = (type: "all" | "pending" | "in_transit" | "today") => {
+    setQuickFilter(type);
+    setPage(1);
   };
 
   const openCreate = () => {
@@ -284,7 +286,7 @@ export default function ShippingMain({
       setSelectedDelivery(payload);
       setIsDetailOpen(true);
     } catch (error) {
-      Swal.fire({
+      openSwal({
         icon: "error",
         title: "Gagal memuat detail delivery order",
         text: getErrorMessage(error),
@@ -323,7 +325,7 @@ export default function ShippingMain({
   const handleSubmit = async () => {
     const validationError = validatePayload();
     if (validationError) {
-      Swal.fire({ icon: "warning", title: validationError });
+      openSwal({ icon: "warning", title: validationError });
       return;
     }
 
@@ -343,7 +345,7 @@ export default function ShippingMain({
           notes: form.notes || undefined,
         };
         await deliveryOrderService.createFromSalesOrder(payload);
-        Swal.fire({
+        openSwal({
           icon: "success",
           title: "Delivery order berhasil dibuat",
           timer: 2000,
@@ -366,7 +368,7 @@ export default function ShippingMain({
           notes: form.notes || undefined,
         };
         await deliveryOrderService.updateDeliveryOrder(selectedDelivery.id, payload);
-        Swal.fire({
+        openSwal({
           icon: "success",
           title: "Delivery order berhasil diperbarui",
           timer: 2000,
@@ -378,7 +380,7 @@ export default function ShippingMain({
       closeForm();
       await fetchDeliveries();
     } catch (error) {
-      Swal.fire({
+      openSwal({
         icon: "error",
         title: "Gagal menyimpan delivery order",
         text: getErrorMessage(error),
@@ -389,7 +391,7 @@ export default function ShippingMain({
   };
 
   const deleteDelivery = async (id: number) => {
-    const confirmation = await Swal.fire({
+    const confirmation = await openSwal({
       icon: "warning",
       title: "Hapus delivery order ini?",
       showCancelButton: true,
@@ -402,7 +404,7 @@ export default function ShippingMain({
       setIsLoading(true);
       await deliveryOrderService.deleteDeliveryOrder(id);
       await fetchDeliveries();
-      Swal.fire({
+      openSwal({
         icon: "success",
         title: "Delivery order berhasil dihapus",
         timer: 2000,
@@ -411,7 +413,7 @@ export default function ShippingMain({
         position: "top-right",
       });
     } catch (error) {
-      Swal.fire({
+      openSwal({
         icon: "error",
         title: "Gagal menghapus delivery order",
         text: getErrorMessage(error),
@@ -432,11 +434,23 @@ export default function ShippingMain({
       }
 
       if (action === "delivered") {
+        const row = deliveries.find((delivery) => delivery.id === id);
+        if (!row?.deliveryProofPhoto) {
+          openSwal({
+            icon: "warning",
+            title: "Upload bukti kirim terlebih dahulu",
+            toast: true,
+            position: "top-right",
+            timer: 2200,
+            showConfirmButton: false,
+          });
+          return;
+        }
         await deliveryOrderService.markDelivered(id);
       }
 
       if (action === "returned") {
-        const reasonResult = await Swal.fire({
+        const reasonResult = await openSwal({
           title: "Alasan retur",
           input: "text",
           showCancelButton: true,
@@ -447,7 +461,7 @@ export default function ShippingMain({
       }
 
       if (action === "reminder") {
-        const recipientsResult = await Swal.fire({
+        const recipientsResult = await openSwal({
           title: "Recipients dipisah koma",
           input: "text",
           inputValue: "staff_gudang,direktur",
@@ -462,7 +476,7 @@ export default function ShippingMain({
           .filter(Boolean);
         if (!recipients.length) return;
 
-        const messageResult = await Swal.fire({
+        const messageResult = await openSwal({
           title: "Pesan reminder (opsional)",
           input: "text",
           inputValue: "",
@@ -477,7 +491,7 @@ export default function ShippingMain({
       }
 
       await fetchDeliveries();
-      Swal.fire({
+      openSwal({
         icon: "success",
         title: "Aksi pengiriman berhasil diproses",
         timer: 2000,
@@ -486,7 +500,7 @@ export default function ShippingMain({
         position: "top-right",
       });
     } catch (error) {
-      Swal.fire({
+      openSwal({
         icon: "error",
         title: "Gagal memproses aksi pengiriman",
         text: getErrorMessage(error),
@@ -506,7 +520,7 @@ export default function ShippingMain({
   const submitProof = async () => {
     if (!selectedDelivery) return;
     if (!proofFile) {
-      Swal.fire({
+      openSwal({
         icon: "warning",
         title: "File bukti kirim wajib dipilih",
       });
@@ -523,7 +537,7 @@ export default function ShippingMain({
       await deliveryOrderService.uploadProof(selectedDelivery.id, formData);
       setIsProofOpen(false);
       await fetchDeliveries();
-      Swal.fire({
+      openSwal({
         icon: "success",
         title: "Bukti kirim berhasil di-upload",
         timer: 2000,
@@ -532,7 +546,7 @@ export default function ShippingMain({
         position: "top-right",
       });
     } catch (error) {
-      Swal.fire({
+      openSwal({
         icon: "error",
         title: "Gagal upload bukti kirim",
         text: getErrorMessage(error),
@@ -541,6 +555,19 @@ export default function ShippingMain({
       setIsLoading(false);
     }
   };
+
+  useEffect(() => {
+    const timeout = setTimeout(() => {
+      void fetchDeliveries(1, pageSize);
+    }, 350);
+    return () => clearTimeout(timeout);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [search, statusFilter, quickFilter]);
+
+  useEffect(() => {
+    void fetchDeliveries(page, pageSize);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [page, pageSize]);
 
   return (
     <div className="h-full w-full">
@@ -555,12 +582,19 @@ export default function ShippingMain({
             <Input
               placeholder="Cari nomor DO"
               value={search}
-              onChange={(event) => setSearch(event.target.value)}
+              onChange={(event) => {
+                setSearch(event.target.value);
+                setPage(1);
+              }}
             />
             <select
               className="h-9 rounded-md border bg-background px-3 text-sm"
               value={statusFilter}
-              onChange={(event) => setStatusFilter(event.target.value)}
+              onChange={(event) => {
+                setStatusFilter(event.target.value);
+                setQuickFilter("all");
+                setPage(1);
+              }}
             >
               <option value="">Semua status</option>
               <option value="pending">pending</option>
@@ -568,7 +602,7 @@ export default function ShippingMain({
               <option value="delivered">delivered</option>
               <option value="returned">returned</option>
             </select>
-            <Button variant="outline" onClick={fetchDeliveries}>
+            <Button variant="outline" onClick={() => fetchDeliveries(1, pageSize)}>
               Refresh
             </Button>
             <Button className="bg-iprimary-blue text-white hover:bg-iprimary-blue-tertiary" onClick={openCreate}>
@@ -577,16 +611,28 @@ export default function ShippingMain({
           </div>
 
           <div className="flex flex-wrap gap-2">
-            <Button variant="outline" onClick={() => runQuickFilter("all")}>
+            <Button
+              variant={quickFilter === "all" ? "default" : "outline"}
+              onClick={() => runQuickFilter("all")}
+            >
               Semua
             </Button>
-            <Button variant="outline" onClick={() => runQuickFilter("pending")}>
+            <Button
+              variant={quickFilter === "pending" ? "default" : "outline"}
+              onClick={() => runQuickFilter("pending")}
+            >
               Pending
             </Button>
-            <Button variant="outline" onClick={() => runQuickFilter("in_transit")}>
+            <Button
+              variant={quickFilter === "in_transit" ? "default" : "outline"}
+              onClick={() => runQuickFilter("in_transit")}
+            >
               In Transit
             </Button>
-            <Button variant="outline" onClick={() => runQuickFilter("today")}>
+            <Button
+              variant={quickFilter === "today" ? "default" : "outline"}
+              onClick={() => runQuickFilter("today")}
+            >
               Hari Ini
             </Button>
           </div>
@@ -670,7 +716,7 @@ export default function ShippingMain({
                                 <DropdownMenuItem
                                   className={`${actionItemClassName} border-emerald-500`}
                                   onClick={() => callAction(delivery.id, "delivered")}
-                                  disabled={delivery.status !== "in_transit"}
+                                  disabled={delivery.status !== "in_transit" || !delivery.deliveryProofPhoto}
                                 >
                                   <Check className="text-emerald-600" />
                                   Delivered
@@ -686,9 +732,10 @@ export default function ShippingMain({
                                 <DropdownMenuItem
                                   className={`${actionItemClassName} border-violet-500`}
                                   onClick={() => callAction(delivery.id, "reminder")}
+                                  disabled={Boolean(delivery.reminderSent)}
                                 >
                                   <BellRing className="text-violet-500" />
-                                  Reminder
+                                  {delivery.reminderSent ? "Reminder Terkirim" : "Reminder"}
                                 </DropdownMenuItem>
                                 <DropdownMenuItem
                                   className={`${actionItemClassName} border-red-500`}
@@ -708,6 +755,46 @@ export default function ShippingMain({
                 )}
               </TableBody>
             </Table>
+          </div>
+          <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+            <p className="text-sm text-muted-foreground">
+              Menampilkan {deliveries.length} dari total {totalRows} data
+            </p>
+            <div className="flex items-center gap-2">
+              <select
+                className="h-9 rounded-md border bg-background px-2 text-sm"
+                value={String(pageSize)}
+                onChange={(event) => {
+                  const nextSize = Number(event.target.value);
+                  setPage(1);
+                  setPageSize(nextSize);
+                  void fetchDeliveries(1, nextSize);
+                }}
+              >
+                {[10, 20, 50, 100].map((size) => (
+                  <option key={size} value={size}>
+                    {size} / halaman
+                  </option>
+                ))}
+              </select>
+              <Button
+                variant="outline"
+                onClick={() => void fetchDeliveries(page - 1, pageSize)}
+                disabled={page <= 1}
+              >
+                Prev
+              </Button>
+              <span className="text-sm">
+                Halaman {page} / {lastPage}
+              </span>
+              <Button
+                variant="outline"
+                onClick={() => void fetchDeliveries(page + 1, pageSize)}
+                disabled={page >= lastPage}
+              >
+                Next
+              </Button>
+            </div>
           </div>
         </CardContent>
       </Card>

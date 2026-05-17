@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import Swal from "sweetalert2";
+import { openSwal } from "@/lib/swal";
 import { getDictionary } from "../../../../get-dictionary";
 import { useLoading } from "@/context/loadingContext";
 import { qcCoaService } from "@/services";
@@ -54,7 +54,7 @@ export default function QcCoaDetail({
       const response = await qcCoaService.getCoaCertificate(coaId);
       setCoa(response?.data ?? response);
     } catch {
-      Swal.fire({
+      openSwal({
         icon: "error",
         title: "Gagal memuat COA",
         toast: true,
@@ -83,7 +83,7 @@ export default function QcCoaDetail({
       window.open(blobUrl, "_blank");
       setTimeout(() => URL.revokeObjectURL(blobUrl), 60_000);
     } catch {
-      Swal.fire({
+      openSwal({
         icon: "error",
         title: "Gagal membuka print preview",
         toast: true,

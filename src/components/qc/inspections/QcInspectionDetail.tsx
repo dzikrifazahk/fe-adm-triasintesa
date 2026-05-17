@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import Swal from "sweetalert2";
+import { openSwal } from "@/lib/swal";
 import { getDictionary } from "../../../../get-dictionary";
 import { useLoading } from "@/context/loadingContext";
 import { qcCoaService } from "@/services";
@@ -215,7 +215,7 @@ export default function QcInspectionDetail({
       });
       setResultRows(rows);
     } catch {
-      Swal.fire({
+      openSwal({
         icon: "error",
         title: "Gagal memuat QC inspection",
         toast: true,
@@ -260,7 +260,7 @@ export default function QcInspectionDetail({
 
   const handleSaveResults = async () => {
     if (inspection?.finalStatus !== "pending") {
-      Swal.fire({
+      openSwal({
         icon: "warning",
         title: "Hasil parameter hanya bisa diubah saat status pending",
         toast: true,
@@ -272,7 +272,7 @@ export default function QcInspectionDetail({
     }
 
     if (resultRows.some((row) => !row.result.trim())) {
-      Swal.fire({
+      openSwal({
         icon: "warning",
         title: "Lengkapi semua hasil uji",
         toast: true,
@@ -296,7 +296,7 @@ export default function QcInspectionDetail({
         interpretationNotes,
       });
       loadInspection();
-      Swal.fire({
+      openSwal({
         icon: "success",
         title: "Hasil QC diperbarui",
         toast: true,
@@ -305,7 +305,7 @@ export default function QcInspectionDetail({
         showConfirmButton: false,
       });
     } catch {
-      Swal.fire({
+      openSwal({
         icon: "error",
         title: "Gagal menyimpan hasil",
         toast: true,
@@ -320,7 +320,7 @@ export default function QcInspectionDetail({
 
   const handleApprovePjtQc = async () => {
     if (interpretationDirty) {
-      Swal.fire({
+      openSwal({
         icon: "warning",
         title: "Simpan Hasil terlebih dahulu",
         text: "Perubahan interpretasi belum disimpan.",
@@ -333,7 +333,7 @@ export default function QcInspectionDetail({
     }
 
     if (!allParametersFilled) {
-      Swal.fire({
+      openSwal({
         icon: "warning",
         title: "Approve hanya bisa jika semua parameter terisi",
         text: `Masih ada ${missingParameters} parameter yang belum diisi.`,
@@ -346,7 +346,7 @@ export default function QcInspectionDetail({
     }
 
     if (!savedInterpretation) {
-      Swal.fire({
+      openSwal({
         icon: "warning",
         title: "Interpretasi wajib diisi sebelum approve",
         toast: true,
@@ -357,7 +357,7 @@ export default function QcInspectionDetail({
       return;
     }
 
-    const result = await Swal.fire({
+    const result = await openSwal({
       icon: "question",
       title: "Konfirmasi Approve PJT QC",
       html: `
@@ -378,7 +378,7 @@ export default function QcInspectionDetail({
       await qcCoaService.approvePjtQc(inspectionId);
       await loadInspection();
       await loadApprovalStatus();
-      Swal.fire({
+      openSwal({
         icon: "success",
         title: "Approved oleh PJT QC",
         text: "COA otomatis dibuat setelah QC disetujui.",
@@ -388,7 +388,7 @@ export default function QcInspectionDetail({
         showConfirmButton: false,
       });
     } catch {
-      Swal.fire({
+      openSwal({
         icon: "error",
         title: "Gagal approve PJT QC",
         toast: true,
@@ -404,7 +404,7 @@ export default function QcInspectionDetail({
   const handleReject = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
     if (!rejectReason.trim()) {
-      Swal.fire({
+      openSwal({
         icon: "warning",
         title: "Reason wajib diisi",
         toast: true,
@@ -426,7 +426,7 @@ export default function QcInspectionDetail({
       setRejectNotes("");
       await loadInspection();
       await loadApprovalStatus();
-      Swal.fire({
+      openSwal({
         icon: "success",
         title: "QC inspection rejected",
         toast: true,
@@ -435,7 +435,7 @@ export default function QcInspectionDetail({
         showConfirmButton: false,
       });
     } catch {
-      Swal.fire({
+      openSwal({
         icon: "error",
         title: "Gagal reject QC inspection",
         toast: true,

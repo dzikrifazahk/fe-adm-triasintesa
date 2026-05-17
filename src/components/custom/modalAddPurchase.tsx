@@ -21,7 +21,7 @@ import {
   SelectItem,
 } from "@/components/ui/select";
 import { Plus, Trash2, Upload, CheckCircle2, Circle } from "lucide-react";
-import Swal from "sweetalert2";
+import { openSwal } from "@/lib/swal";
 import { cn } from "@/lib/utils";
 
 import { IPurchase } from "@/types/purchase";
@@ -267,7 +267,7 @@ export const ModalPurchase = ({
   // ---------- NEXT & FINAL SUBMIT ----------
   const handleNext = () => {
     if (!canGoNext) {
-      Swal.fire({
+      openSwal({
         icon: "warning",
         title: "Lengkapi data dulu",
         toast: true,
@@ -333,7 +333,7 @@ export const ModalPurchase = ({
       logFormData(fd);
       isGetData("purchase");
       setIsLoading(false);
-      Swal.fire({
+      openSwal({
         icon: "success",
         title: message,
         toast: true,

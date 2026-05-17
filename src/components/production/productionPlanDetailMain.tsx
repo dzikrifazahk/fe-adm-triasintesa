@@ -42,7 +42,7 @@ import {
 } from "../ui/select";
 import { Textarea } from "../ui/textarea";
 import { Loader2, Pencil, X } from "lucide-react";
-import Swal from "sweetalert2";
+import { openSwal } from "@/lib/swal";
 
 type Props = {
   dictionary: Awaited<ReturnType<typeof getDictionary>>["production_page_dic"];
@@ -237,7 +237,7 @@ export default function ProductionPlanDetailMain({
       }
     } catch (error) {
       console.error(error);
-      Swal.fire({
+      openSwal({
         icon: "error",
         title: detailDictionary.load_detail_error,
         toast: true,
@@ -276,7 +276,7 @@ export default function ProductionPlanDetailMain({
       return batchData;
     } catch (error) {
       console.error(error);
-      Swal.fire({
+      openSwal({
         icon: "error",
         title: detailDictionary.load_batches_error,
         toast: true,
@@ -306,7 +306,7 @@ export default function ProductionPlanDetailMain({
       setHasLoadedJirigens(true);
     } catch (error) {
       console.error(error);
-      Swal.fire({
+      openSwal({
         icon: "error",
         title: detailDictionary.load_jirigens_error,
         toast: true,
@@ -355,7 +355,7 @@ export default function ProductionPlanDetailMain({
     }
 
     if (eligible.length === 0) {
-      Swal.fire({
+      openSwal({
         icon: "warning",
         title: "QC belum selesai",
         text: "Production jirigen hanya bisa dibuat untuk batch yang sudah lolos QC.",
@@ -444,7 +444,7 @@ export default function ProductionPlanDetailMain({
         await productionPlanService.createProductionBatch(payload);
       }
 
-      Swal.fire({
+      openSwal({
         icon: "success",
         title: editingBatchId
           ? detailDictionary.batch_update_success
@@ -462,7 +462,7 @@ export default function ProductionPlanDetailMain({
       await loadBatches();
     } catch (error) {
       console.error(error);
-      Swal.fire({
+      openSwal({
         icon: "error",
         title: editingBatchId
           ? detailDictionary.batch_update_error
@@ -487,7 +487,7 @@ export default function ProductionPlanDetailMain({
       }));
     } catch (error) {
       console.error(error);
-      Swal.fire({
+      openSwal({
         icon: "error",
         title: "Gagal generate nomor batch",
         toast: true,
@@ -512,7 +512,7 @@ export default function ProductionPlanDetailMain({
       selectedBatch?.hasApprovedQc;
 
     if (!isEligible) {
-      Swal.fire({
+      openSwal({
         icon: "warning",
         title: "Batch belum lolos QC",
         text: "Selesaikan approval QC batch terlebih dahulu sebelum membuat production jirigen.",
@@ -536,7 +536,7 @@ export default function ProductionPlanDetailMain({
         ).toISOString(),
       });
 
-      Swal.fire({
+      openSwal({
         icon: "success",
         title: detailDictionary.jirigen_create_success,
         toast: true,
@@ -555,7 +555,7 @@ export default function ProductionPlanDetailMain({
       await loadJirigens();
     } catch (error) {
       console.error(error);
-      Swal.fire({
+      openSwal({
         icon: "error",
         title: detailDictionary.jirigen_create_error,
         toast: true,
@@ -616,7 +616,7 @@ export default function ProductionPlanDetailMain({
     } catch (error) {
       console.error(error);
       setIsBarcodePreviewOpen(false);
-      Swal.fire({
+      openSwal({
         icon: "error",
         title: "Gagal memuat preview barcode",
         toast: true,
@@ -642,7 +642,7 @@ export default function ProductionPlanDetailMain({
     if (!plan || plan.status === status) return;
 
     if (status === "completed" || status === "cancel") {
-      const result = await Swal.fire({
+      const result = await openSwal({
         icon: "question",
         title:
           status === "completed"
@@ -673,7 +673,7 @@ export default function ProductionPlanDetailMain({
       setSelectedStatus(status);
       setIsEditingStatus(false);
 
-      Swal.fire({
+      openSwal({
         icon: "success",
         title: formDictionary.save_success_update,
         toast: true,
@@ -683,7 +683,7 @@ export default function ProductionPlanDetailMain({
       });
     } catch (error) {
       console.error(error);
-      Swal.fire({
+      openSwal({
         icon: "error",
         title: formDictionary.save_error,
         toast: true,

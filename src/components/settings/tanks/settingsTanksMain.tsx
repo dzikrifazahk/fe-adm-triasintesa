@@ -10,7 +10,7 @@ import { useLoading } from "@/context/loadingContext";
 import { MobileContext } from "@/hooks/use-mobile-ssr";
 import { ITank } from "@/types/tanks";
 import { tanksService } from "@/services";
-import Swal from "sweetalert2";
+import { openSwal } from "@/lib/swal";
 import { ModalUpsertTanks } from "./modalTanks";
 
 export default function SettingsTanksMain({
@@ -100,7 +100,7 @@ export default function SettingsTanksMain({
   };
 
   const handleDeleteData = (id: string) => {
-    Swal.fire({
+    openSwal({
       icon: "warning",
       text: "Apakah anda ingin menghapus Role ini?",
       showDenyButton: true,
@@ -117,7 +117,7 @@ export default function SettingsTanksMain({
   
           setIsLoading(false);
   
-          Swal.fire({
+          openSwal({
             icon: "success",
             title: "Success menghapus data tank",
             toast: true,
@@ -127,7 +127,7 @@ export default function SettingsTanksMain({
           });
 
         } catch {
-          Swal.fire({
+          openSwal({
             icon: "error",
             title: "Gagal menghapus data tank",
             toast: true,
@@ -167,7 +167,7 @@ export default function SettingsTanksMain({
     await getData(page, pageSize, debouncedSearch);
     setIsLoading(false);
 
-    Swal.fire({
+    openSwal({
       icon: "success",
       title: "Data berhasil di refresh",
       toast: true,

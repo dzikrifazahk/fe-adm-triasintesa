@@ -31,6 +31,7 @@ import {
   DropdownMenuContent,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { DataTablePagination } from "@/components/data-table/pagination";
 import { IMeta } from "@/types/common";
 import { getDictionary } from "../../../../get-dictionary";
 import { MobileContext } from "@/hooks/use-mobile-ssr";
@@ -256,12 +257,14 @@ export function DataTable<TData, TValue>({
           </TableBody>
         </Table>
       </div>
-      {/* <DataTablePagination
+      <DataTablePagination
         table={table}
         onPageChange={handlePageChange}
         lastPage={metadata?.last_page as number}
         onPageSizeChange={handlePageSizeChange}
-      /> */}
+        currentPage={metadata?.current_page ?? 1}
+        currentPageSize={metadata?.per_page ?? 10}
+      />
     </>
   );
 }

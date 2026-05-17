@@ -2,7 +2,7 @@
 import { IUser } from "@/types/user";
 import axios, { AxiosError, AxiosInstance, ResponseType } from "axios";
 import { deleteCookie, getCookie } from "cookies-next";
-import Swal from "sweetalert2";
+import { openSwal } from "@/lib/swal";
 
 export function getUser(): IUser {
   const cookie = getCookie("userData");
@@ -45,7 +45,7 @@ export abstract class BaseHttpService {
           deleteCookie("userData");
 
           if (typeof window !== "undefined") {
-            Swal.fire({
+            openSwal({
               icon: "warning",
               title: "Session Expired",
               text: "Please login again for continue",

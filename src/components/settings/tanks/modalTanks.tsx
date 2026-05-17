@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Pencil } from "lucide-react";
-import Swal from "sweetalert2";
+import { openSwal } from "@/lib/swal";
 import { useLoading } from "@/context/loadingContext";
 import { codeGeneratorService } from "@/services";
 
@@ -113,7 +113,7 @@ export function ModalUpsertTanks({
     }
 
     if (!tankType) {
-      Swal.fire({
+      openSwal({
         icon: "warning",
         title: "Tipe tank wajib dipilih",
         toast: true,
@@ -127,7 +127,7 @@ export function ModalUpsertTanks({
     const isEditMode =
       type === "edit" || (type === "detail" && isDetailEditing);
 
-    Swal.fire({
+    openSwal({
       icon: "warning",
       text: isEditMode
         ? "Apakah anda ingin mengubah Tank?"
@@ -143,7 +143,7 @@ export function ModalUpsertTanks({
         setIsLoading(true);
 
         isGetData?.();
-        Swal.fire({
+        openSwal({
           icon: "success",
           title: "Berhasil menyimpan data tank",
           toast: true,
@@ -154,7 +154,7 @@ export function ModalUpsertTanks({
 
         clearInput();
       } catch {
-        Swal.fire({
+        openSwal({
           icon: "error",
           title: "Gagal menyimpan data tank",
           toast: true,
@@ -193,7 +193,7 @@ export function ModalUpsertTanks({
       const response = await codeGeneratorService.preview("tank");
       setTankCode(response.value ?? "");
     } catch {
-      Swal.fire({
+      openSwal({
         icon: "error",
         title: "Gagal generate kode tank",
         toast: true,

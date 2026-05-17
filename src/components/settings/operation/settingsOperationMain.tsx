@@ -3,7 +3,7 @@
 import { useContext, useEffect, useState } from "react";
 import { columns } from "./column";
 import { operationService } from "@/services";
-import Swal from "sweetalert2";
+import { openSwal } from "@/lib/swal";
 import axios from "axios";
 import { getDictionary } from "../../../../get-dictionary";
 import { Modal } from "@/components/custom/modal";
@@ -64,7 +64,7 @@ export default function SettingsOperationMain({
       setMetadata(meta);
       return data;
     } catch {
-      Swal.fire({
+      openSwal({
         icon: "error",
         title: "Terjadi Kesalahan",
         position: "top-right",
@@ -84,7 +84,7 @@ export default function SettingsOperationMain({
       return data;
     } catch {
       setIsLoading(false);
-      Swal.fire({
+      openSwal({
         icon: "error",
         title: "Terjadi Kesalahan",
         position: "top-right",
@@ -123,7 +123,7 @@ export default function SettingsOperationMain({
         timezone: tz,
       };
 
-      Swal.fire({
+      openSwal({
         icon: "warning",
         text: "Apakah anda ingin mengubah Operasional?",
         showDenyButton: true,
@@ -139,7 +139,7 @@ export default function SettingsOperationMain({
             const response = await operationService.updateOperation(payload);
             await getData(page, pageSize);
             if (response.status_code === 200) {
-              Swal.fire({
+              openSwal({
                 icon: "success",
                 title: `Berhasil Mengubah Operasional`,
                 position: "top-right",
@@ -163,7 +163,7 @@ export default function SettingsOperationMain({
                   }
                 }
               }
-              Swal.fire({
+              openSwal({
                 icon: "error",
                 title: `Terjadi Kesalahan ${errorMessages}`,
                 position: "top-right",
@@ -176,7 +176,7 @@ export default function SettingsOperationMain({
           clearInput();
         } else if (result.isConfirmed === false) {
           clearInput();
-          Swal.fire({
+          openSwal({
             icon: "warning",
             title: "Batal Ubah Data",
             position: "top-right",
@@ -195,7 +195,7 @@ export default function SettingsOperationMain({
         timezone: tz,
       };
 
-      Swal.fire({
+      openSwal({
         icon: "warning",
         text: "Apakah anda ingin menambahkan Waktu Operasional?",
         showDenyButton: true,
@@ -210,7 +210,7 @@ export default function SettingsOperationMain({
             setIsLoading(true);
             const response = await operationService.createOperation(payload);
             getData(page, pageSize);
-            Swal.fire({
+            openSwal({
               icon: "success",
               title: `${response.message}`,
               position: "top-right",
@@ -233,7 +233,7 @@ export default function SettingsOperationMain({
                   }
                 }
               }
-              Swal.fire({
+              openSwal({
                 icon: "error",
                 title: `Terjadi Kesalahan ${errorMessages}`,
                 position: "top-right",
@@ -246,7 +246,7 @@ export default function SettingsOperationMain({
           clearInput();
         } else if (result.isConfirmed === false) {
           clearInput();
-          Swal.fire({
+          openSwal({
             icon: "warning",
             title: "Batal Tambah Data",
             position: "top-right",
@@ -302,7 +302,7 @@ export default function SettingsOperationMain({
   };
 
   const handleDeleteData = async (id: string) => {
-    Swal.fire({
+    openSwal({
       icon: "warning",
       text: "Apakah anda ingin menghapus Waktu Operasional ini?",
       showDenyButton: true,
@@ -316,7 +316,7 @@ export default function SettingsOperationMain({
         setIsLoading(true);
         const response = await operationService.deleteOperation(id);
         getData(page, pageSize);
-        Swal.fire({
+        openSwal({
           icon: "success",
           title: `${response.message}`,
           position: "top-right",
@@ -326,7 +326,7 @@ export default function SettingsOperationMain({
         });
         setIsLoading(false);
       } else if (result.isConfirmed === false) {
-        Swal.fire({
+        openSwal({
           icon: "warning",
           title: "Batal Hapus Data",
           position: "top-right",
@@ -343,7 +343,7 @@ export default function SettingsOperationMain({
       setIsLoading(true);
       await getData(page, pageSize);
       setIsLoading(false);
-      Swal.fire({
+      openSwal({
         icon: "success",
         title: "Data berhasil di refresh",
         position: "top-right",
@@ -357,7 +357,7 @@ export default function SettingsOperationMain({
       clearInput();
       if (axios.isAxiosError(e)) {
         const message = e.response?.data?.message ?? "";
-        Swal.fire({
+        openSwal({
           icon: "error",
           title: `Terjadi Kesalahan ${message}`,
           position: "top-right",

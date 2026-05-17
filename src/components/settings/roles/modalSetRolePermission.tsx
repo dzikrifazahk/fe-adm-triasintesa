@@ -4,7 +4,7 @@ import { Modal } from "@/components/custom/modal";
 import { permissionService } from "@/services";
 import { IPermissions } from "@/types/permission";
 import { useEffect, useMemo, useState } from "react";
-import Swal from "sweetalert2";
+import { openSwal } from "@/lib/swal";
 import axios from "axios";
 
 interface ModalSetPermission {
@@ -43,7 +43,7 @@ export const ModalSetRolePermission = ({
       setPermissionsData(groupedPermissions);
     } catch (error) {
       console.error(error);
-      Swal.fire({
+      openSwal({
         icon: "error",
         title: "Gagal mengambil data permission",
         position: "top-right",
@@ -113,7 +113,7 @@ export const ModalSetRolePermission = ({
     e.preventDefault();
 
     if (!detailData?.id) {
-      Swal.fire({
+      openSwal({
         icon: "warning",
         title: "Role tidak ditemukan",
         position: "top-right",
@@ -128,7 +128,7 @@ export const ModalSetRolePermission = ({
       permissionIds: selectedPermissionIds,
     };
 
-    Swal.fire({
+    openSwal({
       icon: "warning",
       text: "Apakah anda ingin menyimpan permission role ini?",
       showDenyButton: true,
@@ -150,7 +150,7 @@ export const ModalSetRolePermission = ({
 
         await isGetData();
 
-        Swal.fire({
+        openSwal({
           icon: "success",
           title: response?.message || "Permission role berhasil disimpan",
           position: "top-right",
@@ -180,7 +180,7 @@ export const ModalSetRolePermission = ({
           }
         }
 
-        Swal.fire({
+        openSwal({
           icon: "error",
           title: errorMessage,
           position: "top-right",

@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import axios from "axios";
-import Swal from "sweetalert2";
+import { openSwal } from "@/lib/swal";
 import { getDictionary } from "../../../get-dictionary";
 import { useLoading } from "@/context/loadingContext";
 import { codeGeneratorService, salesOrderService } from "@/services";
@@ -60,7 +60,12 @@ import {
 
 type ListPayload<T> = {
   data: T[];
-  meta?: unknown;
+  meta?: {
+    current_page?: number;
+    last_page?: number;
+    per_page?: number;
+    total?: number;
+  };
 };
 
 type DetailDraft = {
@@ -75,7 +80,9 @@ type FormState = {
   orderDate: string;
   paymentMethod: string;
   paymentTermDays: string;
-  discountAmount: string;
+  discountType: "nominal" | "percentage";
+  discountValue: string;
+  ppnPercentage: string;
   shippingCost: string;
   shippingAddress: string;
   notes: string;
@@ -88,7 +95,9 @@ const emptyForm: FormState = {
   orderDate: "",
   paymentMethod: "cash",
   paymentTermDays: "",
-  discountAmount: "0",
+  discountType: "nominal",
+  discountValue: "0",
+  ppnPercentage: "11",
   shippingCost: "0",
   shippingAddress: "",
   notes: "",
@@ -165,6 +174,10 @@ export default function SalesOrderMain({
   const [items, setItems] = useState<ISalesOrderItem[]>([]);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+  const [lastPage, setLastPage] = useState(1);
+  const [totalRows, setTotalRows] = useState(0);
 
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
@@ -178,7 +191,7 @@ export default function SalesOrderMain({
     dictionary?.description ??
     "Kelola sales order dari input hingga penyelesaian pengiriman.";
 
-  const canCreate = useMemo(() => !isEditMode, [isEditMode]);
+  const canManageDetails = useMemo(() => true, []);
   const itemById = useMemo(() => {
     return new Map(items.map((item) => [String(item.id), item]));
   }, [items]);
@@ -195,20 +208,60 @@ export default function SalesOrderMain({
 
     return grouped;
   }, [selectedOrder]);
+  const calculationPreview = useMemo(() => {
+    const subtotal = form.details.reduce((sum, detail) => {
+      const quantity = toNumber(detail.quantity);
+      const unitPrice = toNumber(detail.unitPrice);
+      if (quantity <= 0 || unitPrice < 0) return sum;
+      return sum + quantity * unitPrice;
+    }, 0);
 
-  const fetchOrders = async () => {
+    const discountValue = toNumber(form.discountValue);
+    const ppnPercentage = toNumber(form.ppnPercentage, 11);
+    const shippingCost = toNumber(form.shippingCost);
+
+    const rawDiscountAmount =
+      form.discountType === "percentage"
+        ? (subtotal * Math.max(0, discountValue)) / 100
+        : Math.max(0, discountValue);
+    const discountAmount = Math.min(rawDiscountAmount, subtotal);
+    const dppAmount = subtotal - discountAmount;
+    const ppnAmount = dppAmount * (Math.max(0, ppnPercentage) / 100);
+    const grandTotal = dppAmount + ppnAmount + Math.max(0, shippingCost);
+
+    return {
+      subtotal,
+      discountAmount,
+      dppAmount,
+      ppnAmount,
+      shippingCost: Math.max(0, shippingCost),
+      grandTotal,
+    };
+  }, [
+    form.details,
+    form.discountType,
+    form.discountValue,
+    form.ppnPercentage,
+    form.shippingCost,
+  ]);
+
+  const fetchOrders = async (nextPage = page, nextPageSize = pageSize) => {
     try {
       setIsLoading(true);
       const response = await salesOrderService.getSalesOrders({
-        page: 1,
-        limit: 100,
+        page: nextPage,
+        limit: nextPageSize,
         soNumber: search || undefined,
         status: (statusFilter as SalesOrderStatus) || undefined,
       });
       const payload = unwrapData<ListPayload<ISalesOrder>>(response);
       setOrders(Array.isArray(payload.data) ? payload.data : []);
+      setPage(payload.meta?.current_page ?? nextPage);
+      setPageSize(payload.meta?.per_page ?? nextPageSize);
+      setLastPage(payload.meta?.last_page ?? 1);
+      setTotalRows(payload.meta?.total ?? payload.data?.length ?? 0);
     } catch (error) {
-      Swal.fire({
+      openSwal({
         icon: "error",
         title: "Gagal memuat sales order",
         text: getErrorMessage(error),
@@ -236,7 +289,10 @@ export default function SalesOrderMain({
         limit: 200,
       });
       const ItemPayload = unwrapData<ListPayload<ISalesOrderItem>>(ItemResponse);
-      setItems(Array.isArray(ItemPayload.data) ? ItemPayload.data : []);
+      const availableItems = Array.isArray(ItemPayload.data)
+        ? ItemPayload.data.filter((item) => (item.stock ?? 0) > 0)
+        : [];
+      setItems(availableItems);
     } catch {
       setItems([]);
     }
@@ -258,13 +314,21 @@ export default function SalesOrderMain({
   const openEdit = (order: ISalesOrder) => {
     setIsEditMode(true);
     setSelectedOrder(order);
+    const discountType: "nominal" | "percentage" = "nominal";
+    const discountValue = String(order.discountAmount ?? 0);
+    const baseAmount = Number(order.subtotal ?? 0) - Number(order.discountAmount ?? 0);
+    const ppnPercentage =
+      baseAmount > 0 ? String((Number(order.ppnAmount ?? 0) / baseAmount) * 100) : "11";
+
     setForm({
       customerId: String(order.customerId ?? ""),
       soNumber: order.soNumber ?? "",
       orderDate: order.orderDate?.slice(0, 10) ?? "",
       paymentMethod: order.paymentMethod ?? "cash",
       paymentTermDays: order.paymentTermDays ? String(order.paymentTermDays) : "",
-      discountAmount: String(order.discountAmount ?? 0),
+      discountType,
+      discountValue,
+      ppnPercentage,
       shippingCost: String(order.shippingCost ?? 0),
       shippingAddress: order.shippingAddress ?? "",
       notes: order.notes ?? "",
@@ -286,7 +350,7 @@ export default function SalesOrderMain({
       setSelectedOrder(detail);
       setIsDetailOpen(true);
     } catch (error) {
-      Swal.fire({
+      openSwal({
         icon: "error",
         title: "Gagal memuat detail sales order",
         text: getErrorMessage(error),
@@ -308,7 +372,7 @@ export default function SalesOrderMain({
       const response = await codeGeneratorService.preview("sales_order");
       setField("soNumber", response.value ?? "");
     } catch (error) {
-      Swal.fire({
+      openSwal({
         icon: "error",
         title: "Gagal generate nomor SO",
         text: getErrorMessage(error),
@@ -369,7 +433,9 @@ export default function SalesOrderMain({
     orderDate: form.orderDate,
     paymentMethod: form.paymentMethod,
     paymentTermDays: form.paymentTermDays ? toNumber(form.paymentTermDays) : undefined,
-    discountAmount: toNumber(form.discountAmount),
+    discountType: form.discountType,
+    discountValue: toNumber(form.discountValue),
+    ppnPercentage: toNumber(form.ppnPercentage, 11),
     shippingCost: toNumber(form.shippingCost),
     shippingAddress: form.shippingAddress.trim() || undefined,
     notes: form.notes.trim() || undefined,
@@ -384,9 +450,16 @@ export default function SalesOrderMain({
     customerId: toNumber(form.customerId),
     soNumber: form.soNumber.trim(),
     orderDate: form.orderDate,
+    details: form.details.map((item) => ({
+      itemId: toNumber(item.itemId),
+      quantity: toNumber(item.quantity),
+      unitPrice: toNumber(item.unitPrice),
+    })),
     paymentMethod: form.paymentMethod,
     paymentTermDays: form.paymentTermDays ? toNumber(form.paymentTermDays) : undefined,
-    discountAmount: toNumber(form.discountAmount),
+    discountType: form.discountType,
+    discountValue: toNumber(form.discountValue),
+    ppnPercentage: toNumber(form.ppnPercentage, 11),
     shippingCost: toNumber(form.shippingCost),
     shippingAddress: form.shippingAddress.trim() || undefined,
     notes: form.notes.trim() || undefined,
@@ -395,6 +468,15 @@ export default function SalesOrderMain({
   const validateCreatePayload = (payload: ICreateSalesOrderPayload): string | null => {
     if (!payload.customerId || !payload.soNumber || !payload.orderDate) {
       return "Customer, SO number, dan tanggal order wajib diisi.";
+    }
+    if (payload.paymentMethod === "termin" && (!payload.paymentTermDays || payload.paymentTermDays <= 0)) {
+      return "Payment term (hari) wajib diisi untuk metode pembayaran termin.";
+    }
+    if ((payload.discountValue ?? 0) < 0 || (payload.shippingCost ?? 0) < 0) {
+      return "Diskon dan biaya kirim tidak boleh bernilai negatif.";
+    }
+    if ((payload.ppnPercentage ?? 11) < 0 || (payload.ppnPercentage ?? 11) > 100) {
+      return "PPN harus di antara 0 sampai 100 persen.";
     }
 
     if (!payload.details.length) {
@@ -423,6 +505,45 @@ export default function SalesOrderMain({
     return null;
   };
 
+  const validateUpdatePayload = (payload: IUpdateSalesOrderPayload): string | null => {
+    if (!payload.customerId || !payload.soNumber || !payload.orderDate) {
+      return "Customer, SO number, dan tanggal order wajib diisi.";
+    }
+    if (payload.paymentMethod === "termin" && (!payload.paymentTermDays || payload.paymentTermDays <= 0)) {
+      return "Payment term (hari) wajib diisi untuk metode pembayaran termin.";
+    }
+    if ((payload.discountValue ?? 0) < 0 || (payload.shippingCost ?? 0) < 0) {
+      return "Diskon dan biaya kirim tidak boleh bernilai negatif.";
+    }
+    if ((payload.ppnPercentage ?? 11) < 0 || (payload.ppnPercentage ?? 11) > 100) {
+      return "PPN harus di antara 0 sampai 100 persen.";
+    }
+
+    if (!payload.details?.length) {
+      return "Minimal 1 detail order wajib diisi.";
+    }
+
+    const hasInvalid = payload.details.some(
+      (item) => !item.itemId || item.quantity <= 0 || item.unitPrice <= 0,
+    );
+    if (hasInvalid) {
+      return "Item, quantity, dan price pada detail wajib valid.";
+    }
+
+    const hasOverStock = payload.details.some((detail, index) => {
+      const draft = form.details[index];
+      const selectedItem = itemById.get(String(draft?.itemId || detail.itemId));
+      const stock = selectedItem?.stock ?? 0;
+      return detail.quantity > stock;
+    });
+
+    if (hasOverStock) {
+      return "Quantity melebihi stok item yang tersedia.";
+    }
+
+    return null;
+  };
+
   const handleSubmit = async () => {
     try {
       setIsLoading(true);
@@ -431,11 +552,18 @@ export default function SalesOrderMain({
         const createPayload = buildCreatePayload();
         const validationError = validateCreatePayload(createPayload);
         if (validationError) {
-          Swal.fire({ icon: "warning", title: validationError });
+          openSwal({
+            icon: "warning",
+            title: validationError,
+            toast: true,
+            position: "top-right",
+            timer: 2200,
+            showConfirmButton: false,
+          });
           return;
         }
         await salesOrderService.createSalesOrder(createPayload);
-        Swal.fire({
+        openSwal({
           icon: "success",
           title: "Sales order berhasil dibuat",
           timer: 2000,
@@ -446,8 +574,20 @@ export default function SalesOrderMain({
       } else {
         if (!selectedOrder) return;
         const updatePayload = buildUpdatePayload();
+        const validationError = validateUpdatePayload(updatePayload);
+        if (validationError) {
+          openSwal({
+            icon: "warning",
+            title: validationError,
+            toast: true,
+            position: "top-right",
+            timer: 2200,
+            showConfirmButton: false,
+          });
+          return;
+        }
         await salesOrderService.updateSalesOrder(selectedOrder.id, updatePayload);
-        Swal.fire({
+        openSwal({
           icon: "success",
           title: "Sales order berhasil diperbarui",
           timer: 2000,
@@ -459,8 +599,9 @@ export default function SalesOrderMain({
 
       closeForm();
       await fetchOrders();
+      await fetchLookups();
     } catch (error) {
-      Swal.fire({
+      openSwal({
         icon: "error",
         title: "Gagal menyimpan sales order",
         text: getErrorMessage(error),
@@ -471,7 +612,7 @@ export default function SalesOrderMain({
   };
 
   const deleteOrder = async (id: number) => {
-    const confirmation = await Swal.fire({
+    const confirmation = await openSwal({
       icon: "warning",
       title: "Hapus sales order ini?",
       showCancelButton: true,
@@ -484,7 +625,8 @@ export default function SalesOrderMain({
       setIsLoading(true);
       await salesOrderService.deleteSalesOrder(id);
       await fetchOrders();
-      Swal.fire({
+      await fetchLookups();
+      openSwal({
         icon: "success",
         title: "Sales order berhasil dihapus",
         timer: 2000,
@@ -493,7 +635,7 @@ export default function SalesOrderMain({
         position: "top-right",
       });
     } catch (error) {
-      Swal.fire({
+      openSwal({
         icon: "error",
         title: "Gagal menghapus sales order",
         text: getErrorMessage(error),
@@ -523,7 +665,7 @@ export default function SalesOrderMain({
       }
 
       if (action === "shipment") {
-        const shippingDateResult = await Swal.fire({
+        const shippingDateResult = await openSwal({
           title: "Tanggal kirim (YYYY-MM-DD)",
           input: "text",
           inputValue: new Date().toISOString().slice(0, 10),
@@ -536,7 +678,7 @@ export default function SalesOrderMain({
         });
         if (!shippingDateResult.isConfirmed || !shippingDateResult.value) return;
 
-        const shippingNotesResult = await Swal.fire({
+        const shippingNotesResult = await openSwal({
           title: "Catatan pengiriman (opsional)",
           input: "text",
           inputValue: "",
@@ -552,7 +694,7 @@ export default function SalesOrderMain({
       }
 
       if (action === "complete") {
-        const receivedByResult = await Swal.fire({
+        const receivedByResult = await openSwal({
           title: "Diterima oleh",
           input: "text",
           showCancelButton: true,
@@ -560,7 +702,7 @@ export default function SalesOrderMain({
         });
         if (!receivedByResult.isConfirmed || !receivedByResult.value) return;
 
-        const notesResult = await Swal.fire({
+        const notesResult = await openSwal({
           title: "Catatan penerimaan (opsional)",
           input: "text",
           inputValue: "",
@@ -576,7 +718,7 @@ export default function SalesOrderMain({
       }
 
       if (action === "cancel") {
-        const reasonResult = await Swal.fire({
+        const reasonResult = await openSwal({
           title: "Alasan pembatalan",
           input: "text",
           showCancelButton: true,
@@ -588,7 +730,8 @@ export default function SalesOrderMain({
       }
 
       await fetchOrders();
-      Swal.fire({
+      await fetchLookups();
+      openSwal({
         icon: "success",
         title: "Status sales order berhasil diperbarui",
         timer: 2000,
@@ -597,7 +740,7 @@ export default function SalesOrderMain({
         position: "top-right",
       });
     } catch (error) {
-      Swal.fire({
+      openSwal({
         icon: "error",
         title: "Gagal memproses status sales order",
         text: getErrorMessage(error),
@@ -620,12 +763,18 @@ export default function SalesOrderMain({
             <Input
               placeholder="Cari nomor SO"
               value={search}
-              onChange={(event) => setSearch(event.target.value)}
+              onChange={(event) => {
+                setSearch(event.target.value);
+                setPage(1);
+              }}
             />
             <select
               className="h-9 rounded-md border bg-background px-3 text-sm"
               value={statusFilter}
-              onChange={(event) => setStatusFilter(event.target.value)}
+              onChange={(event) => {
+                setStatusFilter(event.target.value);
+                setPage(1);
+              }}
             >
               <option value="">Semua status</option>
               <option value="pending_approval">pending approval</option>
@@ -636,7 +785,7 @@ export default function SalesOrderMain({
               <option value="completed">completed</option>
               <option value="cancelled">cancelled</option>
             </select>
-            <Button variant="outline" onClick={fetchOrders}>
+            <Button variant="outline" onClick={() => fetchOrders(1, pageSize)}>
               Refresh
             </Button>
             <Button className="bg-iprimary-blue text-white hover:bg-iprimary-blue-tertiary" onClick={openCreate}>
@@ -775,6 +924,46 @@ export default function SalesOrderMain({
               </TableBody>
             </Table>
           </div>
+          <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+            <p className="text-sm text-muted-foreground">
+              Menampilkan {orders.length} dari total {totalRows} data
+            </p>
+            <div className="flex items-center gap-2">
+              <select
+                className="h-9 rounded-md border bg-background px-2 text-sm"
+                value={String(pageSize)}
+                onChange={(event) => {
+                  const nextSize = Number(event.target.value);
+                  setPage(1);
+                  setPageSize(nextSize);
+                  void fetchOrders(1, nextSize);
+                }}
+              >
+                {[10, 20, 50, 100].map((size) => (
+                  <option key={size} value={size}>
+                    {size} / halaman
+                  </option>
+                ))}
+              </select>
+              <Button
+                variant="outline"
+                onClick={() => void fetchOrders(page - 1, pageSize)}
+                disabled={page <= 1}
+              >
+                Prev
+              </Button>
+              <span className="text-sm">
+                Halaman {page} / {lastPage}
+              </span>
+              <Button
+                variant="outline"
+                onClick={() => void fetchOrders(page + 1, pageSize)}
+                disabled={page >= lastPage}
+              >
+                Next
+              </Button>
+            </div>
+          </div>
         </CardContent>
       </Card>
 
@@ -853,12 +1042,26 @@ export default function SalesOrderMain({
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="discountAmount">Diskon</Label>
+              <Label htmlFor="discountType">Tipe Diskon</Label>
+              <select
+                id="discountType"
+                className="h-9 w-full rounded-md border bg-background px-3 text-sm"
+                value={form.discountType}
+                onChange={(event) => setField("discountType", event.target.value)}
+              >
+                <option value="nominal">Nominal (Rp)</option>
+                <option value="percentage">Persen (%)</option>
+              </select>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="discountValue">
+                Nilai Diskon {form.discountType === "percentage" ? "(%)" : "(Rp)"}
+              </Label>
               <Input
-                id="discountAmount"
+                id="discountValue"
                 type="number"
-                value={form.discountAmount}
-                onChange={(event) => setField("discountAmount", event.target.value)}
+                value={form.discountValue}
+                onChange={(event) => setField("discountValue", event.target.value)}
               />
             </div>
             <div className="space-y-2">
@@ -868,6 +1071,15 @@ export default function SalesOrderMain({
                 type="number"
                 value={form.shippingCost}
                 onChange={(event) => setField("shippingCost", event.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="ppnPercentage">PPN (%)</Label>
+              <Input
+                id="ppnPercentage"
+                type="number"
+                value={form.ppnPercentage}
+                onChange={(event) => setField("ppnPercentage", event.target.value)}
               />
             </div>
             <div className="space-y-2 md:col-span-2">
@@ -888,7 +1100,7 @@ export default function SalesOrderMain({
             </div>
           </div>
 
-          {canCreate && (
+          {canManageDetails && (
             <div className="space-y-3">
               <div className="flex items-center justify-between">
                 <h3 className="font-semibold">Detail Order</h3>
@@ -948,6 +1160,46 @@ export default function SalesOrderMain({
               ))}
             </div>
           )}
+
+          <div className="rounded-md border p-3">
+            <div className="mb-2 flex items-center justify-between">
+              <h3 className="font-semibold">Preview Perhitungan</h3>
+              <Badge
+                variant="outline"
+                className="text-xs"
+              >
+                Diskon: {form.discountType === "percentage" ? "Persen (%)" : "Nominal (Rp)"}
+              </Badge>
+            </div>
+            <div className="grid grid-cols-1 gap-2 text-sm md:grid-cols-2">
+              <p>
+                <span className="font-medium">Subtotal:</span>{" "}
+                {formatCurrency(calculationPreview.subtotal)}
+              </p>
+              <p>
+                <span className="font-medium">Diskon:</span>{" "}
+                {formatCurrency(calculationPreview.discountAmount)}
+              </p>
+              <p>
+                <span className="font-medium">DPP:</span>{" "}
+                {formatCurrency(calculationPreview.dppAmount)}
+              </p>
+              <p>
+                <span className="font-medium">PPN:</span>{" "}
+                {formatCurrency(calculationPreview.ppnAmount)}
+              </p>
+              <p>
+                <span className="font-medium">Biaya Kirim:</span>{" "}
+                {formatCurrency(calculationPreview.shippingCost)}
+              </p>
+              <p className="text-base">
+                <span className="font-semibold">Grand Total:</span>{" "}
+                <span className="font-semibold">
+                  {formatCurrency(calculationPreview.grandTotal)}
+                </span>
+              </p>
+            </div>
+          </div>
 
           <DialogFooter>
             <Button variant="outline" onClick={closeForm}>

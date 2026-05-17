@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import axios from "axios";
-import Swal from "sweetalert2";
+import { openSwal } from "@/lib/swal";
 import { getDictionary } from "../../../get-dictionary";
 import { useLoading } from "@/context/loadingContext";
 import { codeGeneratorService, customerService } from "@/services";
@@ -134,7 +134,7 @@ export default function CustomerMain({ dictionary }: { dictionary: Dictionary })
       const payload = unwrapData<ListPayload<ICustomer>>(response);
       setCustomers(Array.isArray(payload.data) ? payload.data : []);
     } catch (error) {
-      Swal.fire({
+      openSwal({
         icon: "error",
         title: "Gagal memuat customer",
         text: getErrorMessage(error),
@@ -184,7 +184,7 @@ export default function CustomerMain({ dictionary }: { dictionary: Dictionary })
       setSelectedCustomer(payload);
       setIsDetailOpen(true);
     } catch (error) {
-      Swal.fire({
+      openSwal({
         icon: "error",
         title: "Gagal memuat detail customer",
         text: getErrorMessage(error),
@@ -200,7 +200,7 @@ export default function CustomerMain({ dictionary }: { dictionary: Dictionary })
       const response = await codeGeneratorService.preview("customer");
       setField("customerCode", response.value ?? "");
     } catch (error) {
-      Swal.fire({
+      openSwal({
         icon: "error",
         title: "Gagal generate kode customer",
         text: getErrorMessage(error),
@@ -223,7 +223,7 @@ export default function CustomerMain({ dictionary }: { dictionary: Dictionary })
     };
 
     if (!payload.customerCode || !payload.companyName) {
-      Swal.fire({
+      openSwal({
         icon: "warning",
         title: "Field wajib belum lengkap",
         text: "Lengkapi kode customer dan nama perusahaan.",
@@ -242,7 +242,7 @@ export default function CustomerMain({ dictionary }: { dictionary: Dictionary })
 
       setIsFormOpen(false);
       await fetchCustomers();
-      Swal.fire({
+      openSwal({
         icon: "success",
         title: "Data customer berhasil disimpan",
         toast: true,
@@ -251,7 +251,7 @@ export default function CustomerMain({ dictionary }: { dictionary: Dictionary })
         showConfirmButton: false,
       });
     } catch (error) {
-      Swal.fire({
+      openSwal({
         icon: "error",
         title: "Gagal menyimpan customer",
         text: getErrorMessage(error),
@@ -262,7 +262,7 @@ export default function CustomerMain({ dictionary }: { dictionary: Dictionary })
   };
 
   const removeCustomer = async (id: number) => {
-    const confirm = await Swal.fire({
+    const confirm = await openSwal({
       icon: "warning",
       title: "Hapus customer ini?",
       showCancelButton: true,
@@ -276,7 +276,7 @@ export default function CustomerMain({ dictionary }: { dictionary: Dictionary })
       setIsLoading(true);
       await customerService.deleteCustomer(id);
       await fetchCustomers();
-      Swal.fire({
+      openSwal({
         icon: "success",
         title: "Customer berhasil dihapus",
         toast: true,
@@ -285,7 +285,7 @@ export default function CustomerMain({ dictionary }: { dictionary: Dictionary })
         showConfirmButton: false,
       });
     } catch (error) {
-      Swal.fire({
+      openSwal({
         icon: "error",
         title: "Gagal menghapus customer",
         text: getErrorMessage(error),
@@ -305,7 +305,7 @@ export default function CustomerMain({ dictionary }: { dictionary: Dictionary })
       }
       await fetchCustomers();
     } catch (error) {
-      Swal.fire({
+      openSwal({
         icon: "error",
         title: "Gagal mengubah status customer",
         text: getErrorMessage(error),

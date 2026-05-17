@@ -3,7 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useLoading } from "@/context/loadingContext";
 import { ITank, ITankLog } from "@/types/tanks";
 import { tanksService } from "@/services";
-import Swal from "sweetalert2";
+import { openSwal } from "@/lib/swal";
 import { getDictionary } from "../../../get-dictionary";
 import { Button } from "@/components/ui/button";
 import {
@@ -99,7 +99,7 @@ export default function TanksRefillMain({
       const response = await tanksService.getTanks();
       setTanks(response?.data?.data ?? response?.data ?? []);
     } catch (error) {
-      Swal.fire({
+      openSwal({
         icon: "error",
         title: dictionary.toast.fetch_error_title,
         text: dictionary.toast.fetch_error_text,
@@ -142,7 +142,7 @@ export default function TanksRefillMain({
       setTankLogs(response?.data?.data ?? response?.data ?? []);
       setMetaTankLogs(response?.data?.meta ?? null);
     } catch (error) {
-      Swal.fire({
+      openSwal({
         icon: "error",
         title: dictionary.toast.fetch_error_title,
         position: "top-right",
@@ -242,7 +242,7 @@ export default function TanksRefillMain({
     }
 
     if (amount <= 0) {
-      Swal.fire({
+      openSwal({
         icon: "warning",
         title: dictionary.toast.amount_warning,
         toast: true,
@@ -261,7 +261,7 @@ export default function TanksRefillMain({
 
     closeActionModal();
 
-    const confirm = await Swal.fire({
+    const confirm = await openSwal({
       icon: "question",
       title: titleMap[actionState.mode],
       text: `Volume akhir akan menjadi ${formatNumber(nextVolume)} Liter`,
@@ -296,7 +296,7 @@ export default function TanksRefillMain({
 
       await getTanks();
 
-      Swal.fire({
+      openSwal({
         icon: "success",
         title: dictionary.toast.success_title,
         toast: true,
@@ -306,7 +306,7 @@ export default function TanksRefillMain({
       });
     } catch (error) {
       console.error(error);
-      Swal.fire({
+      openSwal({
         icon: "error",
         title: dictionary.toast.error_title,
         text: dictionary.toast.error_text,

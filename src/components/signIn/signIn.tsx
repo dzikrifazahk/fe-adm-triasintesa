@@ -4,7 +4,7 @@ import { useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import Swal from "sweetalert2";
+import { openSwal } from "@/lib/swal";
 import { Eye, EyeOff } from "lucide-react";
 import LocaleSwitcher from "@/components/localeSwitcher";
 import Head from "next/head";
@@ -50,7 +50,7 @@ export default function SignIn({
       setIsLoading(false);
 
       if (!response.ok) {
-        Swal.fire({
+        openSwal({
           icon: "error",
           title: "Login failed",
           text: data?.message || "Terjadi kesalahan saat login",
@@ -61,7 +61,7 @@ export default function SignIn({
         return;
       }
 
-      Swal.fire({
+      openSwal({
         icon: "success",
         title: "Login Success",
         text: "Successfully login, redirecting to dashboard",
@@ -82,7 +82,7 @@ export default function SignIn({
       }
     } catch (error) {
       setIsLoading(false);
-      Swal.fire({
+      openSwal({
         icon: "error",
         title: "Login failed",
         text: "Terjadi kesalahan saat menghubungi server",
@@ -100,7 +100,7 @@ export default function SignIn({
 
   const handleSubmitForgotPassword = async () => {
     if (!forgotEmail) {
-      Swal.fire({
+      openSwal({
         icon: "error",
         title: "Error",
         text: "Please enter your email",
@@ -111,7 +111,7 @@ export default function SignIn({
       return;
     }
 
-    Swal.fire({
+    openSwal({
       icon: "warning",
       text: "Apakah anda ingin melakukan reset password?",
       showDenyButton: true,
@@ -122,7 +122,7 @@ export default function SignIn({
       showConfirmButton: true,
     }).then(async (result) => {
       if (!result.isConfirmed) {
-        Swal.fire({
+        openSwal({
           icon: "info",
           text: "Perubahan tidak disimpan",
           position: "center",
@@ -159,7 +159,7 @@ export default function SignIn({
 
         setIsLoading(false);
 
-        Swal.fire({
+        openSwal({
           icon: "success",
           title: "Berhasil mengirim email reset password",
           position: "top-right",
@@ -170,7 +170,7 @@ export default function SignIn({
       } catch (e: any) {
         setIsLoading(false);
 
-        Swal.fire({
+        openSwal({
           icon: "error",
           text: e?.message || "Gagal menyimpan perubahan",
           position: "center",

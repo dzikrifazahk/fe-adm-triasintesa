@@ -38,7 +38,7 @@ import {
   RefreshCcw,
   WalletCards,
 } from "lucide-react";
-import Swal from "sweetalert2";
+import { openSwal } from "@/lib/swal";
 import axios from "axios";
 import {
   IFinancialRecordItem,
@@ -259,6 +259,8 @@ export default function FinancialRecordMain({ dictionary }: Props) {
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<FilterStatus>("all");
   const [categoryFilter, setCategoryFilter] = useState<FilterCategory>("all");
+  const [tablePage, setTablePage] = useState(1);
+  const [tablePageSize, setTablePageSize] = useState(10);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingRecordId, setEditingRecordId] = useState<string | null>(null);
   const [form, setForm] = useState<FormState>(defaultFormState);
@@ -340,6 +342,11 @@ export default function FinancialRecordMain({ dictionary }: Props) {
 
     return matchesSearch && matchesStatus && matchesCategory;
   });
+  const pagedFilteredRecords = filteredRecords.slice(
+    (tablePage - 1) * tablePageSize,
+    tablePage * tablePageSize,
+  );
+  const filteredLastPage = Math.max(1, Math.ceil(filteredRecords.length / tablePageSize));
 
   const activeTabMeta = stageMeta[activeTab];
   const activeTabTotal = tabCounts[activeTab];
@@ -548,7 +555,7 @@ export default function FinancialRecordMain({ dictionary }: Props) {
 
       setIsDialogOpen(false);
       await handleRefetch();
-      Swal.fire({
+      openSwal({
         icon: "success",
         title: "Data berhasil disimpan",
         toast: true,
@@ -557,7 +564,7 @@ export default function FinancialRecordMain({ dictionary }: Props) {
         showConfirmButton: false,
       });
     } catch (error) {
-      Swal.fire({
+      openSwal({
         icon: "error",
         title: "Gagal menyimpan data",
         text: getErrorMessage(error),
@@ -605,7 +612,7 @@ export default function FinancialRecordMain({ dictionary }: Props) {
 
       await handleRefetch();
     } catch (error) {
-      Swal.fire({
+      openSwal({
         icon: "error",
         title: "Gagal update stage",
         text: getErrorMessage(error),
@@ -624,7 +631,7 @@ export default function FinancialRecordMain({ dictionary }: Props) {
         }),
       );
     } catch (error) {
-      Swal.fire({
+      openSwal({
         icon: "error",
         title: "Gagal memuat data",
         text: getErrorMessage(error),
@@ -638,7 +645,12 @@ export default function FinancialRecordMain({ dictionary }: Props) {
     setSearchQuery("");
     setStatusFilter("all");
     setCategoryFilter("all");
+    setTablePage(1);
   }
+
+  useEffect(() => {
+    setTablePage(1);
+  }, [activeTab, deferredSearchQuery, categoryFilter, statusFilter, tablePageSize]);
 
   const hasBaseError =
     !form.title.trim() || !form.createdBy.trim() || !form.date || Number(form.amount) <= 0;
@@ -796,12 +808,24 @@ export default function FinancialRecordMain({ dictionary }: Props) {
                     searchQuery={searchQuery}
                     categoryFilter={categoryFilter}
                     categories={categories}
-                    rows={filteredRecords}
+                    rows={pagedFilteredRecords}
+                    page={tablePage}
+                    pageSize={tablePageSize}
+                    totalRows={filteredRecords.length}
+                    lastPage={filteredLastPage}
                     onSearchChange={setSearchQuery}
                     onCategoryFilterChange={(value) =>
                       setCategoryFilter(value as FilterCategory)
                     }
                     onClearFilters={clearFilters}
+                    onPageChange={(nextPage) => {
+                      if (nextPage < 1 || nextPage > filteredLastPage) return;
+                      setTablePage(nextPage);
+                    }}
+                    onPageSizeChange={(nextPageSize) => {
+                      setTablePageSize(nextPageSize);
+                      setTablePage(1);
+                    }}
                     onEdit={(recordId) => {
                       const record = records.find((item) => item.id === recordId);
                       if (record) openEditDialog(record);

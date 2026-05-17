@@ -79,6 +79,9 @@ export interface ICreateSalesOrderPayload {
   paymentTermDays?: number;
   paymentTermDetail?: unknown;
   discountAmount?: number;
+  discountType?: "nominal" | "percentage";
+  discountValue?: number;
+  ppnPercentage?: number;
   shippingCost?: number;
   shippingAddress?: string;
   notes?: string;
@@ -93,6 +96,9 @@ export interface IUpdateSalesOrderPayload {
   paymentTermDays?: number;
   paymentTermDetail?: unknown;
   discountAmount?: number;
+  discountType?: "nominal" | "percentage";
+  discountValue?: number;
+  ppnPercentage?: number;
   shippingCost?: number;
   shippingAddress?: string;
   notes?: string;
