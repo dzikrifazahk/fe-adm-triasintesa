@@ -112,7 +112,7 @@ export function FinancialRecordTableSection({
 }: Props) {
   const actionLabel = (record: FinancialRecordRow) => {
     if (record.stage === "submission") return "Kirim ke payment request";
-    if (record.stage === "payment_request") return "Tandai paid";
+    if (record.stage === "payment_request") return "Pembayaran";
     return "Paid";
   };
 
