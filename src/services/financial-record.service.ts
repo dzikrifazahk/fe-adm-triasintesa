@@ -10,6 +10,32 @@ export class FinancialRecordService extends BaseHttpService {
     return response.data;
   }
 
+  async createFinancialRecord(payload: FormData) {
+    const response = await this.httpClient.post("/financial-records", payload, {
+      headers: { "Content-Type": "multipart/form-data" },
+    });
+    return response.data;
+  }
+
+  async updateFinancialRecord(id: number, payload: FormData) {
+    const response = await this.httpClient.patch(`/financial-records/${id}`, payload, {
+      headers: { "Content-Type": "multipart/form-data" },
+    });
+    return response.data;
+  }
+
+  async moveFinancialRecordToPaymentRequest(id: number, payload: Record<string, unknown> = {}) {
+    const response = await this.httpClient.post(`/financial-records/${id}/move-to-payment-request`, payload);
+    return response.data;
+  }
+
+  async markFinancialRecordPaid(id: number, payload: FormData) {
+    const response = await this.httpClient.post(`/financial-records/${id}/mark-paid`, payload, {
+      headers: { "Content-Type": "multipart/form-data" },
+    });
+    return response.data;
+  }
+
   async getFlashCash(queryParams: Record<string, unknown> = {}) {
     const response = await this.httpClient.get("/cash-flow", { params: queryParams });
     return response.data;

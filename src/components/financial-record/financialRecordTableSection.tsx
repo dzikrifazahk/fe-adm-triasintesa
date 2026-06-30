@@ -4,13 +4,7 @@ import { getDictionary } from "../../../get-dictionary";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -27,7 +21,14 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { ArrowRightLeft, FilePenLine, Filter, Search } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { ArrowRightLeft, CheckCircle2, FilePenLine, MoreHorizontal, Search } from "lucide-react";
 
 type Dictionary = Awaited<
   ReturnType<typeof getDictionary>
@@ -35,29 +36,30 @@ type Dictionary = Awaited<
 
 type FinancialStage = "submission" | "payment_request" | "paid";
 type FinancialPriority = "high" | "medium" | "low";
-type FinancialStatus =
-  | "need_review"
-  | "waiting_budget"
-  | "ready_to_pay"
-  | "paid";
+type DateStatus = "open" | "due_date" | "overdue" | "paid";
 
 type FinancialRecordRow = {
   id: string;
+  ledgerId: number;
   title: string;
   vendor: string;
   category: string;
   amount: number;
   date: string;
+  periodStartDate?: string | null;
+  periodEndDate?: string | null;
+  dueDate?: string | null;
+  paymentDate?: string | null;
   stage: FinancialStage;
-  status: FinancialStatus;
+  dateStatus: DateStatus;
   priority: FinancialPriority;
   createdBy: string;
+  paidBy?: string | null;
 };
 
 type Props = {
   dictionary: Dictionary;
   title: string;
-  description: string;
   searchQuery: string;
   categoryFilter: string;
   categories: string[];
@@ -72,19 +74,19 @@ type Props = {
   onPageChange: (nextPage: number) => void;
   onPageSizeChange: (nextPageSize: number) => void;
   onEdit: (recordId: string) => void;
-  onAdvanceStage: (recordId: string) => void;
+  onMoveToPaymentRequest: (recordId: string) => void;
+  onMarkPaid: (recordId: string) => void;
   formatCurrency: (amount: number) => string;
-  formatDate: (date: string) => string;
+  formatDate: (date?: string | null) => string;
   priorityLabel: (priority: FinancialPriority) => string;
   priorityClassName: (priority: FinancialPriority) => string;
-  statusLabel: (status: FinancialStatus) => string;
-  statusClassName: (status: FinancialStatus) => string;
+  dateStatusLabel: (status: DateStatus) => string;
+  dateStatusClassName: (status: DateStatus) => string;
 };
 
 export function FinancialRecordTableSection({
   dictionary,
   title,
-  description,
   searchQuery,
   categoryFilter,
   categories,
@@ -99,59 +101,54 @@ export function FinancialRecordTableSection({
   onPageChange,
   onPageSizeChange,
   onEdit,
-  onAdvanceStage,
+  onMoveToPaymentRequest,
+  onMarkPaid,
   formatCurrency,
   formatDate,
   priorityLabel,
   priorityClassName,
-  statusLabel,
-  statusClassName,
+  dateStatusLabel,
+  dateStatusClassName,
 }: Props) {
-  return (
-    <Card className="gap-0 rounded-[24px] border-slate-200 shadow-sm dark:border-[#34363B] dark:bg-[#1C1D21]">
-      <CardHeader className="border-b border-slate-100 pb-5 dark:border-[#34363B]">
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-          <div>
-            <CardTitle className="text-xl text-slate-900 dark:text-slate-100">
-              {title}
-            </CardTitle>
-            <CardDescription className="mt-2 max-w-2xl text-sm leading-6 dark:text-slate-400">
-              {description}
-            </CardDescription>
-          </div>
-        </div>
-      </CardHeader>
+  const actionLabel = (record: FinancialRecordRow) => {
+    if (record.stage === "submission") return "Kirim ke payment request";
+    if (record.stage === "payment_request") return "Tandai paid";
+    return "Paid";
+  };
 
-      <CardContent className="space-y-5 pt-6">
-        <div className="grid gap-3 lg:grid-cols-[1.2fr_0.6fr_0.6fr_auto]">
+  const actionIcon = (record: FinancialRecordRow) =>
+    record.stage === "payment_request" ? CheckCircle2 : ArrowRightLeft;
+
+  const runPrimaryAction = (record: FinancialRecordRow) => {
+    if (record.stage === "submission") onMoveToPaymentRequest(record.id);
+    if (record.stage === "payment_request") onMarkPaid(record.id);
+  };
+
+  return (
+    <Card className="rounded-2xl border-slate-200 shadow-sm dark:border-[#34363B] dark:bg-[#1C1D21]">
+      <CardHeader className="gap-4 border-b border-slate-100 pb-5 dark:border-[#34363B]">
+        <div className="flex flex-col gap-1">
+          <CardTitle className="text-xl text-slate-900 dark:text-slate-100">{title}</CardTitle>
+          <p className="text-sm text-slate-500 dark:text-slate-400">
+            {totalRows} record dalam tab ini
+          </p>
+        </div>
+        <div className="grid gap-3 md:grid-cols-[1fr_240px_auto]">
           <div className="relative">
             <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-slate-400" />
             <Input
               value={searchQuery}
               onChange={(event) => onSearchChange(event.target.value)}
-              placeholder={
-                dictionary?.toolbar?.search_placeholder ??
-                "Cari judul, vendor, ID, kategori..."
-              }
-              className="h-11 rounded-xl border-slate-200 pl-9 dark:border-[#34363B] dark:bg-[#23252B] dark:text-slate-100 dark:placeholder:text-slate-500"
+              placeholder={dictionary?.toolbar?.search_placeholder ?? "Cari expense, vendor, kategori..."}
+              className="h-11 rounded-xl border-slate-200 pl-9 dark:border-[#34363B] dark:bg-[#23252B]"
             />
           </div>
-
-          <Select
-            value={categoryFilter}
-            onValueChange={onCategoryFilterChange}
-          >
-            <SelectTrigger className="h-11 w-full rounded-xl border-slate-200 dark:border-[#34363B] dark:bg-[#23252B] dark:text-slate-100">
-              <SelectValue
-                placeholder={
-                  dictionary?.toolbar?.category_placeholder ?? "Filter kategori"
-                }
-              />
+          <Select value={categoryFilter} onValueChange={onCategoryFilterChange}>
+            <SelectTrigger className="h-11 rounded-xl border-slate-200 dark:border-[#34363B] dark:bg-[#23252B]">
+              <SelectValue placeholder="Semua kategori" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">
-                {dictionary?.toolbar?.all_category ?? "Semua kategori"}
-              </SelectItem>
+              <SelectItem value="all">Semua kategori</SelectItem>
               {categories.map((category) => (
                 <SelectItem key={category} value={category}>
                   {category}
@@ -159,164 +156,190 @@ export function FinancialRecordTableSection({
               ))}
             </SelectContent>
           </Select>
-
-          <Button
-            variant="outline"
-            className="h-11 rounded-xl border-slate-200 dark:border-[#34363B] dark:bg-[#23252B] dark:text-slate-100 dark:hover:bg-[#2A2D33]"
-            onClick={onClearFilters}
-          >
-            <Filter className="size-4" />
-            {dictionary?.button_filter ?? "Filters"}
+          <Button variant="outline" className="h-11 rounded-xl" onClick={onClearFilters}>
+            Reset
           </Button>
         </div>
+      </CardHeader>
 
-        <div className="overflow-hidden rounded-[22px] border border-slate-200 dark:border-[#34363B]">
+      <CardContent className="space-y-5 pt-5">
+        <div className="hidden overflow-hidden rounded-xl border border-slate-200 md:block dark:border-[#34363B]">
           <Table>
             <TableHeader className="bg-slate-50 dark:bg-[#23252B]">
-              <TableRow className="hover:bg-slate-50 dark:hover:bg-[#23252B]">
-                <TableHead className="px-4">
-                  {dictionary?.table?.expense ?? "Expense"}
-                </TableHead>
-                <TableHead>
-                  {dictionary?.table?.category ?? "Kategori"}
-                </TableHead>
-                <TableHead>
-                  {dictionary?.table?.amount ?? "Nominal"}
-                </TableHead>
-                <TableHead>
-                  {dictionary?.table?.status ?? "Status"}
-                </TableHead>
-                <TableHead>
-                  {dictionary?.table?.date ?? "Tanggal"}
-                </TableHead>
-                <TableHead className="px-4 text-right">
-                  {dictionary?.table?.actions ?? "Aksi"}
-                </TableHead>
+              <TableRow>
+                <TableHead className="px-4">Expense</TableHead>
+                <TableHead>Kategori</TableHead>
+                <TableHead>Nominal</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead>Tanggal</TableHead>
+                <TableHead className="px-4 text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {rows.length > 0 ? (
+              {rows.length ? (
                 rows.map((record) => (
                   <TableRow key={record.id}>
                     <TableCell className="px-4 py-4">
                       <div className="space-y-1">
-                        <p className="font-semibold text-slate-900 dark:text-slate-100">
-                          {record.title}
-                        </p>
-                        <div className="flex flex-wrap items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
+                        <p className="font-semibold text-slate-900 dark:text-slate-100">{record.title}</p>
+                        <div className="flex flex-wrap gap-2 text-xs text-slate-500">
                           <span>{record.id}</span>
-                          <span className="text-slate-300 dark:text-slate-600">
-                            •
-                          </span>
+                          <span>•</span>
                           <span>{record.vendor}</span>
-                          <span className="text-slate-300 dark:text-slate-600">
-                            •
-                          </span>
-                          <span>
-                            {dictionary?.table?.created_by_prefix ?? "By"}{" "}
-                            {record.createdBy}
-                          </span>
+                          <span>•</span>
+                          <span>By {record.createdBy}</span>
                         </div>
                       </div>
                     </TableCell>
                     <TableCell>
                       <div className="space-y-2">
-                        <p className="font-medium text-slate-800 dark:text-slate-200">
-                          {record.category}
-                        </p>
-                        <Badge
-                          className={cn("rounded-full border-0", priorityClassName(record.priority))}
-                        >
+                        <p className="font-medium text-slate-800 dark:text-slate-200">{record.category}</p>
+                        <Badge className={cn("rounded-full border-0", priorityClassName(record.priority))}>
                           {priorityLabel(record.priority)}
                         </Badge>
                       </div>
                     </TableCell>
-                    <TableCell className="font-semibold text-slate-900 dark:text-slate-100">
-                      {formatCurrency(record.amount)}
-                    </TableCell>
+                    <TableCell className="font-semibold">{formatCurrency(record.amount)}</TableCell>
                     <TableCell>
-                      <Badge
-                        className={cn("rounded-full border", statusClassName(record.status))}
-                      >
-                        {statusLabel(record.status)}
+                      <Badge className={cn("rounded-full border", dateStatusClassName(record.dateStatus))}>
+                        {dateStatusLabel(record.dateStatus)}
                       </Badge>
                     </TableCell>
-                    <TableCell className="text-slate-600 dark:text-slate-400">
-                      {formatDate(record.date)}
+                    <TableCell className="text-slate-600">
+                      {record.stage === "paid"
+                        ? formatDate(record.paymentDate)
+                        : record.stage === "submission"
+                          ? formatDate(record.date)
+                          : formatDate(record.dueDate)}
                     </TableCell>
-                    <TableCell className="px-4">
-                      <div className="flex justify-end gap-2">
-                        <Button
-                          variant="outline"
-                          className="rounded-xl dark:border-[#34363B] dark:bg-[#23252B] dark:text-slate-100 dark:hover:bg-[#2A2D33]"
-                          onClick={() => onEdit(record.id)}
-                        >
-                          <FilePenLine className="size-4" />
-                          {dictionary?.button_edit ?? "Edit"}
-                        </Button>
-                        {record.stage !== "paid" ? (
-                          <Button
-                            className="rounded-xl bg-slate-900 text-white hover:bg-slate-800 dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-slate-200"
-                            onClick={() => onAdvanceStage(record.id)}
-                          >
-                            <ArrowRightLeft className="size-4" />
-                            {record.stage === "submission"
-                              ? (dictionary?.button_update_stage ?? "Ubah")
-                              : (dictionary?.button_mark_paid ?? "Bayar")}
-                          </Button>
-                        ) : null}
-                      </div>
+                    <TableCell className="px-4 text-right">
+                      <RowActions
+                        record={record}
+                        actionLabel={actionLabel(record)}
+                        actionIcon={actionIcon(record)}
+                        onEdit={onEdit}
+                        onPrimaryAction={runPrimaryAction}
+                      />
                     </TableCell>
                   </TableRow>
                 ))
               ) : (
                 <TableRow>
-                  <TableCell colSpan={6} className="px-4 py-12 text-center">
-                    <div className="mx-auto max-w-md space-y-2">
-                      <p className="text-base font-semibold text-slate-900 dark:text-slate-100">
-                        {dictionary?.table?.empty_title ?? "Tidak ada data yang cocok"}
-                      </p>
-                      <p className="text-sm leading-6 text-slate-500 dark:text-slate-400">
-                        {dictionary?.table?.empty_description ??
-                          "Coba ubah kata kunci pencarian atau reset filter untuk melihat data lain di tab ini."}
-                      </p>
-                    </div>
+                  <TableCell colSpan={6} className="px-4 py-12 text-center text-sm text-slate-500">
+                    Tidak ada data yang cocok.
                   </TableCell>
                 </TableRow>
               )}
             </TableBody>
           </Table>
         </div>
+
+        <div className="space-y-3 md:hidden">
+          {rows.length ? (
+            rows.map((record) => (
+              <div key={record.id} className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm dark:border-[#34363B] dark:bg-[#23252B]">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0 space-y-1">
+                    <p className="font-semibold text-slate-900 dark:text-slate-100">{record.title}</p>
+                    <p className="text-xs text-slate-500">{record.id} • {record.vendor}</p>
+                  </div>
+                  <RowActions
+                    record={record}
+                    actionLabel={actionLabel(record)}
+                    actionIcon={actionIcon(record)}
+                    onEdit={onEdit}
+                    onPrimaryAction={runPrimaryAction}
+                  />
+                </div>
+                <div className="mt-4 grid grid-cols-2 gap-3 text-sm">
+                  <Info label="Kategori" value={record.category} />
+                  <Info label="Nominal" value={formatCurrency(record.amount)} />
+                  <Info
+                    label="Tanggal"
+                    value={record.stage === "paid" ? formatDate(record.paymentDate) : formatDate(record.dueDate || record.date)}
+                  />
+                  <div>
+                    <p className="text-xs text-slate-500">Status</p>
+                    <Badge className={cn("mt-1 rounded-full border", dateStatusClassName(record.dateStatus))}>
+                      {dateStatusLabel(record.dateStatus)}
+                    </Badge>
+                  </div>
+                </div>
+              </div>
+            ))
+          ) : (
+            <div className="rounded-xl border border-dashed p-8 text-center text-sm text-slate-500">
+              Tidak ada data yang cocok.
+            </div>
+          )}
+        </div>
+
         <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-          <p className="text-sm text-slate-500 dark:text-slate-400">
-            Menampilkan {rows.length} dari total {totalRows} data
-          </p>
-          <div className="flex items-center gap-2">
+          <p className="text-sm text-slate-500">Menampilkan {rows.length} dari total {totalRows} data</p>
+          <div className="flex flex-wrap items-center gap-2">
             <select
               className="h-9 rounded-md border bg-background px-2 text-sm"
               value={String(pageSize)}
               onChange={(event) => onPageSizeChange(Number(event.target.value))}
             >
               {[10, 20, 50, 100].map((size) => (
-                <option key={size} value={size}>
-                  {size} / halaman
-                </option>
+                <option key={size} value={size}>{size} / halaman</option>
               ))}
             </select>
-            <Button variant="outline" onClick={() => onPageChange(page - 1)} disabled={page <= 1}>
-              Prev
-            </Button>
+            <Button variant="outline" onClick={() => onPageChange(page - 1)} disabled={page <= 1}>Prev</Button>
             <span className="text-sm">Halaman {page} / {lastPage}</span>
-            <Button
-              variant="outline"
-              onClick={() => onPageChange(page + 1)}
-              disabled={page >= lastPage}
-            >
-              Next
-            </Button>
+            <Button variant="outline" onClick={() => onPageChange(page + 1)} disabled={page >= lastPage}>Next</Button>
           </div>
         </div>
       </CardContent>
     </Card>
+  );
+}
+
+function RowActions({
+  record,
+  actionLabel,
+  actionIcon: ActionIcon,
+  onEdit,
+  onPrimaryAction,
+}: {
+  record: FinancialRecordRow;
+  actionLabel: string;
+  actionIcon: typeof ArrowRightLeft;
+  onEdit: (recordId: string) => void;
+  onPrimaryAction: (record: FinancialRecordRow) => void;
+}) {
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button variant="ghost" size="icon" className="h-9 w-9">
+          <MoreHorizontal className="size-4" />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="w-56">
+        <DropdownMenuLabel>Actions</DropdownMenuLabel>
+        {record.stage !== "paid" ? (
+          <DropdownMenuItem onClick={() => onEdit(record.id)}>
+            <FilePenLine className="size-4" />
+            Edit
+          </DropdownMenuItem>
+        ) : null}
+        {record.stage !== "paid" ? (
+          <DropdownMenuItem onClick={() => onPrimaryAction(record)}>
+            <ActionIcon className="size-4" />
+            {actionLabel}
+          </DropdownMenuItem>
+        ) : null}
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}
+
+function Info({ label, value }: { label: string; value: string }) {
+  return (
+    <div>
+      <p className="text-xs text-slate-500">{label}</p>
+      <p className="mt-1 font-medium text-slate-900 dark:text-slate-100">{value}</p>
+    </div>
   );
 }

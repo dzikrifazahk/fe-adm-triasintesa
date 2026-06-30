@@ -1,18 +1,13 @@
 "use client";
 
-import { useDeferredValue, useEffect, useState } from "react";
+import { useDeferredValue, useEffect, useMemo, useState } from "react";
+import axios from "axios";
 import { getDictionary } from "../../../get-dictionary";
 import { financialRecordService } from "@/services";
 import { FinancialRecordTableSection } from "@/components/financial-record/financialRecordTableSection";
 import { cn } from "@/lib/utils";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import {
   Dialog,
   DialogContent,
@@ -24,11 +19,9 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import {
-  BanknoteArrowDown,
   CheckCircle2,
   CircleDollarSign,
   CreditCard,
@@ -36,13 +29,11 @@ import {
   Plus,
   ReceiptText,
   RefreshCcw,
+  Upload,
   WalletCards,
 } from "lucide-react";
 import { openSwal } from "@/lib/swal";
-import axios from "axios";
-import {
-  IFinancialRecordItem,
-} from "@/types/financial-record";
+import { IFinancialRecordItem } from "@/types/financial-record";
 
 type Dictionary = Awaited<
   ReturnType<typeof getDictionary>
@@ -54,130 +45,70 @@ type Props = {
 
 type FinancialStage = "submission" | "payment_request" | "paid";
 type FinancialPriority = "high" | "medium" | "low";
-type FinancialStatus =
-  | "need_review"
-  | "waiting_budget"
-  | "ready_to_pay"
-  | "paid";
 type FinancialSource = "flash_cash" | "invoice" | "man_power" | "reimbursement";
+type DateStatus = "open" | "due_date" | "overdue" | "paid";
 
-type FinancialRecord = {
-  id: string;
+type FinancialRecord = IFinancialRecordItem & {
   source: FinancialSource;
-  sourceId: number;
-  title: string;
-  vendor: string;
-  category: string;
-  amount: number;
-  date: string;
-  stage: FinancialStage;
-  status: FinancialStatus;
-  notes: string;
   priority: FinancialPriority;
-  createdBy: string;
 };
-
-type FilterStatus = "all" | FinancialStatus;
-type FilterCategory = "all" | string;
 
 type FormState = {
-  source: FinancialSource;
+  sourceType: FinancialSource;
   title: string;
   vendor: string;
-  invoiceNumber: string;
-  salesOrderId: string;
-  customerId: string;
-  dueDate: string;
-  paymentMethod: "cash" | "termin";
-  flashType: "in" | "out";
-  recordType: string;
   category: string;
   amount: string;
-  date: string;
-  stage: FinancialStage;
-  status: FinancialStatus;
-  priority: FinancialPriority;
-  createdBy: string;
-  notes: string;
+  expenseDate: string;
+  periodStartDate: string;
+  periodEndDate: string;
+  dueDate: string;
+  description: string;
 };
 
-const initialRecords: FinancialRecord[] = [];
+const todayString = () => new Date().toISOString().slice(0, 10);
 
-const defaultFormState: FormState = {
-  source: "flash_cash",
-  title: "",
-  vendor: "",
-  invoiceNumber: "",
-  salesOrderId: "",
-  customerId: "",
-  dueDate: "2026-04-15",
-  paymentMethod: "cash",
-  flashType: "out",
-  recordType: "man_power",
-  category: "Operational",
-  amount: "",
-  date: "2026-04-15",
-  stage: "submission",
-  status: "need_review",
-  priority: "medium",
-  createdBy: "",
-  notes: "",
+const defaultFormState = (): FormState => {
+  const today = todayString();
+  return {
+    sourceType: "flash_cash",
+    title: "",
+    vendor: "",
+    category: "Operational",
+    amount: "",
+    expenseDate: today,
+    periodStartDate: today,
+    periodEndDate: today,
+    dueDate: today,
+    description: "",
+  };
 };
 
-const stageMeta: Record<FinancialStage, { accent: string }> = {
-  submission: {
-    accent: "from-blue-600 via-blue-500 to-cyan-400",
-  },
-  payment_request: {
-    accent: "from-amber-500 via-orange-500 to-rose-400",
-  },
-  paid: {
-    accent: "from-emerald-600 via-teal-500 to-cyan-400",
-  },
+const sourceLabels: Record<FinancialSource, string> = {
+  flash_cash: "Flash Cash",
+  invoice: "Invoice",
+  reimbursement: "Reimbursement",
+  man_power: "Man Power",
 };
 
-const statusMeta: Record<
-  FinancialStatus,
-  { label: string; className: string; needsReview: boolean }
-> = {
-  need_review: {
-    label: "Perlu Review",
-    className: "border-amber-200 bg-amber-50 text-amber-700",
-    needsReview: true,
-  },
-  waiting_budget: {
-    label: "Menunggu Budget",
-    className: "border-sky-200 bg-sky-50 text-sky-700",
-    needsReview: false,
-  },
-  ready_to_pay: {
-    label: "Siap Dibayar",
-    className: "border-violet-200 bg-violet-50 text-violet-700",
-    needsReview: false,
-  },
-  paid: {
-    label: "Paid",
-    className: "border-emerald-200 bg-emerald-50 text-emerald-700",
-    needsReview: false,
-  },
+const sourceCategories: Record<FinancialSource, string[]> = {
+  flash_cash: ["Operational", "Logistics", "Utilities", "Maintenance"],
+  invoice: ["Supplier Invoice", "Purchase", "Operational", "Utilities"],
+  reimbursement: ["Transport", "Meal", "Accommodation", "Medical", "Office"],
+  man_power: ["Salary", "Overtime", "Daily Worker", "Service Fee"],
 };
 
-const priorityMeta: Record<
-  FinancialPriority,
-  { label: string; className: string }
-> = {
-  high: {
-    label: "High",
-    className: "bg-rose-50 text-rose-700",
-  },
-  medium: {
-    label: "Medium",
-    className: "bg-amber-50 text-amber-700",
-  },
-  low: {
-    label: "Low",
-    className: "bg-emerald-50 text-emerald-700",
-  },
+const priorityMeta: Record<FinancialPriority, { label: string; className: string }> = {
+  high: { label: "High", className: "bg-rose-50 text-rose-700" },
+  medium: { label: "Medium", className: "bg-amber-50 text-amber-700" },
+  low: { label: "Low", className: "bg-emerald-50 text-emerald-700" },
+};
+
+const dateStatusMeta: Record<DateStatus, { label: string; className: string }> = {
+  open: { label: "Open", className: "border-sky-200 bg-sky-50 text-sky-700" },
+  due_date: { label: "Due Date", className: "border-amber-200 bg-amber-50 text-amber-700" },
+  overdue: { label: "Overdue", className: "border-red-200 bg-red-50 text-red-700" },
+  paid: { label: "Paid", className: "border-emerald-200 bg-emerald-50 text-emerald-700" },
 };
 
 const currencyFormatter = new Intl.NumberFormat("id-ID", {
@@ -190,10 +121,10 @@ function formatCurrency(amount: number) {
   return currencyFormatter.format(amount);
 }
 
-function formatDate(dateString: string) {
+function formatDate(dateString?: string | null) {
+  if (!dateString) return "-";
   const date = new Date(dateString);
   if (Number.isNaN(date.getTime())) return dateString;
-
   return date.toLocaleDateString("id-ID", {
     day: "2-digit",
     month: "short",
@@ -201,26 +132,12 @@ function formatDate(dateString: string) {
   });
 }
 
-function getReviewCount(records: FinancialRecord[], stage: FinancialStage) {
-  return records.filter(
-    (record) => record.stage === stage && statusMeta[record.status].needsReview,
-  ).length;
-}
-
-function getStageIcon(stage: FinancialStage) {
-  if (stage === "submission") return FileClock;
-  if (stage === "payment_request") return CreditCard;
-  return CheckCircle2;
-}
-
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null;
 }
 
 function unwrapData<T>(value: unknown): T {
-  if (isRecord(value) && "data" in value) {
-    return value.data as T;
-  }
+  if (isRecord(value) && "data" in value) return value.data as T;
   return value as T;
 }
 
@@ -246,52 +163,74 @@ function getPriorityFromAmount(amount: number): FinancialPriority {
   return "low";
 }
 
-function toInt(value: string, fallback = 0): number {
-  const parsed = Number(value);
-  if (!Number.isFinite(parsed)) return fallback;
-  return parsed;
+function validateFile(file?: File | null): string | null {
+  if (!file) return null;
+  const allowed = ["image/jpeg", "image/png", "image/webp", "application/pdf"];
+  if (!allowed.includes(file.type)) return "Attachment hanya boleh gambar JPG/PNG/WebP atau PDF.";
+  if (file.size > 3_000_000) return "Ukuran file maksimal 3MB.";
+  return null;
+}
+
+function appendIfValue(formData: FormData, key: string, value?: string | null) {
+  if (value !== undefined && value !== null && String(value).trim()) {
+    formData.append(key, String(value));
+  }
+}
+
+function getStageIcon(stage: FinancialStage) {
+  if (stage === "submission") return FileClock;
+  if (stage === "payment_request") return CreditCard;
+  return CheckCircle2;
 }
 
 export default function FinancialRecordMain({ dictionary }: Props) {
   const copy = dictionary;
   const [activeTab, setActiveTab] = useState<FinancialStage>("submission");
-  const [records, setRecords] = useState<FinancialRecord[]>(initialRecords);
+  const [records, setRecords] = useState<FinancialRecord[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
-  const [statusFilter, setStatusFilter] = useState<FilterStatus>("all");
-  const [categoryFilter, setCategoryFilter] = useState<FilterCategory>("all");
+  const [categoryFilter, setCategoryFilter] = useState("all");
   const [tablePage, setTablePage] = useState(1);
   const [tablePageSize, setTablePageSize] = useState(10);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingRecordId, setEditingRecordId] = useState<string | null>(null);
   const [form, setForm] = useState<FormState>(defaultFormState);
-  const [lastRefetchedAt, setLastRefetchedAt] = useState("Baru saja");
+  const [attachment, setAttachment] = useState<File | null>(null);
+  const [paymentRecordId, setPaymentRecordId] = useState<string | null>(null);
+  const [paymentDate, setPaymentDate] = useState(todayString());
+  const [paymentNotes, setPaymentNotes] = useState("");
+  const [paymentProof, setPaymentProof] = useState<File | null>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
 
   const deferredSearchQuery = useDeferredValue(searchQuery);
 
   async function loadRecords() {
-    const financialRecordsRes = await financialRecordService.getFinancialRecords({
+    const response = await financialRecordService.getFinancialRecords({
       page: 1,
-      limit: 100,
+      limit: 200,
     });
 
-    const rows = unwrapList<IFinancialRecordItem>(financialRecordsRes).map((row) => ({
-      id: row.id,
+    const rows = unwrapList<IFinancialRecordItem>(response).map((row) => ({
+      ...row,
       source: row.source,
-      sourceId: row.sourceId,
-      title: row.title,
-      vendor: row.vendor,
-      category: row.category,
+      sourceId: row.sourceId ?? null,
       amount: Number(row.amount || 0),
-      date: row.date,
-      stage: row.stage,
-      status: row.status,
-      notes: row.notes || "",
       priority: row.priority || getPriorityFromAmount(Number(row.amount || 0)),
-      createdBy: row.createdBy,
-    }));
+      vendor: row.vendor || sourceLabels[row.source],
+      dateStatus: row.dateStatus || (row.stage === "paid" ? "paid" : "open"),
+    })) as FinancialRecord[];
 
-    setRecords(rows.sort((a, b) => b.date.localeCompare(a.date)));
+    setRecords(rows.sort((a, b) => (b.date || "").localeCompare(a.date || "")));
+  }
+
+  async function handleRefetch() {
+    setIsRefreshing(true);
+    try {
+      await loadRecords();
+    } catch (error) {
+      openSwal({ icon: "error", title: "Gagal memuat data", text: getErrorMessage(error) });
+    } finally {
+      setIsRefreshing(false);
+    }
   }
 
   useEffect(() => {
@@ -299,928 +238,480 @@ export default function FinancialRecordMain({ dictionary }: Props) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const categories = Array.from(
-    new Set(records.map((record) => record.category)),
-  ).sort();
+  const stageLabels: Record<FinancialStage, string> = {
+    submission: copy?.tabs?.submission ?? "Submission",
+    payment_request: copy?.tabs?.payment_request ?? "Payment Request",
+    paid: copy?.tabs?.paid ?? "Paid",
+  };
 
   const tabCounts = {
-    submission: records.filter((record) => record.stage === "submission")
-      .length,
-    payment_request: records.filter(
-      (record) => record.stage === "payment_request",
-    ).length,
+    submission: records.filter((record) => record.stage === "submission").length,
+    payment_request: records.filter((record) => record.stage === "payment_request").length,
     paid: records.filter((record) => record.stage === "paid").length,
-  };
-
-  const reviewCounts = {
-    submission: getReviewCount(records, "submission"),
-    payment_request: getReviewCount(records, "payment_request"),
-  };
-
-  const normalizedSearch = deferredSearchQuery.trim().toLowerCase();
-
-  const filteredRecords = records.filter((record) => {
-    if (record.stage !== activeTab) return false;
-
-    const matchesSearch =
-      normalizedSearch.length === 0 ||
-      [
-        record.id,
-        record.title,
-        record.vendor,
-        record.category,
-        record.createdBy,
-      ]
-        .join(" ")
-        .toLowerCase()
-        .includes(normalizedSearch);
-
-    const matchesStatus =
-      statusFilter === "all" || record.status === statusFilter;
-    const matchesCategory =
-      categoryFilter === "all" || record.category === categoryFilter;
-
-    return matchesSearch && matchesStatus && matchesCategory;
-  });
-  const pagedFilteredRecords = filteredRecords.slice(
-    (tablePage - 1) * tablePageSize,
-    tablePage * tablePageSize,
-  );
-  const filteredLastPage = Math.max(1, Math.ceil(filteredRecords.length / tablePageSize));
-
-  const activeTabMeta = stageMeta[activeTab];
-  const activeTabTotal = tabCounts[activeTab];
-  const activeTabAmount = filteredRecords.reduce(
-    (total, record) => total + record.amount,
-    0,
-  );
-  const stageLabels = {
-    submission: copy?.tabs?.submission ?? "Pengajuan",
-    payment_request: copy?.tabs?.payment_request ?? "Permintaan Pembayaran",
-    paid: copy?.tabs?.paid ?? "Telah Dibayar",
-  };
-  const stageDescriptions = {
-    submission:
-      copy?.tabs?.submission_description ??
-      "Expense baru masuk dan menunggu pengecekan awal.",
-    payment_request:
-      copy?.tabs?.payment_request_description ??
-      "Expense yang siap masuk proses pembayaran.",
-    paid:
-      copy?.tabs?.paid_description ??
-      "Riwayat pembayaran yang sudah selesai diproses.",
-  };
-  const actionLabels = {
-    submission: copy?.actions?.submission ?? "Kirim ke permintaan pembayaran",
-    payment_request: copy?.actions?.payment_request ?? "Tandai sudah dibayar",
-    paid: copy?.actions?.paid ?? "Sudah selesai",
   };
 
   const stats = [
     {
-      label: copy?.stats?.active_total ?? "Total expense aktif",
+      label: "Active expenses",
       value: formatCurrency(
-        records
-          .filter((record) => record.stage !== "paid")
-          .reduce((total, record) => total + record.amount, 0),
+        records.filter((record) => record.stage !== "paid").reduce((total, record) => total + record.amount, 0),
       ),
-      hint:
-        copy?.stats?.active_total_hint ??
-        "Akumulasi pengajuan dan permintaan pembayaran",
+      hint: "Submission dan payment request",
       icon: CircleDollarSign,
     },
     {
-      label: copy?.stats?.need_review ?? "Perlu review",
-      value: `${reviewCounts.submission + reviewCounts.payment_request} item`,
-      hint:
-        copy?.stats?.need_review_hint ?? "Prioritas untuk tim finance hari ini",
+      label: "Due / Overdue",
+      value: `${records.filter((record) => record.stage !== "paid" && ["due_date", "overdue"].includes(record.dateStatus)).length} item`,
+      hint: "Perlu perhatian finance",
       icon: ReceiptText,
     },
     {
-      label: copy?.stats?.paid_total ?? "Sudah dibayar",
-      value: formatCurrency(
-        records
-          .filter((record) => record.stage === "paid")
-          .reduce((total, record) => total + record.amount, 0),
-      ),
-      hint: `${tabCounts.paid} ${
-        copy?.stats?.paid_total_hint_suffix ?? "transaksi terselesaikan"
-      }`,
+      label: "Already paid",
+      value: formatCurrency(records.filter((record) => record.stage === "paid").reduce((total, record) => total + record.amount, 0)),
+      hint: `${tabCounts.paid} completed transactions`,
       icon: WalletCards,
     },
   ];
 
-  function resetForm(nextStageValue: FinancialStage = activeTab) {
-    const today = new Date().toISOString().slice(0, 10);
-    setForm({
-      ...defaultFormState,
-      stage: nextStageValue,
-      status: nextStageValue === "paid" ? "paid" : "need_review",
-      date: today,
-      dueDate: today,
-    });
-  }
+  const categories = useMemo(() => Array.from(new Set(records.map((record) => record.category))).sort(), [records]);
+  const normalizedSearch = deferredSearchQuery.trim().toLowerCase();
+
+  const filteredRecords = records.filter((record) => {
+    if (record.stage !== activeTab) return false;
+    const matchesSearch =
+      !normalizedSearch ||
+      [record.id, record.title, record.vendor, record.category, record.createdBy]
+        .join(" ")
+        .toLowerCase()
+        .includes(normalizedSearch);
+    const matchesCategory = categoryFilter === "all" || record.category === categoryFilter;
+    return matchesSearch && matchesCategory;
+  });
+
+  const filteredLastPage = Math.max(1, Math.ceil(filteredRecords.length / tablePageSize));
+  const pagedFilteredRecords = filteredRecords.slice((tablePage - 1) * tablePageSize, tablePage * tablePageSize);
+
+  useEffect(() => {
+    setTablePage(1);
+  }, [activeTab, deferredSearchQuery, categoryFilter, tablePageSize]);
 
   function openCreateDialog() {
     setEditingRecordId(null);
-    resetForm(activeTab);
+    setForm(defaultFormState());
+    setAttachment(null);
     setIsDialogOpen(true);
   }
 
   function openEditDialog(record: FinancialRecord) {
+    const meta = record.sourceMeta || {};
+    const notes = typeof meta.notes === "string" ? meta.notes : record.notes;
     setEditingRecordId(record.id);
     setForm({
-      source: record.source,
+      sourceType: record.source,
       title: record.title,
       vendor: record.vendor,
-      invoiceNumber: record.source === "invoice" ? record.title.replace(/^Invoice\s+/i, "") : "",
-      salesOrderId: "",
-      customerId: "",
-      dueDate: record.date,
-      paymentMethod: "cash",
-      flashType: "out",
-      recordType: record.source === "man_power" ? "man_power" : "man_power",
       category: record.category,
       amount: String(record.amount),
-      date: record.date,
-      stage: record.stage,
-      status: record.status,
-      priority: record.priority,
-      createdBy: record.createdBy,
-      notes: record.notes,
+      expenseDate: record.date || todayString(),
+      periodStartDate: record.periodStartDate || record.date || todayString(),
+      periodEndDate: record.periodEndDate || record.dueDate || record.date || todayString(),
+      dueDate: record.dueDate || record.periodEndDate || record.date || todayString(),
+      description: notes || "",
     });
+    setAttachment(null);
     setIsDialogOpen(true);
   }
 
-  function handleFormChange<Key extends keyof FormState>(
-    key: Key,
-    value: FormState[Key],
-  ) {
+  function handleFormChange<Key extends keyof FormState>(key: Key, value: FormState[Key]) {
     setForm((current) => ({ ...current, [key]: value }));
   }
 
-  async function handleSaveRecord() {
-    const parsedAmount = Number(form.amount);
-    const trimmedTitle = form.title.trim();
-    const trimmedVendor = form.vendor.trim();
-    const trimmedCategory = form.category.trim();
-    const trimmedNotes = form.notes.trim();
+  function handleSourceChange(sourceType: FinancialSource) {
+    setForm((current) => ({
+      ...current,
+      sourceType,
+      category: sourceCategories[sourceType][0],
+    }));
+  }
 
-    if (
-      !trimmedTitle ||
-      !form.createdBy.trim() ||
-      !form.date ||
-      Number.isNaN(parsedAmount) ||
-      parsedAmount <= 0
-    ) {
+  function buildFormData() {
+    const formData = new FormData();
+    formData.append("sourceType", form.sourceType);
+    formData.append("title", form.title.trim());
+    formData.append("category", form.category.trim());
+    formData.append("amount", String(Number(form.amount)));
+    appendIfValue(formData, "vendor", form.vendor.trim());
+    appendIfValue(formData, "description", form.description.trim());
+    appendIfValue(formData, "dueDate", form.dueDate);
+    if (form.sourceType === "flash_cash") {
+      formData.append("expenseDate", form.expenseDate);
+    } else {
+      formData.append("periodStartDate", form.periodStartDate);
+      formData.append("periodEndDate", form.periodEndDate);
+    }
+    if (attachment) formData.append("attachment", attachment);
+    return formData;
+  }
+
+  async function handleSaveRecord() {
+    const fileError = validateFile(attachment);
+    const editingRecord = editingRecordId ? records.find((record) => record.id === editingRecordId) : null;
+    if (!editingRecord && !attachment) {
+      openSwal({ icon: "warning", title: "Attachment wajib diupload." });
+      return;
+    }
+    if (fileError) {
+      openSwal({ icon: "warning", title: fileError });
       return;
     }
 
     try {
-      const editingRecord = editingRecordId
-        ? records.find((record) => record.id === editingRecordId)
-        : null;
-      const source = editingRecord?.source ?? form.source;
-      const sourceId = editingRecord?.sourceId;
-
-      if (source === "flash_cash") {
-        const payload = {
-          transactionDate: form.date,
-          type: form.flashType,
-          category: trimmedCategory,
-          amount: parsedAmount,
-          description: trimmedTitle,
-        };
-        if (sourceId) {
-          await financialRecordService.updateFlashCash(sourceId, payload);
-        } else {
-          await financialRecordService.createFlashCash(payload);
-        }
-      }
-
-      if (source === "invoice") {
-        const invoiceNumber =
-          form.invoiceNumber.trim() ||
-          trimmedTitle.replace(/\s+/g, "-").toUpperCase().slice(0, 20) ||
-          `INV-${Date.now()}`;
-        const payload = {
-          salesOrderId: toInt(form.salesOrderId, 0),
-          customerId: toInt(form.customerId, 0),
-          invoiceNumber,
-          invoiceDate: form.date,
-          dueDate: form.dueDate || form.date,
-          subtotal: parsedAmount,
-          taxAmount: 0,
-          discountAmount: 0,
-          grandTotal: parsedAmount,
-          paymentMethod: form.paymentMethod,
-          paymentTermDays: 30,
-          notes: trimmedNotes || undefined,
-        };
-        if (sourceId) {
-          await financialRecordService.updateInvoice(sourceId, payload);
-        } else {
-          await financialRecordService.createInvoice(payload);
-        }
-      }
-
-      if (source === "man_power") {
-        const payload = {
-          recordDate: form.date,
-          recordType: form.recordType.trim() || "man_power",
-          amount: parsedAmount,
-          description: trimmedTitle,
-          notes: trimmedNotes || undefined,
-        };
-        if (sourceId) {
-          await financialRecordService.updateManPowerRecord(sourceId, payload);
-        } else {
-          await financialRecordService.createManPowerRecord(payload);
-        }
-      }
-
-      if (source === "reimbursement") {
-        const payload = {
-          expenseDate: form.date,
-          category: trimmedCategory || "reimbursement",
-          amount: parsedAmount,
-          description: trimmedTitle,
-        };
-        if (sourceId) {
-          await financialRecordService.updateReimbursement(sourceId, payload);
-        } else {
-          await financialRecordService.createReimbursement(payload);
-        }
+      const formData = buildFormData();
+      if (editingRecord) {
+        await financialRecordService.updateFinancialRecord(editingRecord.ledgerId, formData);
+      } else {
+        await financialRecordService.createFinancialRecord(formData);
       }
 
       setIsDialogOpen(false);
       await handleRefetch();
       openSwal({
         icon: "success",
-        title: "Data berhasil disimpan",
+        title: "Financial record berhasil disimpan",
         toast: true,
         position: "top-end",
         timer: 1500,
         showConfirmButton: false,
       });
     } catch (error) {
-      openSwal({
-        icon: "error",
-        title: "Gagal menyimpan data",
-        text: getErrorMessage(error),
-      });
+      openSwal({ icon: "error", title: "Gagal menyimpan data", text: getErrorMessage(error) });
     }
   }
 
-  async function handleAdvanceStage(recordId: string) {
+  async function handleMoveToPaymentRequest(recordId: string) {
     const record = records.find((item) => item.id === recordId);
-    if (!record || record.stage === "paid") return;
-
+    if (!record) return;
     try {
-      if (record.source === "invoice") {
-        if (record.stage === "submission") {
-          await financialRecordService.issueInvoice(record.sourceId);
-        } else {
-          await financialRecordService.createPayment({
-            invoiceId: record.sourceId,
-            paymentDate: new Date().toISOString().slice(0, 10),
-            amount: record.amount,
-            paymentMethod: "cash",
-          });
-        }
-      }
-
-      if (record.source === "man_power") {
-        if (record.stage === "submission") {
-          await financialRecordService.approveManPowerRecord(record.sourceId);
-        } else {
-          await financialRecordService.markManPowerPaid(record.sourceId);
-        }
-      }
-
-      if (record.source === "reimbursement") {
-        if (record.stage === "submission") {
-          await financialRecordService.approveReimbursementByStaff(record.sourceId);
-        } else if (record.stage === "payment_request") {
-          await financialRecordService.approveReimbursementByDirector(record.sourceId);
-        }
-      }
-
-      if (record.source === "flash_cash" && record.stage === "submission") {
-        await financialRecordService.approveFlashCash(record.sourceId);
-      }
-
+      await financialRecordService.moveFinancialRecordToPaymentRequest(record.ledgerId, {
+        dueDate: record.dueDate || record.periodEndDate || record.date,
+      });
       await handleRefetch();
     } catch (error) {
-      openSwal({
-        icon: "error",
-        title: "Gagal update stage",
-        text: getErrorMessage(error),
-      });
+      openSwal({ icon: "error", title: "Gagal memindahkan record", text: getErrorMessage(error) });
     }
   }
 
-  async function handleRefetch() {
-    setIsRefreshing(true);
+  function openPaymentDialog(recordId: string) {
+    setPaymentRecordId(recordId);
+    setPaymentDate(todayString());
+    setPaymentNotes("");
+    setPaymentProof(null);
+  }
+
+  async function handleMarkPaid() {
+    const record = records.find((item) => item.id === paymentRecordId);
+    const fileError = validateFile(paymentProof);
+    if (!record) return;
+    if (!paymentProof) {
+      openSwal({ icon: "warning", title: "Bukti pembayaran wajib diupload." });
+      return;
+    }
+    if (fileError) {
+      openSwal({ icon: "warning", title: fileError });
+      return;
+    }
+
     try {
-      await loadRecords();
-      setLastRefetchedAt(
-        new Date().toLocaleTimeString("id-ID", {
-          hour: "2-digit",
-          minute: "2-digit",
-        }),
-      );
-    } catch (error) {
+      const formData = new FormData();
+      formData.append("paymentDate", paymentDate);
+      appendIfValue(formData, "notes", paymentNotes);
+      formData.append("paymentProof", paymentProof);
+      await financialRecordService.markFinancialRecordPaid(record.ledgerId, formData);
+      setPaymentRecordId(null);
+      await handleRefetch();
       openSwal({
-        icon: "error",
-        title: "Gagal memuat data",
-        text: getErrorMessage(error),
+        icon: "success",
+        title: "Record sudah ditandai paid",
+        toast: true,
+        position: "top-end",
+        timer: 1500,
+        showConfirmButton: false,
       });
-    } finally {
-      setIsRefreshing(false);
+    } catch (error) {
+      openSwal({ icon: "error", title: "Gagal memproses pembayaran", text: getErrorMessage(error) });
     }
   }
 
   function clearFilters() {
     setSearchQuery("");
-    setStatusFilter("all");
     setCategoryFilter("all");
     setTablePage(1);
   }
 
-  useEffect(() => {
-    setTablePage(1);
-  }, [activeTab, deferredSearchQuery, categoryFilter, statusFilter, tablePageSize]);
-
-  const hasBaseError =
-    !form.title.trim() || !form.createdBy.trim() || !form.date || Number(form.amount) <= 0;
-  const hasInvoiceError =
-    form.source === "invoice" &&
-    (!form.invoiceNumber.trim() || !form.customerId.trim() || !form.salesOrderId.trim() || !form.dueDate);
-  const hasSourceError =
-    (form.source === "flash_cash" && !form.category.trim()) ||
-    (form.source === "reimbursement" && !form.category.trim()) ||
-    (form.source === "man_power" && !form.recordType.trim()) ||
-    (form.source !== "invoice" && !form.vendor.trim());
-  const hasValidationError = hasBaseError || hasInvoiceError || hasSourceError;
+  const isRangeType = form.sourceType !== "flash_cash";
+  const hasValidationError =
+    !form.title.trim() ||
+    !form.category.trim() ||
+    Number(form.amount) <= 0 ||
+    (form.sourceType === "flash_cash" ? !form.expenseDate : !form.periodStartDate || !form.periodEndDate);
 
   return (
     <>
-      <div className="flex min-h-0 w-full flex-1 flex-col gap-6 overflow-auto">
-        <section className="relative overflow-hidden rounded-[28px] bg-[radial-gradient(circle_at_top_left,_rgba(59,130,246,0.2),_transparent_35%),linear-gradient(135deg,_#0f172a_0%,_#132144_42%,_#1d4ed8_100%)] p-6 text-white shadow-sm lg:p-8">
-          <div className="absolute inset-y-0 right-0 hidden w-1/3 bg-[radial-gradient(circle_at_center,_rgba(255,255,255,0.18),_transparent_60%)] lg:block" />
-          <div className="relative flex flex-col gap-8">
-            <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
-              <div className="max-w-3xl space-y-3">
-                <Badge className="w-fit border border-white/20 bg-white/10 text-white">
-                  {copy?.hero_badge ?? "Financial record workspace"}
-                </Badge>
-                <div className="space-y-2">
-                  <h1 className="text-2xl font-semibold tracking-tight lg:text-4xl">
-                    {dictionary?.title ?? "Financial Record"}
-                  </h1>
-                  <p className="max-w-2xl text-sm leading-6 text-slate-200 lg:text-base">
-                    {copy?.hero_description ??
-                      "Kelola pengajuan expense, lanjutkan ke permintaan pembayaran, lalu simpan histori pembayaran dalam satu workspace yang rapi dan mudah direview."}
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex flex-wrap gap-3">
-                <Button
-                  className="bg-white text-slate-950 hover:bg-slate-100"
-                  onClick={openCreateDialog}
-                >
-                  <Plus className="size-4" />
-                  {copy?.button_add_expense ?? "Tambah Expense"}
-                </Button>
-                <Button
-                  variant="outline"
-                  className="border-white/20 bg-white/10 text-white hover:bg-white/15 hover:text-white"
-                  onClick={handleRefetch}
-                  disabled={isRefreshing}
-                >
-                  <RefreshCcw
-                    className={cn("size-4", isRefreshing && "animate-spin")}
-                  />
-                  {copy?.button_refetch ?? "Re-fetch Data"}
-                </Button>
-              </div>
-            </div>
-
-            <div className="grid gap-4 lg:grid-cols-3">
-              {stats.map((item) => {
-                const Icon = item.icon;
-
-                return (
-                  <div
-                    key={item.label}
-                    className="rounded-2xl border border-white/10 bg-white/10 p-4 backdrop-blur"
-                  >
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="space-y-1">
-                        <p className="text-sm text-slate-200">{item.label}</p>
-                        <p className="text-2xl font-semibold">{item.value}</p>
-                      </div>
-                      <div className="rounded-xl bg-white/10 p-2">
-                        <Icon className="size-5 text-cyan-100" />
-                      </div>
-                    </div>
-                    <p className="mt-3 text-sm text-slate-300">{item.hint}</p>
-                  </div>
-                );
-              })}
-            </div>
+      <div className="flex min-h-0 w-full flex-1 flex-col gap-5 overflow-auto">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+          <div>
+            <h1 className="text-2xl font-semibold text-slate-950 dark:text-slate-100">
+              {dictionary?.title ?? "Financial Record"}
+            </h1>
+            <p className="mt-1 max-w-2xl text-sm text-slate-500">
+              Kelola pengeluaran dari submission, payment request, sampai paid.
+            </p>
           </div>
-        </section>
+          <div className="flex flex-col gap-2 sm:flex-row">
+            <Button className="bg-iprimary-blue text-white hover:bg-iprimary-blue-tertiary" onClick={openCreateDialog}>
+              <Plus className="size-4" />
+              Add Expense
+            </Button>
+            <Button variant="outline" onClick={handleRefetch} disabled={isRefreshing}>
+              <RefreshCcw className={cn("size-4", isRefreshing && "animate-spin")} />
+              Re-fetch Data
+            </Button>
+          </div>
+        </div>
 
-        <Tabs
-          value={activeTab}
-          onValueChange={(value) => setActiveTab(value as FinancialStage)}
-          className="gap-5"
-        >
-          <TabsList className="grid h-auto w-full grid-cols-1 items-stretch gap-2 overflow-visible rounded-[24px] bg-slate-100 p-2 dark:bg-[#1F2023] lg:grid-cols-3">
-            {(
-              [
-                "submission",
-                "payment_request",
-                "paid",
-              ] satisfies FinancialStage[]
-            ).map((stage) => {
+        <div className="grid gap-3 md:grid-cols-3">
+          {stats.map((item) => {
+            const Icon = item.icon;
+            return (
+              <Card key={item.label} className="rounded-2xl border-slate-200 shadow-sm">
+                <CardContent className="p-4">
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <p className="text-sm font-medium text-slate-500">{item.label}</p>
+                      <p className="mt-2 text-2xl font-semibold text-slate-950">{item.value}</p>
+                    </div>
+                    <div className="rounded-xl bg-slate-100 p-2 text-iprimary-blue">
+                      <Icon className="size-5" />
+                    </div>
+                  </div>
+                  <p className="mt-3 text-sm text-slate-500">{item.hint}</p>
+                </CardContent>
+              </Card>
+            );
+          })}
+        </div>
+
+        <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as FinancialStage)} className="gap-4">
+          <TabsList className="grid h-auto w-full grid-cols-1 gap-2 rounded-2xl bg-slate-100 p-2 md:grid-cols-3">
+            {(["submission", "payment_request", "paid"] satisfies FinancialStage[]).map((stage) => {
               const Icon = getStageIcon(stage);
-
               return (
                 <TabsTrigger
                   key={stage}
                   value={stage}
-                  className="flex min-h-[76px] min-w-0 flex-col items-start justify-between gap-3 rounded-[18px] border border-transparent px-5 py-4 text-left text-slate-700 transition-colors data-[state=active]:border-slate-200 data-[state=active]:bg-white data-[state=active]:shadow-md dark:text-slate-300 dark:data-[state=active]:border-[#34363B] dark:data-[state=active]:bg-[#26282D] dark:data-[state=active]:shadow-none sm:flex-row sm:items-center"
+                  className="flex min-h-[72px] justify-start rounded-xl px-4 py-3 text-left data-[state=active]:bg-white data-[state=active]:shadow-sm"
                 >
-                  <div className="flex min-w-0 items-center gap-3">
-                    <div
-                      className={cn(
-                        "shrink-0 rounded-2xl bg-gradient-to-br p-2.5 text-white shadow-sm",
-                        stageMeta[stage].accent,
-                      )}
-                    >
+                  <div className="flex items-center gap-3">
+                    <div className="rounded-xl bg-iprimary-blue/10 p-2 text-iprimary-blue">
                       <Icon className="size-5" />
                     </div>
-                    <div className="min-w-0">
-                      <p className="truncate text-base font-semibold text-slate-900 dark:text-slate-100">
-                        {stageLabels[stage]}
-                      </p>
-                      <p className="text-xs text-slate-500 dark:text-slate-400">
-                        {tabCounts[stage]}{" "}
-                        {copy?.tabs?.transactions_suffix ?? "transaksi"}
-                      </p>
+                    <div>
+                      <p className="font-semibold">{stageLabels[stage]}</p>
+                      <p className="text-xs text-slate-500">{tabCounts[stage]} transactions</p>
                     </div>
                   </div>
-
-                  {stage !== "paid" ? (
-                    <div className="shrink-0 rounded-full bg-slate-900 px-2.5 py-1 text-xs font-semibold text-white dark:bg-slate-800">
-                      {stage === "submission"
-                        ? `${reviewCounts.submission} ${
-                            copy?.tabs?.review_suffix ?? "review"
-                          }`
-                        : `${reviewCounts.payment_request} ${
-                            copy?.tabs?.review_suffix ?? "review"
-                          }`}
-                    </div>
-                  ) : (
-                    <div className="shrink-0 rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300">
-                      {copy?.tabs?.done ?? "Selesai"}
-                    </div>
-                  )}
                 </TabsTrigger>
               );
             })}
           </TabsList>
 
-          {(
-            ["submission", "payment_request", "paid"] satisfies FinancialStage[]
-          ).map((stage) => (
-            <TabsContent key={stage} value={stage} className="w-full">
-              <Card className="overflow-hidden border-0 bg-transparent p-0 shadow-none w-full">
-                <div className="w-full">
-                  <FinancialRecordTableSection
-                    dictionary={copy}
-                    title={stageLabels[stage]}
-                    description={stageDescriptions[stage]}
-                    searchQuery={searchQuery}
-                    categoryFilter={categoryFilter}
-                    categories={categories}
-                    rows={pagedFilteredRecords}
-                    page={tablePage}
-                    pageSize={tablePageSize}
-                    totalRows={filteredRecords.length}
-                    lastPage={filteredLastPage}
-                    onSearchChange={setSearchQuery}
-                    onCategoryFilterChange={(value) =>
-                      setCategoryFilter(value as FilterCategory)
-                    }
-                    onClearFilters={clearFilters}
-                    onPageChange={(nextPage) => {
-                      if (nextPage < 1 || nextPage > filteredLastPage) return;
-                      setTablePage(nextPage);
-                    }}
-                    onPageSizeChange={(nextPageSize) => {
-                      setTablePageSize(nextPageSize);
-                      setTablePage(1);
-                    }}
-                    onEdit={(recordId) => {
-                      const record = records.find((item) => item.id === recordId);
-                      if (record) openEditDialog(record);
-                    }}
-                    onAdvanceStage={handleAdvanceStage}
-                    formatCurrency={formatCurrency}
-                    formatDate={formatDate}
-                    priorityLabel={(priority) =>
-                      copy?.priorities?.[priority] ?? priorityMeta[priority].label
-                    }
-                    priorityClassName={(priority) =>
-                      priorityMeta[priority].className
-                    }
-                    statusLabel={(status) =>
-                      copy?.statuses?.[status] ?? statusMeta[status].label
-                    }
-                    statusClassName={(status) =>
-                      statusMeta[status].className
-                    }
-                  />
-                </div>
-              </Card>
+          {(["submission", "payment_request", "paid"] satisfies FinancialStage[]).map((stage) => (
+            <TabsContent key={stage} value={stage}>
+              <FinancialRecordTableSection
+                dictionary={copy}
+                title={stageLabels[stage]}
+                searchQuery={searchQuery}
+                categoryFilter={categoryFilter}
+                categories={categories}
+                rows={pagedFilteredRecords}
+                page={tablePage}
+                pageSize={tablePageSize}
+                totalRows={filteredRecords.length}
+                lastPage={filteredLastPage}
+                onSearchChange={setSearchQuery}
+                onCategoryFilterChange={setCategoryFilter}
+                onClearFilters={clearFilters}
+                onPageChange={(nextPage) => {
+                  if (nextPage < 1 || nextPage > filteredLastPage) return;
+                  setTablePage(nextPage);
+                }}
+                onPageSizeChange={(nextPageSize) => {
+                  setTablePageSize(nextPageSize);
+                  setTablePage(1);
+                }}
+                onEdit={(recordId) => {
+                  const record = records.find((item) => item.id === recordId);
+                  if (record) openEditDialog(record);
+                }}
+                onMoveToPaymentRequest={handleMoveToPaymentRequest}
+                onMarkPaid={openPaymentDialog}
+                formatCurrency={formatCurrency}
+                formatDate={formatDate}
+                priorityLabel={(priority) => priorityMeta[priority].label}
+                priorityClassName={(priority) => priorityMeta[priority].className}
+                dateStatusLabel={(status) => dateStatusMeta[status].label}
+                dateStatusClassName={(status) => dateStatusMeta[status].className}
+              />
             </TabsContent>
           ))}
         </Tabs>
       </div>
 
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="max-h-[92vh] overflow-y-auto sm:max-w-2xl">
+        <DialogContent className="max-h-[92vh] overflow-y-auto sm:max-w-3xl">
           <DialogHeader>
-            <DialogTitle>
-              {editingRecordId
-                ? (copy?.form?.edit_title ?? "Edit Expense")
-                : (copy?.form?.create_title ?? "Tambah Expense")}
-            </DialogTitle>
+            <DialogTitle>{editingRecordId ? "Edit Expense" : "Tambah Expense"}</DialogTitle>
             <DialogDescription>
-              {copy?.form?.description ??
-                "Lengkapi data expense agar mudah dicari, direview, dan dipindahkan antar tahapan proses keuangan."}
+              Attachment hanya gambar atau PDF dengan ukuran maksimal 3MB.
             </DialogDescription>
           </DialogHeader>
 
           <div className="grid gap-4 py-2 md:grid-cols-2">
-            <div className="space-y-2 md:col-span-2">
-              <Label htmlFor="expense-title">
-                {copy?.form?.title_label ?? "Judul Expense"}
-              </Label>
-              <Input
-                id="expense-title"
-                value={form.title}
-                onChange={(event) =>
-                  handleFormChange("title", event.target.value)
-                }
-                placeholder={
-                  copy?.form?.title_placeholder ??
-                  "Contoh: Pengadaan bahan baku tambahan"
-                }
-              />
-            </div>
-
-            {form.source !== "invoice" ? (
-              <div className="space-y-2">
-                <Label htmlFor="expense-vendor">
-                  {form.source === "reimbursement"
-                    ? "Claimant"
-                    : copy?.form?.vendor_label ?? "Vendor"}
-                </Label>
-                <Input
-                  id="expense-vendor"
-                  value={form.vendor}
-                  onChange={(event) =>
-                    handleFormChange("vendor", event.target.value)
-                  }
-                  placeholder={
-                    form.source === "reimbursement"
-                      ? "Nama pengaju klaim"
-                      : copy?.form?.vendor_placeholder ?? "Nama vendor"
-                  }
-                />
-              </div>
-            ) : (
-              <div className="space-y-2">
-                <Label htmlFor="invoice-number">Invoice Number</Label>
-                <Input
-                  id="invoice-number"
-                  value={form.invoiceNumber}
-                  onChange={(event) =>
-                    handleFormChange("invoiceNumber", event.target.value)
-                  }
-                  placeholder="INV-2026-0001"
-                />
-              </div>
-            )}
-
             <div className="space-y-2">
-              <Label htmlFor="expense-created-by">
-                {copy?.form?.requester_label ?? "Requester"}
-              </Label>
-              <Input
-                id="expense-created-by"
-                value={form.createdBy}
-                onChange={(event) =>
-                  handleFormChange("createdBy", event.target.value)
-                }
-                placeholder={
-                  copy?.form?.requester_placeholder ?? "Nama pengaju"
-                }
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label>Tipe Record</Label>
-              <Select
-                value={form.source}
-                onValueChange={(value) =>
-                  handleFormChange("source", value as FinancialSource)
-                }
-              >
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Pilih tipe record" />
+              <Label>Tipe Pengeluaran</Label>
+              <Select value={form.sourceType} onValueChange={(value) => handleSourceChange(value as FinancialSource)}>
+                <SelectTrigger>
+                  <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="flash_cash">Flash Cash</SelectItem>
                   <SelectItem value="invoice">Invoice</SelectItem>
-                  <SelectItem value="man_power">Man Power</SelectItem>
                   <SelectItem value="reimbursement">Reimbursement</SelectItem>
+                  <SelectItem value="man_power">Man Power</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>Kategori</Label>
+              <Select value={form.category} onValueChange={(value) => handleFormChange("category", value)}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {sourceCategories[form.sourceType].map((category) => (
+                    <SelectItem key={category} value={category}>{category}</SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
 
-            {form.source === "flash_cash" ? (
-              <div className="space-y-2">
-                <Label>Tipe Cash</Label>
-                <Select
-                  value={form.flashType}
-                  onValueChange={(value) =>
-                    handleFormChange("flashType", value as "in" | "out")
-                  }
-                >
-                  <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Pilih tipe cash" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="in">Cash In</SelectItem>
-                    <SelectItem value="out">Cash Out</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            ) : null}
+            <div className="space-y-2 md:col-span-2">
+              <Label>Judul Expense</Label>
+              <Input value={form.title} onChange={(event) => handleFormChange("title", event.target.value)} placeholder="Contoh: Pembelian material GRH" />
+            </div>
+            <div className="space-y-2">
+              <Label>{form.sourceType === "reimbursement" ? "Claimant" : "Vendor / Penerima"}</Label>
+              <Input value={form.vendor} onChange={(event) => handleFormChange("vendor", event.target.value)} placeholder="Nama vendor atau penerima" />
+            </div>
+            <div className="space-y-2">
+              <Label>Nominal</Label>
+              <Input type="number" min="0" value={form.amount} onChange={(event) => handleFormChange("amount", event.target.value)} placeholder="0" />
+            </div>
 
-            {form.source === "invoice" ? (
+            {!isRangeType ? (
               <div className="space-y-2">
-                <Label htmlFor="customer-id">Customer ID</Label>
-                <Input
-                  id="customer-id"
-                  type="number"
-                  min="1"
-                  value={form.customerId}
-                  onChange={(event) =>
-                    handleFormChange("customerId", event.target.value)
-                  }
-                  placeholder="1"
-                />
+                <Label>Tanggal</Label>
+                <Input type="date" value={form.expenseDate} onChange={(event) => handleFormChange("expenseDate", event.target.value)} />
               </div>
             ) : (
-              <div className="space-y-2">
-                <Label>{copy?.form?.category_label ?? "Kategori"}</Label>
-                <Select
-                  value={form.category}
-                  onValueChange={(value) => handleFormChange("category", value)}
-                >
-                  <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Pilih kategori" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {(form.source === "flash_cash"
-                      ? ["Operational", "Logistics", "Utilities", "Maintenance"]
-                      : form.source === "reimbursement"
-                        ? ["Transport", "Meal", "Accommodation", "Medical", "Office"]
-                        : ["Operational", "Maintenance", "Procurement", "Logistics", "Utilities"]
-                    ).map((category) => (
-                      <SelectItem key={category} value={category}>
-                        {category}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+              <>
+                <div className="space-y-2">
+                  <Label>Tanggal Mulai</Label>
+                  <Input type="date" value={form.periodStartDate} onChange={(event) => handleFormChange("periodStartDate", event.target.value)} />
+                </div>
+                <div className="space-y-2">
+                  <Label>Tanggal Selesai</Label>
+                  <Input type="date" value={form.periodEndDate} onChange={(event) => {
+                    handleFormChange("periodEndDate", event.target.value);
+                    handleFormChange("dueDate", event.target.value);
+                  }} />
+                </div>
+              </>
             )}
 
             <div className="space-y-2">
-              <Label htmlFor="expense-amount">
-                {copy?.form?.amount_label ?? "Nominal"}
-              </Label>
-              <Input
-                id="expense-amount"
-                type="number"
-                min="0"
-                value={form.amount}
-                onChange={(event) =>
-                  handleFormChange("amount", event.target.value)
-                }
-                placeholder={copy?.form?.amount_placeholder ?? "0"}
-              />
+              <Label>Due Date</Label>
+              <Input type="date" value={form.dueDate} onChange={(event) => handleFormChange("dueDate", event.target.value)} />
             </div>
-
             <div className="space-y-2">
-              <Label htmlFor="expense-date">
-                {copy?.form?.date_label ?? "Tanggal"}
-              </Label>
-              <Input
-                id="expense-date"
-                type="date"
-                value={form.date}
-                onChange={(event) =>
-                  handleFormChange("date", event.target.value)
-                }
-              />
-            </div>
-
-            {form.source === "invoice" ? (
-              <>
-                <div className="space-y-2">
-                  <Label htmlFor="sales-order-id">Sales Order ID</Label>
-                  <Input
-                    id="sales-order-id"
-                    type="number"
-                    min="1"
-                    value={form.salesOrderId}
-                    onChange={(event) =>
-                      handleFormChange("salesOrderId", event.target.value)
-                    }
-                    placeholder="1"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="due-date">Due Date</Label>
-                  <Input
-                    id="due-date"
-                    type="date"
-                    value={form.dueDate}
-                    onChange={(event) =>
-                      handleFormChange("dueDate", event.target.value)
-                    }
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>Payment Method</Label>
-                  <Select
-                    value={form.paymentMethod}
-                    onValueChange={(value) =>
-                      handleFormChange("paymentMethod", value as "cash" | "termin")
-                    }
-                  >
-                    <SelectTrigger className="w-full">
-                      <SelectValue placeholder="Pilih metode bayar" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="cash">Cash</SelectItem>
-                      <SelectItem value="termin">Termin</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </>
-            ) : null}
-
-            {form.source === "man_power" ? (
-              <div className="space-y-2">
-                <Label htmlFor="record-type">Record Type</Label>
-                <Input
-                  id="record-type"
-                  value={form.recordType}
-                  onChange={(event) =>
-                    handleFormChange("recordType", event.target.value)
-                  }
-                  placeholder="overtime / salary / service_fee"
+              <Label>Attachment</Label>
+              <label className="flex h-10 cursor-pointer items-center gap-2 rounded-md border px-3 text-sm text-slate-600">
+                <Upload className="size-4" />
+                <span className="truncate">{attachment?.name || "Upload gambar / PDF"}</span>
+                <input
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp,application/pdf"
+                  className="hidden"
+                  onChange={(event) => setAttachment(event.target.files?.[0] ?? null)}
                 />
-              </div>
-            ) : null}
-
-            <div className="space-y-2">
-              <Label>{copy?.form?.stage_label ?? "Tahap"}</Label>
-              <Select
-                value={form.stage}
-                onValueChange={(value) =>
-                  handleFormChange("stage", value as FinancialStage)
-                }
-              >
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Pilih tahap" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="submission">
-                    {stageLabels.submission}
-                  </SelectItem>
-                  <SelectItem value="payment_request">
-                    {stageLabels.payment_request}
-                  </SelectItem>
-                  <SelectItem value="paid">{stageLabels.paid}</SelectItem>
-                </SelectContent>
-              </Select>
+              </label>
             </div>
-
-            {form.source !== "reimbursement" ? (
-              <div className="space-y-2">
-                <Label>{copy?.form?.status_label ?? "Status"}</Label>
-                <Select
-                  value={form.status}
-                  onValueChange={(value) =>
-                    handleFormChange("status", value as FinancialStatus)
-                  }
-                >
-                  <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Pilih status" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="need_review">
-                      {copy?.statuses?.need_review ?? "Perlu Review"}
-                    </SelectItem>
-                    <SelectItem value="waiting_budget">
-                      {copy?.statuses?.waiting_budget ?? "Menunggu Budget"}
-                    </SelectItem>
-                    <SelectItem value="ready_to_pay">
-                      {copy?.statuses?.ready_to_pay ?? "Siap Dibayar"}
-                    </SelectItem>
-                    <SelectItem value="paid">
-                      {copy?.statuses?.paid ?? "Paid"}
-                    </SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            ) : null}
-
             <div className="space-y-2 md:col-span-2">
-              <Label>{copy?.form?.priority_label ?? "Prioritas"}</Label>
-              <Select
-                value={form.priority}
-                onValueChange={(value) =>
-                  handleFormChange("priority", value as FinancialPriority)
-                }
-              >
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Pilih prioritas" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="high">
-                    {copy?.priorities?.high ?? "High"}
-                  </SelectItem>
-                  <SelectItem value="medium">
-                    {copy?.priorities?.medium ?? "Medium"}
-                  </SelectItem>
-                  <SelectItem value="low">
-                    {copy?.priorities?.low ?? "Low"}
-                  </SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-2 md:col-span-2">
-              <Label htmlFor="expense-notes">
-                {copy?.form?.notes_label ?? "Catatan"}
-              </Label>
-              <Textarea
-                id="expense-notes"
-                value={form.notes}
-                onChange={(event) =>
-                  handleFormChange("notes", event.target.value)
-                }
-                placeholder={
-                  copy?.form?.notes_placeholder ??
-                  "Tambahkan catatan review, invoice, atau konteks pembayaran"
-                }
-                className="min-h-28"
-              />
+              <Label>Deskripsi</Label>
+              <Textarea value={form.description} onChange={(event) => handleFormChange("description", event.target.value)} className="min-h-28" placeholder="Tambahkan catatan atau konteks pengeluaran" />
             </div>
           </div>
 
           {hasValidationError ? (
             <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
-              {copy?.form?.validation ??
-                "Lengkapi judul, vendor, requester, tanggal, dan nominal lebih dari 0 sebelum menyimpan."}
+              Lengkapi tipe, judul, kategori, tanggal, dan nominal lebih dari 0.
             </div>
           ) : null}
 
           <DialogFooter>
-            <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
-              {copy?.button_cancel ?? "Batal"}
+            <Button variant="outline" onClick={() => setIsDialogOpen(false)}>Batal</Button>
+            <Button className="bg-slate-900 text-white hover:bg-slate-800" onClick={handleSaveRecord} disabled={hasValidationError}>
+              Simpan Expense
             </Button>
-            <Button
-              className="bg-slate-900 text-white hover:bg-slate-800"
-              onClick={handleSaveRecord}
-              disabled={hasValidationError}
-            >
-              {editingRecordId
-                ? (copy?.button_save_changes ?? "Simpan Perubahan")
-                : (copy?.button_save ?? "Simpan Expense")}
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={!!paymentRecordId} onOpenChange={(open) => !open && setPaymentRecordId(null)}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Catat Pembayaran</DialogTitle>
+            <DialogDescription>
+              Isi tanggal pembayaran dan upload bukti pembayaran gambar atau PDF maksimal 3MB.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label>Tanggal Pembayaran</Label>
+              <Input type="date" value={paymentDate} onChange={(event) => setPaymentDate(event.target.value)} />
+            </div>
+            <div className="space-y-2">
+              <Label>Bukti Pembayaran</Label>
+              <label className="flex h-10 cursor-pointer items-center gap-2 rounded-md border px-3 text-sm text-slate-600">
+                <Upload className="size-4" />
+                <span className="truncate">{paymentProof?.name || "Upload bukti pembayaran"}</span>
+                <input
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp,application/pdf"
+                  className="hidden"
+                  onChange={(event) => setPaymentProof(event.target.files?.[0] ?? null)}
+                />
+              </label>
+            </div>
+            <div className="space-y-2">
+              <Label>Catatan</Label>
+              <Textarea value={paymentNotes} onChange={(event) => setPaymentNotes(event.target.value)} />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setPaymentRecordId(null)}>Batal</Button>
+            <Button className="bg-slate-900 text-white hover:bg-slate-800" onClick={handleMarkPaid}>
+              Simpan Pembayaran
             </Button>
           </DialogFooter>
         </DialogContent>
