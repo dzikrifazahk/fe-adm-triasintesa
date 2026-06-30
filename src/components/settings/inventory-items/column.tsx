@@ -29,6 +29,14 @@ const formatDate = (value?: string) => {
   return Number.isNaN(date.getTime()) ? value : format(date, "dd/MM/yyyy");
 };
 
+const formatCurrency = (value?: number) => {
+  return new Intl.NumberFormat("id-ID", {
+    style: "currency",
+    currency: "IDR",
+    maximumFractionDigits: 0,
+  }).format(Number(value ?? 0));
+};
+
 export const columns = (props: ChildProps): ColumnDef<IInventoryItem>[] => [
   {
     id: "select",
@@ -85,6 +93,16 @@ export const columns = (props: ChildProps): ColumnDef<IInventoryItem>[] => [
     header: ({ column }) => (
       <Button variant="ghost" onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}>
         {props.dictionary.column.category}
+        <ArrowUpDown className="ml-2 h-4 w-4" />
+      </Button>
+    ),
+  },
+  {
+    id: "Harga Satuan",
+    accessorFn: (row) => formatCurrency(row.unitPrice),
+    header: ({ column }) => (
+      <Button variant="ghost" onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}>
+        Harga Satuan
         <ArrowUpDown className="ml-2 h-4 w-4" />
       </Button>
     ),

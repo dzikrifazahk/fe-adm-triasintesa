@@ -12,6 +12,7 @@ export interface ISalesOrderItem {
   itemCode: string;
   itemName: string;
   stock?: number;
+  unitPrice?: number;
 }
 
 export interface ISalesOrderCustomer {
@@ -67,7 +68,7 @@ export interface ISalesOrder {
 export interface ISalesOrderDetailPayload {
   itemId: number;
   quantity: number;
-  unitPrice: number;
+  unitPrice?: number;
 }
 
 export interface ICreateSalesOrderPayload {
@@ -126,4 +127,3 @@ export interface ISalesOrderQuery {
   status?: SalesOrderStatus;
   orderDate?: string;
 }
-
