@@ -111,9 +111,13 @@ export function FinancialRecordTableSection({
   dateStatusClassName,
 }: Props) {
   const actionLabel = (record: FinancialRecordRow) => {
-    if (record.stage === "submission") return "Kirim ke payment request";
-    if (record.stage === "payment_request") return "Pembayaran";
-    return "Paid";
+    if (record.stage === "submission") {
+      return dictionary?.actions?.submission ?? "Send to payment request";
+    }
+    if (record.stage === "payment_request") {
+      return dictionary?.actions?.payment_request ?? "Mark as paid";
+    }
+    return dictionary?.actions?.paid ?? "Paid";
   };
 
   const actionIcon = (record: FinancialRecordRow) =>
@@ -130,7 +134,7 @@ export function FinancialRecordTableSection({
         <div className="flex flex-col gap-1">
           <CardTitle className="text-xl text-slate-900 dark:text-slate-100">{title}</CardTitle>
           <p className="text-sm text-slate-500 dark:text-slate-400">
-            {totalRows} record dalam tab ini
+            {totalRows} {dictionary?.tabs?.transactions_suffix ?? "records"}
           </p>
         </div>
         <div className="grid gap-3 md:grid-cols-[1fr_240px_auto]">
@@ -139,25 +143,27 @@ export function FinancialRecordTableSection({
             <Input
               value={searchQuery}
               onChange={(event) => onSearchChange(event.target.value)}
-              placeholder={dictionary?.toolbar?.search_placeholder ?? "Cari expense, vendor, kategori..."}
+              placeholder={dictionary?.toolbar?.search_placeholder ?? "Search expense, vendor, category..."}
               className="h-11 rounded-xl border-slate-200 pl-9 dark:border-[#34363B] dark:bg-[#23252B]"
             />
           </div>
           <Select value={categoryFilter} onValueChange={onCategoryFilterChange}>
-            <SelectTrigger className="h-11 rounded-xl border-slate-200 dark:border-[#34363B] dark:bg-[#23252B]">
-              <SelectValue placeholder="Semua kategori" />
+            <SelectTrigger className="h-11 cursor-pointer rounded-xl border-slate-200 dark:border-[#34363B] dark:bg-[#23252B]">
+              <SelectValue placeholder={dictionary?.toolbar?.all_category ?? "All categories"} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">Semua kategori</SelectItem>
+              <SelectItem value="all" className="cursor-pointer">
+                {dictionary?.toolbar?.all_category ?? "All categories"}
+              </SelectItem>
               {categories.map((category) => (
-                <SelectItem key={category} value={category}>
+                <SelectItem key={category} value={category} className="cursor-pointer">
                   {category}
                 </SelectItem>
               ))}
             </SelectContent>
           </Select>
           <Button variant="outline" className="h-11 rounded-xl" onClick={onClearFilters}>
-            Reset
+            {dictionary?.button_reset ?? "Reset"}
           </Button>
         </div>
       </CardHeader>
@@ -167,12 +173,12 @@ export function FinancialRecordTableSection({
           <Table>
             <TableHeader className="bg-slate-50 dark:bg-[#23252B]">
               <TableRow>
-                <TableHead className="px-4">Expense</TableHead>
-                <TableHead>Kategori</TableHead>
-                <TableHead>Nominal</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Tanggal</TableHead>
-                <TableHead className="px-4 text-right">Actions</TableHead>
+                <TableHead className="px-4">{dictionary?.table?.expense ?? "Expense"}</TableHead>
+                <TableHead>{dictionary?.table?.category ?? "Category"}</TableHead>
+                <TableHead>{dictionary?.table?.amount ?? "Amount"}</TableHead>
+                <TableHead>{dictionary?.table?.status ?? "Status"}</TableHead>
+                <TableHead>{dictionary?.table?.date ?? "Date"}</TableHead>
+                <TableHead className="px-4 text-right">{dictionary?.table?.actions ?? "Actions"}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -187,7 +193,7 @@ export function FinancialRecordTableSection({
                           <span>•</span>
                           <span>{record.vendor}</span>
                           <span>•</span>
-                          <span>By {record.createdBy}</span>
+                          <span>{dictionary?.table?.created_by_prefix ?? "By"} {record.createdBy}</span>
                         </div>
                       </div>
                     </TableCell>
@@ -219,6 +225,8 @@ export function FinancialRecordTableSection({
                         actionIcon={actionIcon(record)}
                         onEdit={onEdit}
                         onPrimaryAction={runPrimaryAction}
+                        actionsLabel={dictionary?.table?.actions ?? "Actions"}
+                        editLabel={dictionary?.button_edit ?? "Edit"}
                       />
                     </TableCell>
                   </TableRow>
@@ -226,7 +234,7 @@ export function FinancialRecordTableSection({
               ) : (
                 <TableRow>
                   <TableCell colSpan={6} className="px-4 py-12 text-center text-sm text-slate-500">
-                    Tidak ada data yang cocok.
+                    {dictionary?.table?.empty_title ?? "No matching data found"}
                   </TableCell>
                 </TableRow>
               )}
@@ -249,17 +257,19 @@ export function FinancialRecordTableSection({
                     actionIcon={actionIcon(record)}
                     onEdit={onEdit}
                     onPrimaryAction={runPrimaryAction}
+                    actionsLabel={dictionary?.table?.actions ?? "Actions"}
+                    editLabel={dictionary?.button_edit ?? "Edit"}
                   />
                 </div>
                 <div className="mt-4 grid grid-cols-2 gap-3 text-sm">
-                  <Info label="Kategori" value={record.category} />
-                  <Info label="Nominal" value={formatCurrency(record.amount)} />
+                  <Info label={dictionary?.table?.category ?? "Category"} value={record.category} />
+                  <Info label={dictionary?.table?.amount ?? "Amount"} value={formatCurrency(record.amount)} />
                   <Info
-                    label="Tanggal"
+                    label={dictionary?.table?.date ?? "Date"}
                     value={record.stage === "paid" ? formatDate(record.paymentDate) : formatDate(record.dueDate || record.date)}
                   />
                   <div>
-                    <p className="text-xs text-slate-500">Status</p>
+                    <p className="text-xs text-slate-500">{dictionary?.table?.status ?? "Status"}</p>
                     <Badge className={cn("mt-1 rounded-full border", dateStatusClassName(record.dateStatus))}>
                       {dateStatusLabel(record.dateStatus)}
                     </Badge>
@@ -269,26 +279,34 @@ export function FinancialRecordTableSection({
             ))
           ) : (
             <div className="rounded-xl border border-dashed p-8 text-center text-sm text-slate-500">
-              Tidak ada data yang cocok.
+              {dictionary?.table?.empty_title ?? "No matching data found"}
             </div>
           )}
         </div>
 
         <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-          <p className="text-sm text-slate-500">Menampilkan {rows.length} dari total {totalRows} data</p>
+          <p className="text-sm text-slate-500">
+            {dictionary?.table?.showing_prefix ?? "Showing"} {rows.length} {dictionary?.table?.showing_middle ?? "of"} {totalRows} {dictionary?.table?.showing_suffix ?? "records"}
+          </p>
           <div className="flex flex-wrap items-center gap-2">
             <select
-              className="h-9 rounded-md border bg-background px-2 text-sm"
+              className="h-9 cursor-pointer rounded-md border bg-background px-2 text-sm"
               value={String(pageSize)}
               onChange={(event) => onPageSizeChange(Number(event.target.value))}
             >
               {[10, 20, 50, 100].map((size) => (
-                <option key={size} value={size}>{size} / halaman</option>
+                  <option key={size} value={size}>{size} / {dictionary?.table?.page_size_suffix ?? "page"}</option>
               ))}
             </select>
-            <Button variant="outline" onClick={() => onPageChange(page - 1)} disabled={page <= 1}>Prev</Button>
-            <span className="text-sm">Halaman {page} / {lastPage}</span>
-            <Button variant="outline" onClick={() => onPageChange(page + 1)} disabled={page >= lastPage}>Next</Button>
+            <Button variant="outline" onClick={() => onPageChange(page - 1)} disabled={page <= 1}>
+              {dictionary?.table?.prev ?? "Prev"}
+            </Button>
+            <span className="text-sm">
+              {dictionary?.table?.page_label ?? "Page"} {page} / {lastPage}
+            </span>
+            <Button variant="outline" onClick={() => onPageChange(page + 1)} disabled={page >= lastPage}>
+              {dictionary?.table?.next ?? "Next"}
+            </Button>
           </div>
         </div>
       </CardContent>
@@ -302,12 +320,16 @@ function RowActions({
   actionIcon: ActionIcon,
   onEdit,
   onPrimaryAction,
+  actionsLabel,
+  editLabel,
 }: {
   record: FinancialRecordRow;
   actionLabel: string;
   actionIcon: typeof ArrowRightLeft;
   onEdit: (recordId: string) => void;
   onPrimaryAction: (record: FinancialRecordRow) => void;
+  actionsLabel: string;
+  editLabel: string;
 }) {
   return (
     <DropdownMenu>
@@ -317,15 +339,15 @@ function RowActions({
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-56">
-        <DropdownMenuLabel>Actions</DropdownMenuLabel>
+        <DropdownMenuLabel>{actionsLabel}</DropdownMenuLabel>
         {record.stage !== "paid" ? (
-          <DropdownMenuItem onClick={() => onEdit(record.id)}>
+          <DropdownMenuItem className="cursor-pointer" onClick={() => onEdit(record.id)}>
             <FilePenLine className="size-4" />
-            Edit
+            {editLabel}
           </DropdownMenuItem>
         ) : null}
         {record.stage !== "paid" ? (
-          <DropdownMenuItem onClick={() => onPrimaryAction(record)}>
+          <DropdownMenuItem className="cursor-pointer" onClick={() => onPrimaryAction(record)}>
             <ActionIcon className="size-4" />
             {actionLabel}
           </DropdownMenuItem>

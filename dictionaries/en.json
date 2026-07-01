@@ -76,7 +76,8 @@
       "need_review": "Need review",
       "need_review_hint": "Today's finance team priority",
       "paid_total": "Already paid",
-      "paid_total_hint_suffix": "completed transactions"
+      "paid_total_hint_suffix": "completed transactions",
+      "items_suffix": "items"
     },
     "tabs": {
       "submission": "Submission",
@@ -123,13 +124,23 @@
       "actions": "Actions",
       "created_by_prefix": "By",
       "empty_title": "No matching data found",
-      "empty_description": "Try changing the search keyword or reset the filters to see other data in this tab."
+      "empty_description": "Try changing the search keyword or reset the filters to see other data in this tab.",
+      "showing_prefix": "Showing",
+      "showing_middle": "of",
+      "showing_suffix": "records",
+      "page_size_suffix": "page",
+      "page_label": "Page",
+      "prev": "Prev",
+      "next": "Next"
     },
     "statuses": {
       "need_review": "Need Review",
       "waiting_budget": "Waiting Budget",
       "ready_to_pay": "Ready to Pay",
-      "paid": "Paid"
+      "paid": "Paid",
+      "open": "Open",
+      "due_date": "Due Date",
+      "overdue": "Overdue"
     },
     "priorities": {
       "high": "High",
@@ -150,20 +161,45 @@
       "description": "Complete the expense data so it stays easy to search, review, and move across financial stages.",
       "title_label": "Expense Title",
       "title_placeholder": "Example: Additional raw material procurement",
+      "expense_type_label": "Expense Type",
       "vendor_label": "Vendor",
       "vendor_placeholder": "Vendor name",
+      "claimant_label": "Claimant",
       "requester_label": "Requester",
       "requester_placeholder": "Requester name",
       "category_label": "Category",
       "amount_label": "Amount",
       "amount_placeholder": "0",
       "date_label": "Date",
+      "period_start_label": "Start Date",
+      "period_end_label": "End Date",
+      "due_date_label": "Due Date",
+      "attachment_label": "Attachment",
+      "attachment_placeholder": "Upload image / PDF",
+      "attachment_hint": "Attachment only allows images or PDF up to 3MB.",
+      "attachment_required": "Attachment is required.",
+      "payment_proof_required": "Payment proof is required.",
       "stage_label": "Stage",
       "status_label": "Status",
       "priority_label": "Priority",
       "notes_label": "Notes",
       "notes_placeholder": "Add review notes, invoice notes, or payment context",
-      "validation": "Complete the title, vendor, requester, date, and an amount greater than 0 before saving."
+      "validation": "Complete expense type, title, category, date, and an amount greater than 0 before saving."
+    },
+    "payment": {
+      "title": "Record Payment",
+      "description": "Fill payment date and upload payment proof image or PDF up to 3MB.",
+      "date_label": "Payment Date",
+      "proof_label": "Payment Proof",
+      "proof_placeholder": "Upload payment proof",
+      "save_button": "Save Payment"
+    },
+    "toast": {
+      "save_success": "Financial record saved",
+      "save_error": "Failed to save data",
+      "move_error": "Failed to move record",
+      "paid_success": "Record marked as paid",
+      "paid_error": "Failed to process payment"
     }
   },
   "tanks_refill_page_dic": {

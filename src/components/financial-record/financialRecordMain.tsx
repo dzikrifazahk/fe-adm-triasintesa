@@ -53,6 +53,20 @@ type FinancialRecord = IFinancialRecordItem & {
   priority: FinancialPriority;
 };
 
+type PaginationMeta = {
+  totalItems?: number;
+  total?: number;
+  totalPages?: number;
+  last_page?: number;
+  current_page?: number;
+  page?: number;
+  per_page?: number;
+  limit?: number;
+};
+
+type StageCache = Record<FinancialStage, FinancialRecord[]>;
+type StageTotals = Record<FinancialStage, number>;
+
 type FormState = {
   sourceType: FinancialSource;
   title: string;
@@ -97,6 +111,8 @@ const sourceCategories: Record<FinancialSource, string[]> = {
   reimbursement: ["Transport", "Meal", "Accommodation", "Medical", "Office"],
   man_power: ["Salary", "Overtime", "Daily Worker", "Service Fee"],
 };
+
+const allCategories = Array.from(new Set(Object.values(sourceCategories).flat())).sort();
 
 const priorityMeta: Record<FinancialPriority, { label: string; className: string }> = {
   high: { label: "High", className: "bg-rose-50 text-rose-700" },
@@ -186,11 +202,21 @@ function getStageIcon(stage: FinancialStage) {
 export default function FinancialRecordMain({ dictionary }: Props) {
   const copy = dictionary;
   const [activeTab, setActiveTab] = useState<FinancialStage>("submission");
-  const [records, setRecords] = useState<FinancialRecord[]>([]);
+  const [recordsByStage, setRecordsByStage] = useState<StageCache>({
+    submission: [],
+    payment_request: [],
+    paid: [],
+  });
+  const [stageTotals, setStageTotals] = useState<StageTotals>({
+    submission: 0,
+    payment_request: 0,
+    paid: 0,
+  });
   const [searchQuery, setSearchQuery] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [tablePage, setTablePage] = useState(1);
   const [tablePageSize, setTablePageSize] = useState(10);
+  const [lastPage, setLastPage] = useState(1);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingRecordId, setEditingRecordId] = useState<string | null>(null);
   const [form, setForm] = useState<FormState>(defaultFormState);
@@ -203,13 +229,19 @@ export default function FinancialRecordMain({ dictionary }: Props) {
 
   const deferredSearchQuery = useDeferredValue(searchQuery);
 
-  async function loadRecords() {
+  async function loadRecords(stage: FinancialStage = activeTab) {
     const response = await financialRecordService.getFinancialRecords({
-      page: 1,
-      limit: 200,
+      stage,
+      page: tablePage,
+      limit: tablePageSize,
+      search: deferredSearchQuery.trim() || undefined,
+      category: categoryFilter === "all" ? undefined : categoryFilter,
     });
 
-    const rows = unwrapList<IFinancialRecordItem>(response).map((row) => ({
+    const payload = unwrapData<{ data?: IFinancialRecordItem[]; meta?: PaginationMeta } | IFinancialRecordItem[]>(response);
+    const sourceRows = Array.isArray(payload) ? payload : payload.data ?? [];
+    const meta = Array.isArray(payload) ? undefined : payload.meta;
+    const rows = sourceRows.map((row) => ({
       ...row,
       source: row.source,
       sourceId: row.sourceId ?? null,
@@ -219,13 +251,21 @@ export default function FinancialRecordMain({ dictionary }: Props) {
       dateStatus: row.dateStatus || (row.stage === "paid" ? "paid" : "open"),
     })) as FinancialRecord[];
 
-    setRecords(rows.sort((a, b) => (b.date || "").localeCompare(a.date || "")));
+    setRecordsByStage((current) => ({
+      ...current,
+      [stage]: rows,
+    }));
+    setStageTotals((current) => ({
+      ...current,
+      [stage]: Number(meta?.totalItems ?? meta?.total ?? sourceRows.length),
+    }));
+    setLastPage(Number(meta?.totalPages ?? meta?.last_page ?? 1));
   }
 
   async function handleRefetch() {
     setIsRefreshing(true);
     try {
-      await loadRecords();
+      await loadRecords(activeTab);
     } catch (error) {
       openSwal({ icon: "error", title: "Gagal memuat data", text: getErrorMessage(error) });
     } finally {
@@ -236,7 +276,7 @@ export default function FinancialRecordMain({ dictionary }: Props) {
   useEffect(() => {
     handleRefetch();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [activeTab, tablePage, tablePageSize, deferredSearchQuery, categoryFilter]);
 
   const stageLabels: Record<FinancialStage, string> = {
     submission: copy?.tabs?.submission ?? "Submission",
@@ -244,56 +284,38 @@ export default function FinancialRecordMain({ dictionary }: Props) {
     paid: copy?.tabs?.paid ?? "Paid",
   };
 
-  const tabCounts = {
-    submission: records.filter((record) => record.stage === "submission").length,
-    payment_request: records.filter((record) => record.stage === "payment_request").length,
-    paid: records.filter((record) => record.stage === "paid").length,
-  };
+  const activeRecords = recordsByStage[activeTab];
+  const visitedRecords = Object.values(recordsByStage).flat();
+  const tabCounts = stageTotals;
 
   const stats = [
     {
-      label: "Active expenses",
+      label: copy?.stats?.active_total ?? "Active expenses",
       value: formatCurrency(
-        records.filter((record) => record.stage !== "paid").reduce((total, record) => total + record.amount, 0),
+        visitedRecords.filter((record) => record.stage !== "paid").reduce((total, record) => total + record.amount, 0),
       ),
-      hint: "Submission dan payment request",
+      hint: copy?.stats?.active_total_hint ?? "Submission dan payment request",
       icon: CircleDollarSign,
     },
     {
-      label: "Due / Overdue",
-      value: `${records.filter((record) => record.stage !== "paid" && ["due_date", "overdue"].includes(record.dateStatus)).length} item`,
-      hint: "Perlu perhatian finance",
+      label: copy?.stats?.need_review ?? "Due / Overdue",
+      value: `${visitedRecords.filter((record) => record.stage !== "paid" && ["due_date", "overdue"].includes(record.dateStatus)).length} ${copy?.stats?.items_suffix ?? "item"}`,
+      hint: copy?.stats?.need_review_hint ?? "Perlu perhatian finance",
       icon: ReceiptText,
     },
     {
-      label: "Already paid",
-      value: formatCurrency(records.filter((record) => record.stage === "paid").reduce((total, record) => total + record.amount, 0)),
-      hint: `${tabCounts.paid} completed transactions`,
+      label: copy?.stats?.paid_total ?? "Already paid",
+      value: formatCurrency(visitedRecords.filter((record) => record.stage === "paid").reduce((total, record) => total + record.amount, 0)),
+      hint: `${tabCounts.paid} ${copy?.stats?.paid_total_hint_suffix ?? "completed transactions"}`,
       icon: WalletCards,
     },
   ];
 
-  const categories = useMemo(() => Array.from(new Set(records.map((record) => record.category))).sort(), [records]);
-  const normalizedSearch = deferredSearchQuery.trim().toLowerCase();
-
-  const filteredRecords = records.filter((record) => {
-    if (record.stage !== activeTab) return false;
-    const matchesSearch =
-      !normalizedSearch ||
-      [record.id, record.title, record.vendor, record.category, record.createdBy]
-        .join(" ")
-        .toLowerCase()
-        .includes(normalizedSearch);
-    const matchesCategory = categoryFilter === "all" || record.category === categoryFilter;
-    return matchesSearch && matchesCategory;
-  });
-
-  const filteredLastPage = Math.max(1, Math.ceil(filteredRecords.length / tablePageSize));
-  const pagedFilteredRecords = filteredRecords.slice((tablePage - 1) * tablePageSize, tablePage * tablePageSize);
+  const categories = useMemo(() => allCategories, []);
 
   useEffect(() => {
     setTablePage(1);
-  }, [activeTab, deferredSearchQuery, categoryFilter, tablePageSize]);
+  }, [deferredSearchQuery, categoryFilter]);
 
   function openCreateDialog() {
     setEditingRecordId(null);
@@ -355,9 +377,9 @@ export default function FinancialRecordMain({ dictionary }: Props) {
 
   async function handleSaveRecord() {
     const fileError = validateFile(attachment);
-    const editingRecord = editingRecordId ? records.find((record) => record.id === editingRecordId) : null;
+    const editingRecord = editingRecordId ? activeRecords.find((record) => record.id === editingRecordId) : null;
     if (!editingRecord && !attachment) {
-      openSwal({ icon: "warning", title: "Attachment wajib diupload." });
+      openSwal({ icon: "warning", title: copy?.form?.attachment_required ?? "Attachment is required." });
       return;
     }
     if (fileError) {
@@ -377,19 +399,19 @@ export default function FinancialRecordMain({ dictionary }: Props) {
       await handleRefetch();
       openSwal({
         icon: "success",
-        title: "Financial record berhasil disimpan",
+        title: copy?.toast?.save_success ?? "Financial record saved",
         toast: true,
         position: "top-end",
         timer: 1500,
         showConfirmButton: false,
       });
     } catch (error) {
-      openSwal({ icon: "error", title: "Gagal menyimpan data", text: getErrorMessage(error) });
+      openSwal({ icon: "error", title: copy?.toast?.save_error ?? "Failed to save data", text: getErrorMessage(error) });
     }
   }
 
   async function handleMoveToPaymentRequest(recordId: string) {
-    const record = records.find((item) => item.id === recordId);
+    const record = activeRecords.find((item) => item.id === recordId);
     if (!record) return;
     try {
       await financialRecordService.moveFinancialRecordToPaymentRequest(record.ledgerId, {
@@ -397,7 +419,7 @@ export default function FinancialRecordMain({ dictionary }: Props) {
       });
       await handleRefetch();
     } catch (error) {
-      openSwal({ icon: "error", title: "Gagal memindahkan record", text: getErrorMessage(error) });
+      openSwal({ icon: "error", title: copy?.toast?.move_error ?? "Failed to move record", text: getErrorMessage(error) });
     }
   }
 
@@ -409,11 +431,11 @@ export default function FinancialRecordMain({ dictionary }: Props) {
   }
 
   async function handleMarkPaid() {
-    const record = records.find((item) => item.id === paymentRecordId);
+    const record = activeRecords.find((item) => item.id === paymentRecordId);
     const fileError = validateFile(paymentProof);
     if (!record) return;
     if (!paymentProof) {
-      openSwal({ icon: "warning", title: "Bukti pembayaran wajib diupload." });
+      openSwal({ icon: "warning", title: copy?.form?.payment_proof_required ?? "Payment proof is required." });
       return;
     }
     if (fileError) {
@@ -431,14 +453,14 @@ export default function FinancialRecordMain({ dictionary }: Props) {
       await handleRefetch();
       openSwal({
         icon: "success",
-        title: "Record sudah ditandai paid",
+        title: copy?.toast?.paid_success ?? "Record marked as paid",
         toast: true,
         position: "top-end",
         timer: 1500,
         showConfirmButton: false,
       });
     } catch (error) {
-      openSwal({ icon: "error", title: "Gagal memproses pembayaran", text: getErrorMessage(error) });
+      openSwal({ icon: "error", title: copy?.toast?.paid_error ?? "Failed to process payment", text: getErrorMessage(error) });
     }
   }
 
@@ -464,17 +486,17 @@ export default function FinancialRecordMain({ dictionary }: Props) {
               {dictionary?.title ?? "Financial Record"}
             </h1>
             <p className="mt-1 max-w-2xl text-sm text-slate-500">
-              Kelola pengeluaran dari submission, payment request, sampai paid.
+              {copy?.description ?? "Kelola pengeluaran dari submission, payment request, sampai paid."}
             </p>
           </div>
           <div className="flex flex-col gap-2 sm:flex-row">
             <Button className="bg-iprimary-blue text-white hover:bg-iprimary-blue-tertiary" onClick={openCreateDialog}>
               <Plus className="size-4" />
-              Add Expense
+              {copy?.button_add_expense ?? "Add Expense"}
             </Button>
             <Button variant="outline" onClick={handleRefetch} disabled={isRefreshing}>
               <RefreshCcw className={cn("size-4", isRefreshing && "animate-spin")} />
-              Re-fetch Data
+              {copy?.button_refetch ?? "Re-fetch Data"}
             </Button>
           </div>
         </div>
@@ -501,7 +523,14 @@ export default function FinancialRecordMain({ dictionary }: Props) {
           })}
         </div>
 
-        <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as FinancialStage)} className="gap-4">
+        <Tabs
+          value={activeTab}
+          onValueChange={(value) => {
+            setTablePage(1);
+            setActiveTab(value as FinancialStage);
+          }}
+          className="gap-4"
+        >
           <TabsList className="grid h-auto w-full grid-cols-1 gap-2 rounded-2xl bg-slate-100 p-2 md:grid-cols-3">
             {(["submission", "payment_request", "paid"] satisfies FinancialStage[]).map((stage) => {
               const Icon = getStageIcon(stage);
@@ -509,7 +538,7 @@ export default function FinancialRecordMain({ dictionary }: Props) {
                 <TabsTrigger
                   key={stage}
                   value={stage}
-                  className="flex min-h-[72px] justify-start rounded-xl px-4 py-3 text-left data-[state=active]:bg-white data-[state=active]:shadow-sm"
+                  className="flex min-h-[72px] cursor-pointer justify-start rounded-xl px-4 py-3 text-left data-[state=active]:bg-white data-[state=active]:shadow-sm"
                 >
                   <div className="flex items-center gap-3">
                     <div className="rounded-xl bg-iprimary-blue/10 p-2 text-iprimary-blue">
@@ -517,7 +546,9 @@ export default function FinancialRecordMain({ dictionary }: Props) {
                     </div>
                     <div>
                       <p className="font-semibold">{stageLabels[stage]}</p>
-                      <p className="text-xs text-slate-500">{tabCounts[stage]} transactions</p>
+                      <p className="text-xs text-slate-500">
+                        {tabCounts[stage]} {copy?.tabs?.transactions_suffix ?? "transactions"}
+                      </p>
                     </div>
                   </div>
                 </TabsTrigger>
@@ -533,16 +564,16 @@ export default function FinancialRecordMain({ dictionary }: Props) {
                 searchQuery={searchQuery}
                 categoryFilter={categoryFilter}
                 categories={categories}
-                rows={pagedFilteredRecords}
+                rows={recordsByStage[stage]}
                 page={tablePage}
                 pageSize={tablePageSize}
-                totalRows={filteredRecords.length}
-                lastPage={filteredLastPage}
+                totalRows={tabCounts[stage]}
+                lastPage={lastPage}
                 onSearchChange={setSearchQuery}
                 onCategoryFilterChange={setCategoryFilter}
                 onClearFilters={clearFilters}
                 onPageChange={(nextPage) => {
-                  if (nextPage < 1 || nextPage > filteredLastPage) return;
+                  if (nextPage < 1 || nextPage > lastPage) return;
                   setTablePage(nextPage);
                 }}
                 onPageSizeChange={(nextPageSize) => {
@@ -550,7 +581,7 @@ export default function FinancialRecordMain({ dictionary }: Props) {
                   setTablePage(1);
                 }}
                 onEdit={(recordId) => {
-                  const record = records.find((item) => item.id === recordId);
+                  const record = activeRecords.find((item) => item.id === recordId);
                   if (record) openEditDialog(record);
                 }}
                 onMoveToPaymentRequest={handleMoveToPaymentRequest}
@@ -559,7 +590,7 @@ export default function FinancialRecordMain({ dictionary }: Props) {
                 formatDate={formatDate}
                 priorityLabel={(priority) => priorityMeta[priority].label}
                 priorityClassName={(priority) => priorityMeta[priority].className}
-                dateStatusLabel={(status) => dateStatusMeta[status].label}
+                dateStatusLabel={(status) => copy?.statuses?.[status] ?? dateStatusMeta[status].label}
                 dateStatusClassName={(status) => dateStatusMeta[status].className}
               />
             </TabsContent>
@@ -570,67 +601,71 @@ export default function FinancialRecordMain({ dictionary }: Props) {
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogContent className="max-h-[92vh] overflow-y-auto sm:max-w-3xl">
           <DialogHeader>
-            <DialogTitle>{editingRecordId ? "Edit Expense" : "Tambah Expense"}</DialogTitle>
+            <DialogTitle>
+              {editingRecordId
+                ? copy?.form?.edit_title ?? "Edit Expense"
+                : copy?.form?.create_title ?? "Add Expense"}
+            </DialogTitle>
             <DialogDescription>
-              Attachment hanya gambar atau PDF dengan ukuran maksimal 3MB.
+              {copy?.form?.attachment_hint ?? "Attachment only allows images or PDF up to 3MB."}
             </DialogDescription>
           </DialogHeader>
 
           <div className="grid gap-4 py-2 md:grid-cols-2">
             <div className="space-y-2">
-              <Label>Tipe Pengeluaran</Label>
+              <Label>{copy?.form?.expense_type_label ?? "Expense Type"}</Label>
               <Select value={form.sourceType} onValueChange={(value) => handleSourceChange(value as FinancialSource)}>
-                <SelectTrigger>
+                <SelectTrigger className="cursor-pointer">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="flash_cash">Flash Cash</SelectItem>
-                  <SelectItem value="invoice">Invoice</SelectItem>
-                  <SelectItem value="reimbursement">Reimbursement</SelectItem>
-                  <SelectItem value="man_power">Man Power</SelectItem>
+                  <SelectItem value="flash_cash" className="cursor-pointer">Flash Cash</SelectItem>
+                  <SelectItem value="invoice" className="cursor-pointer">Invoice</SelectItem>
+                  <SelectItem value="reimbursement" className="cursor-pointer">Reimbursement</SelectItem>
+                  <SelectItem value="man_power" className="cursor-pointer">Man Power</SelectItem>
                 </SelectContent>
               </Select>
             </div>
             <div className="space-y-2">
-              <Label>Kategori</Label>
+              <Label>{copy?.form?.category_label ?? "Category"}</Label>
               <Select value={form.category} onValueChange={(value) => handleFormChange("category", value)}>
-                <SelectTrigger>
+                <SelectTrigger className="cursor-pointer">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
                   {sourceCategories[form.sourceType].map((category) => (
-                    <SelectItem key={category} value={category}>{category}</SelectItem>
+                    <SelectItem key={category} value={category} className="cursor-pointer">{category}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </div>
 
             <div className="space-y-2 md:col-span-2">
-              <Label>Judul Expense</Label>
-              <Input value={form.title} onChange={(event) => handleFormChange("title", event.target.value)} placeholder="Contoh: Pembelian material GRH" />
+              <Label>{copy?.form?.title_label ?? "Expense Title"}</Label>
+              <Input value={form.title} onChange={(event) => handleFormChange("title", event.target.value)} placeholder={copy?.form?.title_placeholder ?? "Example: Material purchase"} />
             </div>
             <div className="space-y-2">
-              <Label>{form.sourceType === "reimbursement" ? "Claimant" : "Vendor / Penerima"}</Label>
-              <Input value={form.vendor} onChange={(event) => handleFormChange("vendor", event.target.value)} placeholder="Nama vendor atau penerima" />
+              <Label>{form.sourceType === "reimbursement" ? copy?.form?.claimant_label ?? "Claimant" : copy?.form?.vendor_label ?? "Vendor / Recipient"}</Label>
+              <Input value={form.vendor} onChange={(event) => handleFormChange("vendor", event.target.value)} placeholder={copy?.form?.vendor_placeholder ?? "Vendor or recipient name"} />
             </div>
             <div className="space-y-2">
-              <Label>Nominal</Label>
-              <Input type="number" min="0" value={form.amount} onChange={(event) => handleFormChange("amount", event.target.value)} placeholder="0" />
+              <Label>{copy?.form?.amount_label ?? "Amount"}</Label>
+              <Input type="number" min="0" value={form.amount} onChange={(event) => handleFormChange("amount", event.target.value)} placeholder={copy?.form?.amount_placeholder ?? "0"} />
             </div>
 
             {!isRangeType ? (
               <div className="space-y-2">
-                <Label>Tanggal</Label>
+                <Label>{copy?.form?.date_label ?? "Date"}</Label>
                 <Input type="date" value={form.expenseDate} onChange={(event) => handleFormChange("expenseDate", event.target.value)} />
               </div>
             ) : (
               <>
                 <div className="space-y-2">
-                  <Label>Tanggal Mulai</Label>
+                  <Label>{copy?.form?.period_start_label ?? "Start Date"}</Label>
                   <Input type="date" value={form.periodStartDate} onChange={(event) => handleFormChange("periodStartDate", event.target.value)} />
                 </div>
                 <div className="space-y-2">
-                  <Label>Tanggal Selesai</Label>
+                  <Label>{copy?.form?.period_end_label ?? "End Date"}</Label>
                   <Input type="date" value={form.periodEndDate} onChange={(event) => {
                     handleFormChange("periodEndDate", event.target.value);
                     handleFormChange("dueDate", event.target.value);
@@ -640,14 +675,16 @@ export default function FinancialRecordMain({ dictionary }: Props) {
             )}
 
             <div className="space-y-2">
-              <Label>Due Date</Label>
+              <Label>{copy?.form?.due_date_label ?? "Due Date"}</Label>
               <Input type="date" value={form.dueDate} onChange={(event) => handleFormChange("dueDate", event.target.value)} />
             </div>
             <div className="space-y-2">
-              <Label>Attachment</Label>
+              <Label>{copy?.form?.attachment_label ?? "Attachment"}</Label>
               <label className="flex h-10 cursor-pointer items-center gap-2 rounded-md border px-3 text-sm text-slate-600">
                 <Upload className="size-4" />
-                <span className="truncate">{attachment?.name || "Upload gambar / PDF"}</span>
+                <span className="truncate">
+                  {attachment?.name || copy?.form?.attachment_placeholder || "Upload image / PDF"}
+                </span>
                 <input
                   type="file"
                   accept="image/jpeg,image/png,image/webp,application/pdf"
@@ -657,21 +694,21 @@ export default function FinancialRecordMain({ dictionary }: Props) {
               </label>
             </div>
             <div className="space-y-2 md:col-span-2">
-              <Label>Deskripsi</Label>
-              <Textarea value={form.description} onChange={(event) => handleFormChange("description", event.target.value)} className="min-h-28" placeholder="Tambahkan catatan atau konteks pengeluaran" />
+              <Label>{copy?.form?.notes_label ?? "Description"}</Label>
+              <Textarea value={form.description} onChange={(event) => handleFormChange("description", event.target.value)} className="min-h-28" placeholder={copy?.form?.notes_placeholder ?? "Add notes or expense context"} />
             </div>
           </div>
 
           {hasValidationError ? (
             <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
-              Lengkapi tipe, judul, kategori, tanggal, dan nominal lebih dari 0.
+              {copy?.form?.validation ?? "Complete expense type, title, category, date, and amount greater than 0."}
             </div>
           ) : null}
 
           <DialogFooter>
-            <Button variant="outline" onClick={() => setIsDialogOpen(false)}>Batal</Button>
+            <Button variant="outline" onClick={() => setIsDialogOpen(false)}>{copy?.button_cancel ?? "Cancel"}</Button>
             <Button className="bg-slate-900 text-white hover:bg-slate-800" onClick={handleSaveRecord} disabled={hasValidationError}>
-              Simpan Expense
+              {editingRecordId ? copy?.button_save_changes ?? "Save Changes" : copy?.button_save ?? "Save Expense"}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -680,21 +717,23 @@ export default function FinancialRecordMain({ dictionary }: Props) {
       <Dialog open={!!paymentRecordId} onOpenChange={(open) => !open && setPaymentRecordId(null)}>
         <DialogContent className="sm:max-w-lg">
           <DialogHeader>
-            <DialogTitle>Catat Pembayaran</DialogTitle>
+            <DialogTitle>{copy?.payment?.title ?? "Record Payment"}</DialogTitle>
             <DialogDescription>
-              Isi tanggal pembayaran dan upload bukti pembayaran gambar atau PDF maksimal 3MB.
+              {copy?.payment?.description ?? "Fill payment date and upload payment proof image or PDF up to 3MB."}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label>Tanggal Pembayaran</Label>
+              <Label>{copy?.payment?.date_label ?? "Payment Date"}</Label>
               <Input type="date" value={paymentDate} onChange={(event) => setPaymentDate(event.target.value)} />
             </div>
             <div className="space-y-2">
-              <Label>Bukti Pembayaran</Label>
+              <Label>{copy?.payment?.proof_label ?? "Payment Proof"}</Label>
               <label className="flex h-10 cursor-pointer items-center gap-2 rounded-md border px-3 text-sm text-slate-600">
                 <Upload className="size-4" />
-                <span className="truncate">{paymentProof?.name || "Upload bukti pembayaran"}</span>
+                <span className="truncate">
+                  {paymentProof?.name || copy?.payment?.proof_placeholder || "Upload payment proof"}
+                </span>
                 <input
                   type="file"
                   accept="image/jpeg,image/png,image/webp,application/pdf"
@@ -704,14 +743,14 @@ export default function FinancialRecordMain({ dictionary }: Props) {
               </label>
             </div>
             <div className="space-y-2">
-              <Label>Catatan</Label>
+              <Label>{copy?.form?.notes_label ?? "Notes"}</Label>
               <Textarea value={paymentNotes} onChange={(event) => setPaymentNotes(event.target.value)} />
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setPaymentRecordId(null)}>Batal</Button>
+            <Button variant="outline" onClick={() => setPaymentRecordId(null)}>{copy?.button_cancel ?? "Cancel"}</Button>
             <Button className="bg-slate-900 text-white hover:bg-slate-800" onClick={handleMarkPaid}>
-              Simpan Pembayaran
+              {copy?.payment?.save_button ?? "Save Payment"}
             </Button>
           </DialogFooter>
         </DialogContent>
