@@ -37,6 +37,7 @@ export function ModalUpsertInventoryItems({
   const [itemName, setItemName] = useState("");
   const [uom, setUom] = useState("");
   const [category, setCategory] = useState("");
+  const [unitPrice, setUnitPrice] = useState("0");
   const [isDetailEditing, setIsDetailEditing] = useState(false);
 
   useEffect(() => {
@@ -46,6 +47,7 @@ export function ModalUpsertInventoryItems({
     setItemName(detailData?.itemName ?? "");
     setUom(detailData?.uom ?? "");
     setCategory(detailData?.category ?? "");
+    setUnitPrice(String(detailData?.unitPrice ?? 0));
     setIsDetailEditing(false);
   }, [detailData, isOpen]);
 
@@ -57,6 +59,7 @@ export function ModalUpsertInventoryItems({
     setItemName("");
     setUom("");
     setCategory("");
+    setUnitPrice("0");
     setIsDetailEditing(false);
     onClose();
   };
@@ -71,6 +74,7 @@ export function ModalUpsertInventoryItems({
       itemName,
       uom: uom || undefined,
       category: category || undefined,
+      unitPrice: Number(unitPrice || 0),
     };
 
     openSwal({
@@ -126,6 +130,14 @@ export function ModalUpsertInventoryItems({
     return Number.isNaN(date.getTime()) ? value : date.toLocaleString();
   };
 
+  const formatCurrency = (value?: number | null) => {
+    return new Intl.NumberFormat("id-ID", {
+      style: "currency",
+      currency: "IDR",
+      maximumFractionDigits: 0,
+    }).format(Number(value ?? 0));
+  };
+
   return (
     <Modal
       isOpen={isOpen}
@@ -163,6 +175,7 @@ export function ModalUpsertInventoryItems({
                 <InfoCard label="Item Name" value={detailData.itemName} />
                 <InfoCard label="UOM" value={detailData.uom || "-"} />
                 <InfoCard label="Category" value={detailData.category || "-"} />
+                <InfoCard label="Harga Satuan" value={formatCurrency(detailData.unitPrice)} />
                 <InfoCard label="Stock" value={detailData.stock ?? 0} />
                 <InfoCard label="Status" value={detailData.isActive ? "active" : "inactive"} />
                 <InfoCard label="Created At" value={formatDate(detailData.createdAt)} />
@@ -207,6 +220,18 @@ export function ModalUpsertInventoryItems({
                 onChange={(e) => setCategory(e.target.value)}
                 placeholder="CONTAINER"
                 disabled={isReadOnly}
+              />
+            </Field>
+
+            <Field label="Harga Satuan" required>
+              <Input
+                type="number"
+                min={0}
+                value={unitPrice}
+                onChange={(e) => setUnitPrice(e.target.value)}
+                placeholder="35000"
+                disabled={isReadOnly}
+                required
               />
             </Field>
 

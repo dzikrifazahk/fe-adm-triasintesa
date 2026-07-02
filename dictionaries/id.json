@@ -76,7 +76,8 @@
       "need_review": "Perlu review",
       "need_review_hint": "Prioritas untuk tim finance hari ini",
       "paid_total": "Sudah dibayar",
-      "paid_total_hint_suffix": "transaksi terselesaikan"
+      "paid_total_hint_suffix": "transaksi terselesaikan",
+      "items_suffix": "item"
     },
     "tabs": {
       "submission": "Pengajuan",
@@ -123,13 +124,23 @@
       "actions": "Aksi",
       "created_by_prefix": "By",
       "empty_title": "Tidak ada data yang cocok",
-      "empty_description": "Coba ubah kata kunci pencarian atau reset filter untuk melihat data lain di tab ini."
+      "empty_description": "Coba ubah kata kunci pencarian atau reset filter untuk melihat data lain di tab ini.",
+      "showing_prefix": "Menampilkan",
+      "showing_middle": "dari total",
+      "showing_suffix": "data",
+      "page_size_suffix": "halaman",
+      "page_label": "Halaman",
+      "prev": "Prev",
+      "next": "Next"
     },
     "statuses": {
       "need_review": "Perlu Review",
       "waiting_budget": "Menunggu Budget",
       "ready_to_pay": "Siap Dibayar",
-      "paid": "Paid"
+      "paid": "Paid",
+      "open": "Open",
+      "due_date": "Due Date",
+      "overdue": "Overdue"
     },
     "priorities": {
       "high": "High",
@@ -150,20 +161,45 @@
       "description": "Lengkapi data expense agar mudah dicari, direview, dan dipindahkan antar tahapan proses keuangan.",
       "title_label": "Judul Expense",
       "title_placeholder": "Contoh: Pengadaan bahan baku tambahan",
+      "expense_type_label": "Tipe Pengeluaran",
       "vendor_label": "Vendor",
       "vendor_placeholder": "Nama vendor",
+      "claimant_label": "Claimant",
       "requester_label": "Requester",
       "requester_placeholder": "Nama pengaju",
       "category_label": "Kategori",
       "amount_label": "Nominal",
       "amount_placeholder": "0",
       "date_label": "Tanggal",
+      "period_start_label": "Tanggal Mulai",
+      "period_end_label": "Tanggal Selesai",
+      "due_date_label": "Due Date",
+      "attachment_label": "Attachment",
+      "attachment_placeholder": "Upload gambar / PDF",
+      "attachment_hint": "Attachment hanya gambar atau PDF dengan ukuran maksimal 3MB.",
+      "attachment_required": "Attachment wajib diupload.",
+      "payment_proof_required": "Bukti pembayaran wajib diupload.",
       "stage_label": "Tahap",
       "status_label": "Status",
       "priority_label": "Prioritas",
       "notes_label": "Catatan",
       "notes_placeholder": "Tambahkan catatan review, invoice, atau konteks pembayaran",
-      "validation": "Lengkapi judul, vendor, requester, tanggal, dan nominal lebih dari 0 sebelum menyimpan."
+      "validation": "Lengkapi tipe, judul, kategori, tanggal, dan nominal lebih dari 0 sebelum menyimpan."
+    },
+    "payment": {
+      "title": "Catat Pembayaran",
+      "description": "Isi tanggal pembayaran dan upload bukti pembayaran gambar atau PDF maksimal 3MB.",
+      "date_label": "Tanggal Pembayaran",
+      "proof_label": "Bukti Pembayaran",
+      "proof_placeholder": "Upload bukti pembayaran",
+      "save_button": "Simpan Pembayaran"
+    },
+    "toast": {
+      "save_success": "Financial record berhasil disimpan",
+      "save_error": "Gagal menyimpan data",
+      "move_error": "Gagal memindahkan record",
+      "paid_success": "Record sudah ditandai paid",
+      "paid_error": "Gagal memproses pembayaran"
     }
   },
   "tanks_refill_page_dic": {

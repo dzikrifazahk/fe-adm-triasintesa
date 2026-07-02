@@ -48,14 +48,18 @@ import {
 } from "@/components/ui/table";
 import {
   Ban,
+  Calculator,
   Check,
+  CircleDollarSign,
   Edit3,
   Eye,
   MoreHorizontal,
   PackageCheck,
+  Plus,
   Send,
   ShieldCheck,
   Trash2,
+  X,
 } from "lucide-react";
 
 type ListPayload<T> = {
@@ -147,6 +151,13 @@ function formatCurrency(value?: number): string {
   }).format(amount);
 }
 
+function detailSubtotal(detail: DetailDraft): number {
+  const quantity = toNumber(detail.quantity);
+  const unitPrice = toNumber(detail.unitPrice);
+  if (quantity <= 0 || unitPrice < 0) return 0;
+  return quantity * unitPrice;
+}
+
 function statusClassName(status: SalesOrderStatus): string {
   if (status === "completed") return "bg-emerald-600 text-white";
   if (status === "cancelled") return "bg-red-600 text-white";
@@ -157,6 +168,25 @@ function statusClassName(status: SalesOrderStatus): string {
 
 function statusLabel(status: SalesOrderStatus): string {
   return status.replaceAll("_", " ");
+}
+
+function SummaryValue({
+  label,
+  value,
+  strong,
+}: {
+  label: string;
+  value: string;
+  strong?: boolean;
+}) {
+  return (
+    <div className="rounded-md border bg-white px-3 py-2">
+      <p className="text-xs font-medium text-slate-500">{label}</p>
+      <p className={`mt-1 text-sm ${strong ? "font-bold text-slate-950" : "font-semibold text-slate-800"}`}>
+        {value}
+      </p>
+    </div>
+  );
 }
 
 export default function SalesOrderMain({
@@ -195,6 +225,20 @@ export default function SalesOrderMain({
   const itemById = useMemo(() => {
     return new Map(items.map((item) => [String(item.id), item]));
   }, [items]);
+  const formItemOptions = useMemo(() => {
+    const optionMap = new Map<string, ISalesOrderItem>();
+    items.forEach((item) => optionMap.set(String(item.id), item));
+    selectedOrder?.details?.forEach((detail) => {
+      if (detail.item) {
+        optionMap.set(String(detail.itemId), {
+          ...detail.item,
+          stock: detail.item.stock ?? 0,
+          unitPrice: detail.unitPrice,
+        });
+      }
+    });
+    return Array.from(optionMap.values());
+  }, [items, selectedOrder]);
   const allocationsByDetail = useMemo(() => {
     const grouped = new Map<number, NonNullable<ISalesOrder["allocations"]>>();
     if (!selectedOrder?.allocations?.length) return grouped;
@@ -210,10 +254,7 @@ export default function SalesOrderMain({
   }, [selectedOrder]);
   const calculationPreview = useMemo(() => {
     const subtotal = form.details.reduce((sum, detail) => {
-      const quantity = toNumber(detail.quantity);
-      const unitPrice = toNumber(detail.unitPrice);
-      if (quantity <= 0 || unitPrice < 0) return sum;
-      return sum + quantity * unitPrice;
+      return sum + detailSubtotal(detail);
     }, 0);
 
     const discountValue = toNumber(form.discountValue);
@@ -407,6 +448,24 @@ export default function SalesOrderMain({
     }));
   };
 
+  const setDetailItem = (index: number, itemId: string) => {
+    const selectedItem =
+      itemById.get(itemId) ??
+      formItemOptions.find((item) => String(item.id) === itemId);
+    setForm((prev) => ({
+      ...prev,
+      details: prev.details.map((item, idx) =>
+        idx === index
+          ? {
+              ...item,
+              itemId,
+              unitPrice: String(selectedItem?.unitPrice ?? 0),
+            }
+          : item,
+      ),
+    }));
+  };
+
   const addDetailRow = () => {
     setForm((prev) => ({
       ...prev,
@@ -442,7 +501,6 @@ export default function SalesOrderMain({
     details: form.details.map((item) => ({
       itemId: toNumber(item.itemId),
       quantity: toNumber(item.quantity),
-      unitPrice: toNumber(item.unitPrice),
     })),
   });
 
@@ -453,7 +511,6 @@ export default function SalesOrderMain({
     details: form.details.map((item) => ({
       itemId: toNumber(item.itemId),
       quantity: toNumber(item.quantity),
-      unitPrice: toNumber(item.unitPrice),
     })),
     paymentMethod: form.paymentMethod,
     paymentTermDays: form.paymentTermDays ? toNumber(form.paymentTermDays) : undefined,
@@ -485,15 +542,21 @@ export default function SalesOrderMain({
 
     const hasInvalid = payload.details.some(
       (item) =>
-        !item.itemId || item.quantity <= 0 || item.unitPrice <= 0,
+        !item.itemId || item.quantity <= 0,
     );
     if (hasInvalid) {
-      return "Item, quantity, dan price pada detail wajib valid.";
+      return "Item dan quantity pada detail wajib valid.";
+    }
+
+    const hasUnsetPrice = form.details.some((detail) => toNumber(detail.unitPrice) <= 0);
+    if (hasUnsetPrice) {
+      return "Harga item belum diset di Inventory Item Master.";
     }
 
     const hasOverStock = payload.details.some((detail, index) => {
       const draft = form.details[index];
       const selectedItem = itemById.get(String(draft?.itemId || detail.itemId));
+      if (!selectedItem) return false;
       const stock = selectedItem?.stock ?? 0;
       return detail.quantity > stock;
     });
@@ -524,15 +587,21 @@ export default function SalesOrderMain({
     }
 
     const hasInvalid = payload.details.some(
-      (item) => !item.itemId || item.quantity <= 0 || item.unitPrice <= 0,
+      (item) => !item.itemId || item.quantity <= 0,
     );
     if (hasInvalid) {
-      return "Item, quantity, dan price pada detail wajib valid.";
+      return "Item dan quantity pada detail wajib valid.";
+    }
+
+    const hasUnsetPrice = form.details.some((detail) => toNumber(detail.unitPrice) <= 0);
+    if (hasUnsetPrice) {
+      return "Harga item belum diset di Inventory Item Master.";
     }
 
     const hasOverStock = payload.details.some((detail, index) => {
       const draft = form.details[index];
       const selectedItem = itemById.get(String(draft?.itemId || detail.itemId));
+      if (!selectedItem) return false;
       const stock = selectedItem?.stock ?? 0;
       return detail.quantity > stock;
     });
@@ -968,237 +1037,250 @@ export default function SalesOrderMain({
       </Card>
 
       <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
-        <DialogContent className="max-h-[90vh] overflow-auto sm:max-w-3xl">
+        <DialogContent className="max-h-[90vh] overflow-auto sm:max-w-5xl">
           <DialogHeader>
             <DialogTitle>{isEditMode ? "Ubah Sales Order" : "Tambah Sales Order"}</DialogTitle>
             <DialogDescription>Lengkapi data order sesuai kebutuhan operasional.</DialogDescription>
           </DialogHeader>
 
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-            <div className="space-y-2">
-              <Label htmlFor="customerId">Customer</Label>
-              <select
-                id="customerId"
-                className="h-9 w-full rounded-md border bg-background px-3 text-sm"
-                value={form.customerId}
-                onChange={(event) => setField("customerId", event.target.value)}
-              >
-                <option value="">Pilih customer</option>
-                {customers.map((customer) => (
-                  <option key={customer.id} value={customer.id}>
-                    {customer.companyName}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="soNumber">SO Number</Label>
-              <div className="flex gap-2">
-                <Input
-                  id="soNumber"
-                  value={form.soNumber}
-                  onChange={(event) => setField("soNumber", event.target.value)}
-                />
-                {!isEditMode ? (
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={handleGenerateSoNumber}
-                    disabled={isGeneratingSoNumber}
+          <div className="space-y-5">
+            <section className="rounded-lg border bg-white p-4">
+              <div className="mb-4 flex items-center gap-2">
+                <PackageCheck className="h-4 w-4 text-iprimary-blue" />
+                <h3 className="text-sm font-semibold text-slate-900">Informasi Order</h3>
+              </div>
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                <div className="space-y-2">
+                  <Label htmlFor="customerId">Customer</Label>
+                  <select
+                    id="customerId"
+                    className="h-10 w-full rounded-md border bg-background px-3 text-sm"
+                    value={form.customerId}
+                    onChange={(event) => setField("customerId", event.target.value)}
                   >
-                    {isGeneratingSoNumber ? "Generating..." : "Generate"}
-                  </Button>
-                ) : null}
-              </div>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="orderDate">Order Date</Label>
-              <Input
-                id="orderDate"
-                type="date"
-                value={form.orderDate}
-                onChange={(event) => setField("orderDate", event.target.value)}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="paymentMethod">Payment Method</Label>
-              <select
-                id="paymentMethod"
-                className="h-9 w-full rounded-md border bg-background px-3 text-sm"
-                value={form.paymentMethod}
-                onChange={(event) => setField("paymentMethod", event.target.value)}
-              >
-                <option value="cash">cash</option>
-                <option value="termin">termin</option>
-              </select>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="paymentTermDays">Payment Term (hari)</Label>
-              <Input
-                id="paymentTermDays"
-                type="number"
-                value={form.paymentTermDays}
-                onChange={(event) => setField("paymentTermDays", event.target.value)}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="discountType">Tipe Diskon</Label>
-              <select
-                id="discountType"
-                className="h-9 w-full rounded-md border bg-background px-3 text-sm"
-                value={form.discountType}
-                onChange={(event) => setField("discountType", event.target.value)}
-              >
-                <option value="nominal">Nominal (Rp)</option>
-                <option value="percentage">Persen (%)</option>
-              </select>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="discountValue">
-                Nilai Diskon {form.discountType === "percentage" ? "(%)" : "(Rp)"}
-              </Label>
-              <Input
-                id="discountValue"
-                type="number"
-                value={form.discountValue}
-                onChange={(event) => setField("discountValue", event.target.value)}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="shippingCost">Biaya Kirim</Label>
-              <Input
-                id="shippingCost"
-                type="number"
-                value={form.shippingCost}
-                onChange={(event) => setField("shippingCost", event.target.value)}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="ppnPercentage">PPN (%)</Label>
-              <Input
-                id="ppnPercentage"
-                type="number"
-                value={form.ppnPercentage}
-                onChange={(event) => setField("ppnPercentage", event.target.value)}
-              />
-            </div>
-            <div className="space-y-2 md:col-span-2">
-              <Label htmlFor="shippingAddress">Alamat Pengiriman</Label>
-              <Textarea
-                id="shippingAddress"
-                value={form.shippingAddress}
-                onChange={(event) => setField("shippingAddress", event.target.value)}
-              />
-            </div>
-            <div className="space-y-2 md:col-span-2">
-              <Label htmlFor="notes">Catatan</Label>
-              <Textarea
-                id="notes"
-                value={form.notes}
-                onChange={(event) => setField("notes", event.target.value)}
-              />
-            </div>
-          </div>
-
-          {canManageDetails && (
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <h3 className="font-semibold">Detail Order</h3>
-                <Button variant="outline" onClick={addDetailRow}>
-                  Tambah Item
-                </Button>
-              </div>
-
-              {form.details.map((detail, index) => (
-                <div key={`detail-${index}`} className="space-y-3 rounded-md border p-3">
-                  <p className="text-sm font-medium text-muted-foreground">Item #{index + 1}</p>
-                  <div className="grid grid-cols-1 gap-3 md:grid-cols-4">
-                    <div className="space-y-2">
-                      <Label>Item</Label>
-                      <select
-                        className="h-9 w-full rounded-md border bg-background px-3 text-sm"
-                        value={detail.itemId}
-                        onChange={(event) => setDetailField(index, "itemId", event.target.value)}
-                      >
-                        <option value="">Pilih Item</option>
-                        {items.map((item) => (
-                          <option key={item.id} value={item.id}>
-                            {item.itemName} (stok: {item.stock ?? 0})
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                    <div className="space-y-2">
-                      <Label>Quantity</Label>
-                      <Input
-                        type="number"
-                        value={detail.quantity}
-                        onChange={(event) => setDetailField(index, "quantity", event.target.value)}
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label>Harga/Jirigen</Label>
-                      <Input
-                        type="number"
-                        value={detail.unitPrice}
-                        onChange={(event) => setDetailField(index, "unitPrice", event.target.value)}
-                      />
-                    </div>
-                    <div className="flex items-end">
+                    <option value="">Pilih customer</option>
+                    {customers.map((customer) => (
+                      <option key={customer.id} value={customer.id}>
+                        {customer.companyName}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="soNumber">SO Number</Label>
+                  <div className="flex gap-2">
+                    <Input
+                      id="soNumber"
+                      value={form.soNumber}
+                      onChange={(event) => setField("soNumber", event.target.value)}
+                    />
+                    {!isEditMode ? (
                       <Button
-                        variant="destructive"
                         type="button"
-                        onClick={() => removeDetailRow(index)}
-                        disabled={form.details.length === 1}
-                        className="w-full"
+                        variant="outline"
+                        onClick={handleGenerateSoNumber}
+                        disabled={isGeneratingSoNumber}
                       >
-                        Hapus Item
+                        {isGeneratingSoNumber ? "Generating..." : "Generate"}
                       </Button>
-                    </div>
+                    ) : null}
                   </div>
                 </div>
-              ))}
-            </div>
-          )}
+                <div className="space-y-2">
+                  <Label htmlFor="orderDate">Order Date</Label>
+                  <Input
+                    id="orderDate"
+                    type="date"
+                    value={form.orderDate}
+                    onChange={(event) => setField("orderDate", event.target.value)}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="shippingCost">Biaya Kirim</Label>
+                  <Input
+                    id="shippingCost"
+                    type="number"
+                    value={form.shippingCost}
+                    onChange={(event) => setField("shippingCost", event.target.value)}
+                  />
+                </div>
+                <div className="space-y-2 md:col-span-2">
+                  <Label htmlFor="shippingAddress">Alamat Pengiriman</Label>
+                  <Textarea
+                    id="shippingAddress"
+                    value={form.shippingAddress}
+                    onChange={(event) => setField("shippingAddress", event.target.value)}
+                    className="min-h-20"
+                  />
+                </div>
+                <div className="space-y-2 md:col-span-2">
+                  <Label htmlFor="notes">Catatan</Label>
+                  <Textarea
+                    id="notes"
+                    value={form.notes}
+                    onChange={(event) => setField("notes", event.target.value)}
+                    className="min-h-20"
+                  />
+                </div>
+              </div>
+            </section>
 
-          <div className="rounded-md border p-3">
-            <div className="mb-2 flex items-center justify-between">
-              <h3 className="font-semibold">Preview Perhitungan</h3>
-              <Badge
-                variant="outline"
-                className="text-xs"
-              >
-                Diskon: {form.discountType === "percentage" ? "Persen (%)" : "Nominal (Rp)"}
-              </Badge>
-            </div>
-            <div className="grid grid-cols-1 gap-2 text-sm md:grid-cols-2">
-              <p>
-                <span className="font-medium">Subtotal:</span>{" "}
-                {formatCurrency(calculationPreview.subtotal)}
-              </p>
-              <p>
-                <span className="font-medium">Diskon:</span>{" "}
-                {formatCurrency(calculationPreview.discountAmount)}
-              </p>
-              <p>
-                <span className="font-medium">DPP:</span>{" "}
-                {formatCurrency(calculationPreview.dppAmount)}
-              </p>
-              <p>
-                <span className="font-medium">PPN:</span>{" "}
-                {formatCurrency(calculationPreview.ppnAmount)}
-              </p>
-              <p>
-                <span className="font-medium">Biaya Kirim:</span>{" "}
-                {formatCurrency(calculationPreview.shippingCost)}
-              </p>
-              <p className="text-base">
-                <span className="font-semibold">Grand Total:</span>{" "}
-                <span className="font-semibold">
-                  {formatCurrency(calculationPreview.grandTotal)}
-                </span>
-              </p>
-            </div>
+            <section className="rounded-lg border bg-white p-4">
+              <div className="mb-4 flex items-center gap-2">
+                <CircleDollarSign className="h-4 w-4 text-iprimary-blue" />
+                <h3 className="text-sm font-semibold text-slate-900">Pembayaran & Pajak</h3>
+              </div>
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
+                <div className="space-y-2">
+                  <Label htmlFor="paymentMethod">Payment Method</Label>
+                  <select
+                    id="paymentMethod"
+                    className="h-10 w-full rounded-md border bg-background px-3 text-sm"
+                    value={form.paymentMethod}
+                    onChange={(event) => setField("paymentMethod", event.target.value)}
+                  >
+                    <option value="cash">cash</option>
+                    <option value="termin">termin</option>
+                  </select>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="paymentTermDays">Payment Term (hari)</Label>
+                  <Input
+                    id="paymentTermDays"
+                    type="number"
+                    value={form.paymentTermDays}
+                    onChange={(event) => setField("paymentTermDays", event.target.value)}
+                    disabled={form.paymentMethod !== "termin"}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="discountType">Tipe Diskon</Label>
+                  <select
+                    id="discountType"
+                    className="h-10 w-full rounded-md border bg-background px-3 text-sm"
+                    value={form.discountType}
+                    onChange={(event) => setField("discountType", event.target.value)}
+                  >
+                    <option value="nominal">Nominal (Rp)</option>
+                    <option value="percentage">Persen (%)</option>
+                  </select>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="discountValue">
+                    Nilai Diskon {form.discountType === "percentage" ? "(%)" : "(Rp)"}
+                  </Label>
+                  <Input
+                    id="discountValue"
+                    type="number"
+                    value={form.discountValue}
+                    onChange={(event) => setField("discountValue", event.target.value)}
+                  />
+                </div>
+                <div className="space-y-2 md:col-span-2">
+                  <Label htmlFor="ppnPercentage">PPN (%)</Label>
+                  <Input
+                    id="ppnPercentage"
+                    type="number"
+                    value={form.ppnPercentage}
+                    onChange={(event) => setField("ppnPercentage", event.target.value)}
+                  />
+                </div>
+              </div>
+            </section>
+
+            {canManageDetails && (
+              <section className="rounded-lg border bg-white p-4">
+                <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                  <div className="flex items-center gap-2">
+                    <PackageCheck className="h-4 w-4 text-iprimary-blue" />
+                    <h3 className="text-sm font-semibold text-slate-900">Detail Item</h3>
+                  </div>
+                  <Button variant="outline" onClick={addDetailRow} className="gap-2">
+                    <Plus className="h-4 w-4" />
+                    Tambah Item
+                  </Button>
+                </div>
+
+                <div className="space-y-3">
+                  {form.details.map((detail, index) => (
+                    <div key={`detail-${index}`} className="rounded-lg border border-slate-200 bg-slate-50 p-3">
+                      <div className="mb-3 flex items-center justify-between gap-3">
+                        <p className="text-sm font-semibold text-slate-800">Item #{index + 1}</p>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          type="button"
+                          onClick={() => removeDetailRow(index)}
+                          disabled={form.details.length === 1}
+                          className="h-8 w-8 text-red-600 hover:bg-red-50 hover:text-red-700"
+                          aria-label="Hapus item"
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      </div>
+                      <div className="grid grid-cols-1 gap-3 md:grid-cols-12">
+                        <div className="space-y-2 md:col-span-5">
+                          <Label>Item</Label>
+                          <select
+                            className="h-10 w-full rounded-md border bg-background px-3 text-sm"
+                            value={detail.itemId}
+                            onChange={(event) => setDetailItem(index, event.target.value)}
+                          >
+                            <option value="">Pilih Item</option>
+                            {formItemOptions.map((item) => (
+                              <option key={item.id} value={item.id}>
+                                {item.itemName} - stok {item.stock ?? 0} - {formatCurrency(item.unitPrice)}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                        <div className="space-y-2 md:col-span-2">
+                          <Label>Quantity</Label>
+                          <Input
+                            type="number"
+                            min={1}
+                            value={detail.quantity}
+                            onChange={(event) => setDetailField(index, "quantity", event.target.value)}
+                          />
+                        </div>
+                        <div className="space-y-2 md:col-span-2">
+                          <Label>Harga Master</Label>
+                          <div className="flex h-10 items-center rounded-md border bg-white px-3 text-sm font-medium text-slate-800">
+                            {formatCurrency(toNumber(detail.unitPrice))}
+                          </div>
+                        </div>
+                        <div className="space-y-2 md:col-span-3">
+                          <Label>Subtotal</Label>
+                          <div className="flex h-10 items-center rounded-md border bg-white px-3 text-sm font-semibold text-slate-900">
+                            {formatCurrency(detailSubtotal(detail))}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </section>
+            )}
+
+            <section className="rounded-lg border bg-slate-50 p-4">
+              <div className="mb-3 flex items-center justify-between gap-3">
+                <div className="flex items-center gap-2">
+                  <Calculator className="h-4 w-4 text-iprimary-blue" />
+                  <h3 className="text-sm font-semibold text-slate-900">Preview Perhitungan</h3>
+                </div>
+                <Badge variant="outline" className="bg-white text-xs">
+                  Diskon: {form.discountType === "percentage" ? "Persen (%)" : "Nominal (Rp)"}
+                </Badge>
+              </div>
+              <div className="grid grid-cols-1 gap-3 text-sm md:grid-cols-3">
+                <SummaryValue label="Subtotal" value={formatCurrency(calculationPreview.subtotal)} />
+                <SummaryValue label="Diskon" value={formatCurrency(calculationPreview.discountAmount)} />
+                <SummaryValue label="DPP" value={formatCurrency(calculationPreview.dppAmount)} />
+                <SummaryValue label="PPN" value={formatCurrency(calculationPreview.ppnAmount)} />
+                <SummaryValue label="Biaya Kirim" value={formatCurrency(calculationPreview.shippingCost)} />
+                <SummaryValue label="Grand Total" value={formatCurrency(calculationPreview.grandTotal)} strong />
+              </div>
+            </section>
           </div>
 
           <DialogFooter>
@@ -1303,4 +1385,3 @@ export default function SalesOrderMain({
     </div>
   );
 }
-
