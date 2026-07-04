@@ -18,6 +18,17 @@ import { ChartConfig, ChartContainer, ChartTooltip, ChartTooltipContent } from "
 import { DashboardFilterSheet } from "./dashboardFilterSheet";
 import { AlertOctagon, CheckCircle2, CircleDollarSign, FileClock } from "lucide-react";
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null;
+}
+
+function unwrapData<T>(value: unknown): T {
+  if (isRecord(value) && "data" in value) {
+    return value.data as T;
+  }
+  return value as T;
+}
+
 function getErrorMessage(error: unknown): string {
   if (axios.isAxiosError(error)) {
     const message = error.response?.data?.message;
@@ -63,7 +74,7 @@ export default function FinancialDashboardTab() {
         dateFrom,
         dateTo,
       });
-      setData(response);
+      setData(unwrapData<IFinancialDashboard>(response));
     } catch (error) {
       openSwal({
         icon: "error",
@@ -95,7 +106,7 @@ export default function FinancialDashboardTab() {
         <div>
           <h2 className="text-lg font-semibold text-slate-900">Financial Records</h2>
           <p className="text-sm text-slate-500">
-            Belanja perusahaan — {data?.period.from ?? dateFrom} s/d {data?.period.to ?? dateTo}
+            Belanja perusahaan — {data?.period?.from ?? dateFrom} s/d {data?.period?.to ?? dateTo}
           </p>
         </div>
         <DashboardFilterSheet

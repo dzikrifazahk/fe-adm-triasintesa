@@ -28,6 +28,17 @@ import { ChartConfig, ChartContainer, ChartTooltip, ChartTooltipContent } from "
 import { DashboardFilterSheet } from "./dashboardFilterSheet";
 import { AlertTriangle, Beaker, Droplets, Factory } from "lucide-react";
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null;
+}
+
+function unwrapData<T>(value: unknown): T {
+  if (isRecord(value) && "data" in value) {
+    return value.data as T;
+  }
+  return value as T;
+}
+
 function getErrorMessage(error: unknown): string {
   if (axios.isAxiosError(error)) {
     const message = error.response?.data?.message;
@@ -70,7 +81,7 @@ export default function ProductControlDashboardTab() {
         dateFrom,
         dateTo,
       });
-      setData(response);
+      setData(unwrapData<IProductControlDashboard>(response));
     } catch (error) {
       openSwal({
         icon: "error",
@@ -94,9 +105,9 @@ export default function ProductControlDashboardTab() {
   };
 
   const qcData = [
-    { status: "Approved", count: data?.qc.breakdown.approved ?? 0 },
-    { status: "Rejected", count: data?.qc.breakdown.rejected ?? 0 },
-    { status: "Pending", count: data?.qc.breakdown.pending ?? 0 },
+    { status: "Approved", count: data?.qc?.breakdown?.approved ?? 0 },
+    { status: "Rejected", count: data?.qc?.breakdown?.rejected ?? 0 },
+    { status: "Pending", count: data?.qc?.breakdown?.pending ?? 0 },
   ];
 
   return (
@@ -105,7 +116,7 @@ export default function ProductControlDashboardTab() {
         <div>
           <h2 className="text-lg font-semibold text-slate-900">Product Control</h2>
           <p className="text-sm text-slate-500">
-            Produksi, QC, Inventory & Tank — {data?.period.from ?? dateFrom} s/d {data?.period.to ?? dateTo}
+            Produksi, QC, Inventory & Tank — {data?.period?.from ?? dateFrom} s/d {data?.period?.to ?? dateTo}
           </p>
         </div>
         <DashboardFilterSheet
@@ -135,11 +146,11 @@ export default function ProductControlDashboardTab() {
                   <Factory className="size-4" /> Production Yield
                 </CardDescription>
                 <CardTitle className="text-2xl">
-                  {data?.productionYield.efficiency ?? 0}%
+                  {data?.productionYield?.efficiency ?? 0}%
                 </CardTitle>
               </CardHeader>
               <CardContent className="text-xs text-slate-500">
-                {data?.productionYield.actual ?? 0} / {data?.productionYield.target ?? 0} jirigen
+                {data?.productionYield?.actual ?? 0} / {data?.productionYield?.target ?? 0} jirigen
               </CardContent>
             </Card>
 
@@ -148,10 +159,10 @@ export default function ProductControlDashboardTab() {
                 <CardDescription className="flex items-center gap-2 text-slate-500">
                   <Beaker className="size-4" /> QC Pass Rate
                 </CardDescription>
-                <CardTitle className="text-2xl">{data?.qc.passRate ?? 0}%</CardTitle>
+                <CardTitle className="text-2xl">{data?.qc?.passRate ?? 0}%</CardTitle>
               </CardHeader>
               <CardContent className="text-xs text-slate-500">
-                {data?.qc.breakdown.approved ?? 0} lolos / {data?.qc.breakdown.rejected ?? 0} gagal uji
+                {data?.qc?.breakdown?.approved ?? 0} lolos / {data?.qc?.breakdown?.rejected ?? 0} gagal uji
               </CardContent>
             </Card>
 
@@ -160,7 +171,7 @@ export default function ProductControlDashboardTab() {
                 <CardDescription className="flex items-center gap-2 text-slate-500">
                   <AlertTriangle className="size-4" /> Low Stock Alert
                 </CardDescription>
-                <CardTitle className="text-2xl">{data?.inventory.lowStockCount ?? 0}</CardTitle>
+                <CardTitle className="text-2xl">{data?.inventory?.lowStockCount ?? 0}</CardTitle>
               </CardHeader>
               <CardContent className="text-xs text-slate-500">
                 Item di bawah batas minimum stock
@@ -173,11 +184,11 @@ export default function ProductControlDashboardTab() {
                   <Droplets className="size-4" /> Tank Volume In/Out
                 </CardDescription>
                 <CardTitle className="text-2xl">
-                  {(data?.tanks.volumeIn ?? 0).toLocaleString("id-ID")} L
+                  {(data?.tanks?.volumeIn ?? 0).toLocaleString("id-ID")} L
                 </CardTitle>
               </CardHeader>
               <CardContent className="text-xs text-slate-500">
-                Keluar: {(data?.tanks.volumeOut ?? 0).toLocaleString("id-ID")} L
+                Keluar: {(data?.tanks?.volumeOut ?? 0).toLocaleString("id-ID")} L
               </CardContent>
             </Card>
           </div>
@@ -190,7 +201,7 @@ export default function ProductControlDashboardTab() {
               </CardHeader>
               <CardContent>
                 <ChartContainer config={productionChartConfig} className="h-64 w-full">
-                  <LineChart data={data?.productionYield.series ?? []}>
+                  <LineChart data={data?.productionYield?.series ?? []}>
                     <CartesianGrid vertical={false} />
                     <XAxis dataKey="date" tickLine={false} axisLine={false} tickMargin={8} />
                     <YAxis tickLine={false} axisLine={false} width={32} />
@@ -228,7 +239,7 @@ export default function ProductControlDashboardTab() {
                 <CardDescription>Volume tangki saat ini vs kapasitas maksimal</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                {(data?.tanks.utilization ?? []).map((tank) => (
+                {(data?.tanks?.utilization ?? []).map((tank) => (
                   <div key={tank.id} className="space-y-1.5">
                     <div className="flex items-center justify-between text-sm">
                       <span className="font-medium text-slate-700">
@@ -241,7 +252,7 @@ export default function ProductControlDashboardTab() {
                     <Progress value={tank.utilizationPct} />
                   </div>
                 ))}
-                {!data?.tanks.utilization.length ? (
+                {!data?.tanks?.utilization?.length ? (
                   <p className="text-sm text-slate-400">Belum ada data tank.</p>
                 ) : null}
               </CardContent>
@@ -262,7 +273,7 @@ export default function ProductControlDashboardTab() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {(data?.inventory.lowStockItems ?? []).map((item) => (
+                    {(data?.inventory?.lowStockItems ?? []).map((item) => (
                       <TableRow key={item.id}>
                         <TableCell>
                           <p className="font-medium text-slate-800">{item.itemName}</p>
@@ -274,7 +285,7 @@ export default function ProductControlDashboardTab() {
                         <TableCell className="text-right text-slate-500">{item.minStock}</TableCell>
                       </TableRow>
                     ))}
-                    {!data?.inventory.lowStockItems.length ? (
+                    {!data?.inventory?.lowStockItems?.length ? (
                       <TableRow>
                         <TableCell colSpan={3} className="text-center text-sm text-slate-400">
                           Semua stok aman.

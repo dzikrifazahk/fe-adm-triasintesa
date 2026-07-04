@@ -29,6 +29,17 @@ import { ChartConfig, ChartContainer, ChartTooltip, ChartTooltipContent } from "
 import { DashboardFilterSheet } from "./dashboardFilterSheet";
 import { Package, TrendingUp, Truck, Wallet } from "lucide-react";
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null;
+}
+
+function unwrapData<T>(value: unknown): T {
+  if (isRecord(value) && "data" in value) {
+    return value.data as T;
+  }
+  return value as T;
+}
+
 function getErrorMessage(error: unknown): string {
   if (axios.isAxiosError(error)) {
     const message = error.response?.data?.message;
@@ -91,7 +102,7 @@ export default function OrdersDashboardTab() {
         dateTo,
         status: status === "all" ? undefined : status,
       });
-      setData(response);
+      setData(unwrapData<IOrdersDashboard>(response));
     } catch (error) {
       openSwal({
         icon: "error",
@@ -123,7 +134,7 @@ export default function OrdersDashboardTab() {
         <div>
           <h2 className="text-lg font-semibold text-slate-900">Orders Overview</h2>
           <p className="text-sm text-slate-500">
-            Sales Order & Shipping — {data?.period.from ?? dateFrom} s/d {data?.period.to ?? dateTo}
+            Sales Order & Shipping — {data?.period?.from ?? dateFrom} s/d {data?.period?.to ?? dateTo}
           </p>
         </div>
         <DashboardFilterSheet
@@ -168,10 +179,10 @@ export default function OrdersDashboardTab() {
                 <CardDescription className="flex items-center gap-2 text-slate-500">
                   <Package className="size-4" /> Order Volume
                 </CardDescription>
-                <CardTitle className="text-2xl">{data?.orderVolume.total ?? 0}</CardTitle>
+                <CardTitle className="text-2xl">{data?.orderVolume?.total ?? 0}</CardTitle>
               </CardHeader>
               <CardContent className="text-xs text-slate-500">
-                {data?.orderVolume.cancelled ?? 0} cancelled dalam periode ini
+                {data?.orderVolume?.cancelled ?? 0} cancelled dalam periode ini
               </CardContent>
             </Card>
 
@@ -222,7 +233,7 @@ export default function OrdersDashboardTab() {
               </CardHeader>
               <CardContent>
                 <ChartContainer config={orderVolumeChartConfig} className="h-64 w-full">
-                  <AreaChart data={data?.orderVolume.series ?? []}>
+                  <AreaChart data={data?.orderVolume?.series ?? []}>
                     <CartesianGrid vertical={false} />
                     <XAxis dataKey="date" tickLine={false} axisLine={false} tickMargin={8} />
                     <YAxis tickLine={false} axisLine={false} width={32} />
@@ -303,19 +314,19 @@ export default function OrdersDashboardTab() {
                 <div className="flex items-center justify-between rounded-xl bg-emerald-50 p-3">
                   <span className="text-sm text-emerald-700">Cash In</span>
                   <span className="font-semibold text-emerald-700">
-                    {formatCurrency(data?.cashFlow.cashIn ?? 0)}
+                    {formatCurrency(data?.cashFlow?.cashIn ?? 0)}
                   </span>
                 </div>
                 <div className="flex items-center justify-between rounded-xl bg-red-50 p-3">
                   <span className="text-sm text-red-700">Cash Out</span>
                   <span className="font-semibold text-red-700">
-                    {formatCurrency(data?.cashFlow.cashOut ?? 0)}
+                    {formatCurrency(data?.cashFlow?.cashOut ?? 0)}
                   </span>
                 </div>
                 <div className="flex items-center justify-between rounded-xl bg-slate-900 p-3 text-white">
                   <span className="text-sm">Net Cash Flow</span>
                   <Badge className="border-white/20 bg-white/10 text-white">
-                    {formatCurrency(data?.cashFlow.net ?? 0)}
+                    {formatCurrency(data?.cashFlow?.net ?? 0)}
                   </Badge>
                 </div>
               </CardContent>
