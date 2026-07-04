@@ -31,6 +31,7 @@ import { InventoryService } from "./inventory.service";
 import { CustomerService } from "./customer.service";
 import { ReportService } from "./report.service";
 import { CodeGeneratorService } from "./code-generator.service";
+import { DashboardService } from "./dashboard.service";
 
 export const authService = new AuthService();
 export const taxService = new TaxsService();
@@ -65,3 +66,4 @@ export const inventoryService = new InventoryService();
 export const customerService = new CustomerService();
 export const reportService = new ReportService();
 export const codeGeneratorService = new CodeGeneratorService();
+export const dashboardService = new DashboardService();
