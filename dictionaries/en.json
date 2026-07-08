@@ -547,7 +547,9 @@
       "exports": "Exports this month",
       "exports_hint": "Reports that have already been downloaded",
       "scheduled": "Active schedules",
-      "scheduled_hint": "Automated reports still running"
+      "scheduled_hint": "Automated reports still running",
+      "modules": "Available modules",
+      "completed": "Completed reports"
     },
     "form": {
       "title": "Generate report",
@@ -585,6 +587,51 @@
       "financial": "Monthly financial report",
       "production": "Weekly production report",
       "inventory": "Daily inventory report"
+    },
+    "tabs": {
+      "generate": "Generate Report",
+      "scheduler": "Report Scheduler"
+    },
+    "steps": {
+      "step1_title": "1. Choose Module",
+      "step1_desc": "Choose the data source (Financial Record, Sales Order, Inventory, etc).",
+      "step2_title": "2. Choose Fields",
+      "step2_desc": "Tick the fields you want in the excel report.",
+      "step3_title": "3. Generate & Monitor",
+      "step3_desc": "The scheduler processes the report: Starting → Processing → Complete.",
+      "step4_title": "4. Download Excel",
+      "step4_desc": "Once Complete, download the excel file from the Report Scheduler."
+    },
+    "job_form": {
+      "module_title": "Choose data module",
+      "module_description": "The report pulls raw data from the selected module.",
+      "module_label": "Module",
+      "module_placeholder": "Select report module",
+      "date_range": "Date range (optional)",
+      "summary_title": "Summary",
+      "fields_title": "Choose report fields",
+      "fields_description": "Only ticked fields will appear in the excel file.",
+      "select_all": "Select all",
+      "unselect_all": "Clear all",
+      "empty_module": "Select a module first to see its fields.",
+      "module_required": "Select a module first",
+      "fields_required": "Select at least one field",
+      "queued": "Report queued in the scheduler. Check the status in the Report Scheduler tab."
+    },
+    "scheduler": {
+      "title": "Report Scheduler",
+      "description": "Track report generation status. Excel download becomes available once Complete.",
+      "refresh": "Refresh",
+      "empty": "No report jobs yet. Create one from the Generate Report tab.",
+      "column_module": "Module",
+      "column_fields": "Fields",
+      "column_period": "Period",
+      "column_status": "Status",
+      "column_rows": "Rows",
+      "column_created": "Created",
+      "column_actions": "Actions",
+      "prev": "Previous",
+      "next": "Next"
     }
   },
   "signin": {

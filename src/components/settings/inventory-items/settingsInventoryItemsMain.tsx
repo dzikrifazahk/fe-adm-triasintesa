@@ -144,6 +144,40 @@ export default function SettingsInventoryItemsMain({
     setModalOpen((prev) => !prev);
   };
 
+  // Toggle "Public URL": when on, the item shows up as a product on the
+  // public company-profile URL
+  const handleTogglePublicUrl = async (itemId: string, nextValue: boolean) => {
+    try {
+      setIsLoading(true);
+      await inventoryService.updateInventoryItem(itemId, {
+        isPublicActive: nextValue,
+      });
+      await getData(page, pageSize, debouncedSearch);
+      openSwal({
+        icon: "success",
+        title: nextValue
+          ? "Item ditampilkan di public URL"
+          : "Item disembunyikan dari public URL",
+        toast: true,
+        position: "top-right",
+        showConfirmButton: false,
+        timer: 2000,
+      });
+    } catch {
+      openSwal({
+        icon: "error",
+        title: "Gagal mengubah status public URL",
+        text: "Pastikan item memiliki slug yang valid.",
+        toast: true,
+        position: "top-right",
+        showConfirmButton: false,
+        timer: 2500,
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const handleSearchChange = (value: string) => setSearch(value);
 
   const handlePageChange = (newPage: number) => {
@@ -186,6 +220,7 @@ export default function SettingsInventoryItemsMain({
               editData: handleEditData,
               dictionary,
               viewDetailData: handleDetailData,
+              togglePublicUrl: handleTogglePublicUrl,
             })}
             data={data}
             addData={handleCreateData}

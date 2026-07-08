@@ -244,7 +244,6 @@
       "success_title": "Volume tank berhasil diperbarui",
       "error_title": "Gagal memperbarui volume tank",
       "error_text": "Pastikan endpoint backend menerima update current volume."
-      
     },
     "empty_state": "Tidak ada tank yang cocok dengan pencarian.",
     "column": {
@@ -543,7 +542,9 @@
       "exports": "Export bulan ini",
       "exports_hint": "Riwayat report yang sudah diunduh",
       "scheduled": "Jadwal aktif",
-      "scheduled_hint": "Report otomatis yang masih berjalan"
+      "scheduled_hint": "Report otomatis yang masih berjalan",
+      "modules": "Module tersedia",
+      "completed": "Report selesai"
     },
     "form": {
       "title": "Generate report",
@@ -581,6 +582,51 @@
       "financial": "Laporan keuangan bulanan",
       "production": "Laporan produksi mingguan",
       "inventory": "Laporan stok harian"
+    },
+    "tabs": {
+      "generate": "Generate Report",
+      "scheduler": "Report Scheduler"
+    },
+    "steps": {
+      "step1_title": "1. Pilih Module",
+      "step1_desc": "Pilih sumber data (Financial Record, Sales Order, Inventory, dll).",
+      "step2_title": "2. Pilih Field",
+      "step2_desc": "Centang field yang ingin ditampilkan pada report excel.",
+      "step3_title": "3. Generate & Monitor",
+      "step3_desc": "Report diproses oleh scheduler: Starting → Processing → Complete.",
+      "step4_title": "4. Download Excel",
+      "step4_desc": "Setelah status Complete, download file excel dari Report Scheduler."
+    },
+    "job_form": {
+      "module_title": "Pilih module data",
+      "module_description": "Report mengambil raw data dari module yang dipilih.",
+      "module_label": "Module",
+      "module_placeholder": "Pilih module report",
+      "date_range": "Rentang tanggal (opsional)",
+      "summary_title": "Ringkasan",
+      "fields_title": "Pilih field report",
+      "fields_description": "Hanya field yang dicentang yang akan muncul di file excel.",
+      "select_all": "Pilih semua",
+      "unselect_all": "Hapus semua",
+      "empty_module": "Pilih module terlebih dahulu untuk melihat daftar field.",
+      "module_required": "Pilih module terlebih dahulu",
+      "fields_required": "Pilih minimal satu field",
+      "queued": "Report masuk antrian scheduler. Cek status di tab Report Scheduler."
+    },
+    "scheduler": {
+      "title": "Report Scheduler",
+      "description": "Pantau status generate report. Download excel tersedia setelah status Complete.",
+      "refresh": "Refresh",
+      "empty": "Belum ada report job. Buat report dari tab Generate Report.",
+      "column_module": "Module",
+      "column_fields": "Field",
+      "column_period": "Periode",
+      "column_status": "Status",
+      "column_rows": "Rows",
+      "column_created": "Dibuat",
+      "column_actions": "Aksi",
+      "prev": "Sebelumnya",
+      "next": "Berikutnya"
     }
   },
   "signin": {

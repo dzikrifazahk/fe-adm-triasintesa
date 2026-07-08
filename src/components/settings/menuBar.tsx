@@ -22,7 +22,6 @@ import {
   FaPeopleGroup,
   FaPersonMilitaryToPerson,
   FaScroll,
-  FaSignHanging,
   FaTv,
   FaUserLock,
   FaWrench,
@@ -183,12 +182,8 @@ export function MenuBar({ dictionary, children }: Props) {
       icon: <FaScroll size={20} />,
       to: "/dashboard/settings/publications",
     },
-    {
-      kind: "item",
-      title: dictionary.landing_products,
-      icon: <FaSignHanging size={20} />,
-      to: "/dashboard/settings/products",
-    },
+    // Produk public URL sekarang dikelola dari Master Item (inventory-items)
+    // lewat toggle "Public URL".
     // ——— System Configuration ———
     { kind: "header", title: SECTION.system },
     // {

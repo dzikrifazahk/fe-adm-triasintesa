@@ -18,6 +18,48 @@ export interface IReportStats {
   active_schedule_count: number;
 }
 
+// ── Raw-data report jobs (report scheduler) ──
+
+export type ReportJobStatus = 'starting' | 'processing' | 'completed' | 'failed';
+
+export interface IReportModuleField {
+  key: string;
+  label: string;
+}
+
+export interface IReportModule {
+  key: string;
+  label: string;
+  description: string;
+  supportsDateRange: boolean;
+  fields: IReportModuleField[];
+}
+
+export interface IReportJob {
+  id: number;
+  moduleKey: string;
+  moduleLabel: string;
+  fields: string[];
+  status: ReportJobStatus;
+  dateFrom?: string | null;
+  dateTo?: string | null;
+  fileName?: string | null;
+  filePath?: string | null;
+  totalRows: number;
+  errorMessage?: string | null;
+  requestedBy?: string | null;
+  startedAt?: string | null;
+  completedAt?: string | null;
+  createdAt?: string | null;
+}
+
+export interface ICreateReportJobPayload {
+  moduleKey: string;
+  fields: string[];
+  dateFrom?: string;
+  dateTo?: string;
+}
+
 export interface IReportPreview {
   summaryTitle: string;
   status: 'ready_to_export';
