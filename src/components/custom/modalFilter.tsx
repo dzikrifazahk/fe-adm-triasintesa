@@ -17,7 +17,7 @@ export const ModalFilter: React.FC<ModalProps> = ({
   onClose,
   children,
   title,
-  width = "w-[30vw]",
+  width = "w-full sm:w-[380px]",
   onCancel,
 }) => {
   const modalRef = useRef<HTMLDivElement | null>(null);

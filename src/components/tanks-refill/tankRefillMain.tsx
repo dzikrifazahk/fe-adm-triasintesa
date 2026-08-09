@@ -321,7 +321,7 @@ export default function TanksRefillMain({
   };
 
   return (
-    <div className="flex h-full w-full flex-col gap-5">
+    <div className="flex min-h-0 w-full flex-1 flex-col gap-5 overflow-auto">
       <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm dark:border-[#34363B] dark:bg-[#26282D]">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
           <div>

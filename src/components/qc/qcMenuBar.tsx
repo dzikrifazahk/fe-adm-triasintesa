@@ -29,7 +29,7 @@ export function QcMenuBar({ dictionary, children }: Props) {
   };
 
   return (
-    <div className="flex h-full w-full flex-col gap-4 md:flex-row">
+    <div className="flex h-full min-h-0 w-full flex-col gap-4 md:flex-row">
       <aside className="w-full shrink-0 rounded-lg border bg-white p-4 dark:bg-card md:w-64">
         <div className="mb-4">
           <p className="text-xs uppercase tracking-wide text-muted-foreground">
@@ -63,7 +63,7 @@ export function QcMenuBar({ dictionary, children }: Props) {
         </div>
       </aside>
 
-      <main className="min-w-0 flex-1 rounded-lg border bg-white p-6 dark:bg-card">
+      <main className="min-h-0 min-w-0 flex-1 overflow-auto rounded-lg border bg-white p-6 dark:bg-card">
         {children}
       </main>
     </div>

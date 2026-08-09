@@ -178,21 +178,21 @@ export const ModalFilterUser = ({
             </RadioGroup>
           </div>
         </div>
-        <div className="mt-10 p-5 flex justify-end gap-2 rounded-b-lg sticky bottom-0">
+        <div className="mt-10 p-5 flex flex-col gap-2 rounded-b-lg sticky bottom-0 sm:flex-row sm:justify-end">
           <Button
-            className="btn bg-iprimary-blue hover:bg-primary-light-two text-white"
+            className="btn w-full bg-iprimary-blue hover:bg-primary-light-two text-white sm:w-auto"
             onClick={handleSubmit}
           >
             {dictionary.apply_filter}
           </Button>
           <Button
-            className="btn bg-yellow-500 hover:bg-yellow-400 text-white"
+            className="btn w-full bg-yellow-500 hover:bg-yellow-400 text-white sm:w-auto"
             onClick={clearFilter}
           >
             <FaArrowRotateLeft />
           </Button>
           <Button
-            className="btn bg-red-500 text-white hover:bg-red-600"
+            className="btn w-full bg-red-500 text-white hover:bg-red-600 sm:w-auto"
             onClick={onCancel}
           >
             {dictionary.cancel}

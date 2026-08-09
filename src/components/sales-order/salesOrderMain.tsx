@@ -53,14 +53,25 @@ import {
   CircleDollarSign,
   Edit3,
   Eye,
+  Filter,
   MoreHorizontal,
   PackageCheck,
   Plus,
+  RefreshCw,
   Send,
   ShieldCheck,
   Trash2,
   X,
 } from "lucide-react";
+import { ModalFilter } from "@/components/custom/modalFilter";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { FaArrowRotateLeft } from "react-icons/fa6";
 
 type ListPayload<T> = {
   data: T[];
@@ -204,6 +215,8 @@ export default function SalesOrderMain({
   const [items, setItems] = useState<ISalesOrderItem[]>([]);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
+  const [isFilterOpen, setFilterOpen] = useState(false);
+  const [pendingStatusFilter, setPendingStatusFilter] = useState("");
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [lastPage, setLastPage] = useState(1);
@@ -286,14 +299,18 @@ export default function SalesOrderMain({
     form.shippingCost,
   ]);
 
-  const fetchOrders = async (nextPage = page, nextPageSize = pageSize) => {
+  const fetchOrders = async (
+    nextPage = page,
+    nextPageSize = pageSize,
+    overrides?: { search?: string; status?: string },
+  ) => {
     try {
       setIsLoading(true);
       const response = await salesOrderService.getSalesOrders({
         page: nextPage,
         limit: nextPageSize,
-        soNumber: search || undefined,
-        status: (statusFilter as SalesOrderStatus) || undefined,
+        soNumber: (overrides?.search ?? search) || undefined,
+        status: ((overrides?.status ?? statusFilter) as SalesOrderStatus) || undefined,
       });
       const payload = unwrapData<ListPayload<ISalesOrder>>(response);
       setOrders(Array.isArray(payload.data) ? payload.data : []);
@@ -344,6 +361,26 @@ export default function SalesOrderMain({
     fetchLookups();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  const openFilter = () => {
+    setPendingStatusFilter(statusFilter);
+    setFilterOpen(true);
+  };
+
+  const applyFilter = () => {
+    setStatusFilter(pendingStatusFilter);
+    setPage(1);
+    setFilterOpen(false);
+    void fetchOrders(1, pageSize, { status: pendingStatusFilter });
+  };
+
+  const resetFilter = () => {
+    setPendingStatusFilter("");
+    setStatusFilter("");
+    setPage(1);
+    setFilterOpen(false);
+    void fetchOrders(1, pageSize, { status: "" });
+  };
 
   const openCreate = () => {
     setIsEditMode(false);
@@ -820,46 +857,50 @@ export default function SalesOrderMain({
   };
 
   return (
-    <div className="h-full w-full">
-      <Card className="h-full">
+    <div className="flex min-h-0 w-full flex-1 flex-col overflow-auto">
+      <Card>
         <CardContent className="space-y-4 pt-6">
-          <div className="flex flex-col gap-1">
-            <h2 className="text-xl font-semibold">{title}</h2>
-            <p className="text-sm text-muted-foreground">{description}</p>
-          </div>
+          <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
+            <div className="flex flex-col gap-1">
+              <h2 className="text-xl font-semibold">{title}</h2>
+              <p className="text-sm text-muted-foreground">{description}</p>
+            </div>
 
-          <div className="grid grid-cols-1 gap-3 md:grid-cols-4">
-            <Input
-              placeholder="Cari nomor SO"
-              value={search}
-              onChange={(event) => {
-                setSearch(event.target.value);
-                setPage(1);
-              }}
-            />
-            <select
-              className="h-9 rounded-md border bg-background px-3 text-sm"
-              value={statusFilter}
-              onChange={(event) => {
-                setStatusFilter(event.target.value);
-                setPage(1);
-              }}
-            >
-              <option value="">Semua status</option>
-              <option value="pending_approval">pending approval</option>
-              <option value="approved">approved</option>
-              <option value="processing">processing</option>
-              <option value="ready_to_ship">ready to ship</option>
-              <option value="shipped">shipped</option>
-              <option value="completed">completed</option>
-              <option value="cancelled">cancelled</option>
-            </select>
-            <Button variant="outline" onClick={() => fetchOrders(1, pageSize)}>
-              Refresh
-            </Button>
-            <Button className="bg-iprimary-blue text-white hover:bg-iprimary-blue-tertiary" onClick={openCreate}>
-              Tambah Sales Order
-            </Button>
+            <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
+              <Input
+                placeholder="Cari nomor SO"
+                value={search}
+                onChange={(event) => {
+                  setSearch(event.target.value);
+                  setPage(1);
+                }}
+                className="sm:w-56"
+              />
+              <Button
+                variant="outline"
+                className="h-9 w-full justify-center gap-2 border-iprimary-blue text-iprimary-blue cursor-pointer hover:bg-iprimary-blue hover:text-white sm:w-9 sm:px-0"
+                onClick={openFilter}
+                aria-label="Filter"
+              >
+                <Filter className="h-4 w-4" />
+                <span className="sm:hidden">Filter</span>
+              </Button>
+              <Button
+                variant="outline"
+                className="h-9 w-full justify-center gap-2 border-iprimary-blue text-iprimary-blue cursor-pointer hover:bg-iprimary-blue hover:text-white sm:w-9 sm:px-0"
+                onClick={() => fetchOrders(1, pageSize)}
+                aria-label="Refresh"
+              >
+                <RefreshCw className="h-4 w-4" />
+                <span className="sm:hidden">Refresh</span>
+              </Button>
+              <Button
+                className="w-full shrink-0 cursor-pointer bg-iprimary-blue text-white hover:bg-iprimary-blue-tertiary sm:w-auto"
+                onClick={openCreate}
+              >
+                Tambah Sales Order
+              </Button>
+            </div>
           </div>
 
           <div className="rounded-md border">
@@ -1382,6 +1423,56 @@ export default function SalesOrderMain({
           ) : null}
         </DialogContent>
       </Dialog>
+
+      <ModalFilter
+        isOpen={isFilterOpen}
+        onClose={() => setFilterOpen(false)}
+        title="Advance Filter"
+        onCancel={() => setFilterOpen(false)}
+      >
+        <div className="flex w-full flex-col gap-4 p-3">
+          <div className="flex w-full flex-col gap-2">
+            <span className="font-bold">Status</span>
+            <Select
+              value={pendingStatusFilter || undefined}
+              onValueChange={setPendingStatusFilter}
+            >
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Semua status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="pending_approval">pending approval</SelectItem>
+                <SelectItem value="approved">approved</SelectItem>
+                <SelectItem value="processing">processing</SelectItem>
+                <SelectItem value="ready_to_ship">ready to ship</SelectItem>
+                <SelectItem value="shipped">shipped</SelectItem>
+                <SelectItem value="completed">completed</SelectItem>
+                <SelectItem value="cancelled">cancelled</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+        <div className="sticky bottom-0 mt-10 flex flex-col gap-2 rounded-b-lg p-5 sm:flex-row sm:justify-end">
+          <Button
+            className="btn w-full bg-iprimary-blue text-white hover:bg-iprimary-blue-tertiary sm:w-auto"
+            onClick={applyFilter}
+          >
+            Terapkan Filter
+          </Button>
+          <Button
+            className="btn w-full bg-yellow-500 text-white hover:bg-yellow-400 sm:w-auto"
+            onClick={resetFilter}
+          >
+            <FaArrowRotateLeft />
+          </Button>
+          <Button
+            className="btn w-full bg-red-500 text-white hover:bg-red-600 sm:w-auto"
+            onClick={() => setFilterOpen(false)}
+          >
+            Batal
+          </Button>
+        </div>
+      </ModalFilter>
     </div>
   );
 }

@@ -47,12 +47,23 @@ import {
   Check,
   Edit3,
   Eye,
+  Filter,
   MoreHorizontal,
+  RefreshCw,
   RotateCcw,
   Send,
   Trash2,
   Upload,
 } from "lucide-react";
+import { ModalFilter } from "@/components/custom/modalFilter";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { FaArrowRotateLeft } from "react-icons/fa6";
 
 type ListPayload<T> = {
   data: T[];
@@ -149,6 +160,8 @@ export default function ShippingMain({
   const [salesOrders, setSalesOrders] = useState<ISalesOrder[]>([]);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
+  const [isFilterOpen, setFilterOpen] = useState(false);
+  const [pendingStatusFilter, setPendingStatusFilter] = useState("");
   const [quickFilter, setQuickFilter] = useState<"all" | "pending" | "in_transit" | "today">("all");
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
@@ -251,6 +264,26 @@ export default function ShippingMain({
   const runQuickFilter = (type: "all" | "pending" | "in_transit" | "today") => {
     setQuickFilter(type);
     setPage(1);
+  };
+
+  const openFilter = () => {
+    setPendingStatusFilter(statusFilter);
+    setFilterOpen(true);
+  };
+
+  const applyFilter = () => {
+    setStatusFilter(pendingStatusFilter);
+    setQuickFilter("all");
+    setPage(1);
+    setFilterOpen(false);
+  };
+
+  const resetFilter = () => {
+    setPendingStatusFilter("");
+    setStatusFilter("");
+    setQuickFilter("all");
+    setPage(1);
+    setFilterOpen(false);
   };
 
   const openCreate = () => {
@@ -570,67 +603,93 @@ export default function ShippingMain({
   }, [page, pageSize]);
 
   return (
-    <div className="h-full w-full">
-      <Card className="h-full">
+    <div className="flex min-h-0 w-full flex-1 flex-col overflow-auto">
+      <Card>
         <CardContent className="space-y-4 pt-6">
-          <div className="flex flex-col gap-1">
-            <h2 className="text-xl font-semibold">{title}</h2>
-            <p className="text-sm text-muted-foreground">{description}</p>
-          </div>
+          <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
+            <div className="flex flex-col gap-1">
+              <h2 className="text-xl font-semibold">{title}</h2>
+              <p className="text-sm text-muted-foreground">{description}</p>
+            </div>
 
-          <div className="grid grid-cols-1 gap-3 md:grid-cols-4">
-            <Input
-              placeholder="Cari nomor DO"
-              value={search}
-              onChange={(event) => {
-                setSearch(event.target.value);
-                setPage(1);
-              }}
-            />
-            <select
-              className="h-9 rounded-md border bg-background px-3 text-sm"
-              value={statusFilter}
-              onChange={(event) => {
-                setStatusFilter(event.target.value);
-                setQuickFilter("all");
-                setPage(1);
-              }}
-            >
-              <option value="">Semua status</option>
-              <option value="pending">pending</option>
-              <option value="in_transit">in transit</option>
-              <option value="delivered">delivered</option>
-              <option value="returned">returned</option>
-            </select>
-            <Button variant="outline" onClick={() => fetchDeliveries(1, pageSize)}>
-              Refresh
-            </Button>
-            <Button className="bg-iprimary-blue text-white hover:bg-iprimary-blue-tertiary" onClick={openCreate}>
-              Tambah Delivery Order
-            </Button>
+            <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
+              <Input
+                placeholder="Cari nomor DO"
+                value={search}
+                onChange={(event) => {
+                  setSearch(event.target.value);
+                  setPage(1);
+                }}
+                className="sm:w-56"
+              />
+              <Button
+                variant="outline"
+                className="h-9 w-full justify-center gap-2 border-iprimary-blue text-iprimary-blue cursor-pointer hover:bg-iprimary-blue hover:text-white sm:w-9 sm:px-0"
+                onClick={openFilter}
+                aria-label="Filter"
+              >
+                <Filter className="h-4 w-4" />
+                <span className="sm:hidden">Filter</span>
+              </Button>
+              <Button
+                variant="outline"
+                className="h-9 w-full justify-center gap-2 border-iprimary-blue text-iprimary-blue cursor-pointer hover:bg-iprimary-blue hover:text-white sm:w-9 sm:px-0"
+                onClick={() => fetchDeliveries(1, pageSize)}
+                aria-label="Refresh"
+              >
+                <RefreshCw className="h-4 w-4" />
+                <span className="sm:hidden">Refresh</span>
+              </Button>
+              <Button
+                className="w-full shrink-0 cursor-pointer bg-iprimary-blue text-white hover:bg-iprimary-blue-tertiary sm:w-auto"
+                onClick={openCreate}
+              >
+                Tambah Delivery Order
+              </Button>
+            </div>
           </div>
 
           <div className="flex flex-wrap gap-2">
             <Button
               variant={quickFilter === "all" ? "default" : "outline"}
+              className={
+                quickFilter === "all"
+                  ? "cursor-pointer bg-iprimary-blue text-white hover:bg-iprimary-blue-tertiary"
+                  : "cursor-pointer border-iprimary-blue text-iprimary-blue hover:bg-iprimary-blue hover:text-white"
+              }
               onClick={() => runQuickFilter("all")}
             >
               Semua
             </Button>
             <Button
               variant={quickFilter === "pending" ? "default" : "outline"}
+              className={
+                quickFilter === "pending"
+                  ? "cursor-pointer bg-iprimary-blue text-white hover:bg-iprimary-blue-tertiary"
+                  : "cursor-pointer border-iprimary-blue text-iprimary-blue hover:bg-iprimary-blue hover:text-white"
+              }
               onClick={() => runQuickFilter("pending")}
             >
               Pending
             </Button>
             <Button
               variant={quickFilter === "in_transit" ? "default" : "outline"}
+              className={
+                quickFilter === "in_transit"
+                  ? "cursor-pointer bg-iprimary-blue text-white hover:bg-iprimary-blue-tertiary"
+                  : "cursor-pointer border-iprimary-blue text-iprimary-blue hover:bg-iprimary-blue hover:text-white"
+              }
               onClick={() => runQuickFilter("in_transit")}
             >
               In Transit
             </Button>
             <Button
               variant={quickFilter === "today" ? "default" : "outline"}
+              className={
+                quickFilter === "today"
+                  ? "cursor-pointer bg-iprimary-blue text-white hover:bg-iprimary-blue-tertiary"
+                  : "cursor-pointer border-iprimary-blue text-iprimary-blue hover:bg-iprimary-blue hover:text-white"
+              }
               onClick={() => runQuickFilter("today")}
             >
               Hari Ini
@@ -994,6 +1053,53 @@ export default function ShippingMain({
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <ModalFilter
+        isOpen={isFilterOpen}
+        onClose={() => setFilterOpen(false)}
+        title="Advance Filter"
+        onCancel={() => setFilterOpen(false)}
+      >
+        <div className="flex w-full flex-col gap-4 p-3">
+          <div className="flex w-full flex-col gap-2">
+            <span className="font-bold">Status</span>
+            <Select
+              value={pendingStatusFilter || undefined}
+              onValueChange={setPendingStatusFilter}
+            >
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Semua status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="pending">pending</SelectItem>
+                <SelectItem value="in_transit">in transit</SelectItem>
+                <SelectItem value="delivered">delivered</SelectItem>
+                <SelectItem value="returned">returned</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+        <div className="sticky bottom-0 mt-10 flex flex-col gap-2 rounded-b-lg p-5 sm:flex-row sm:justify-end">
+          <Button
+            className="btn w-full bg-iprimary-blue text-white hover:bg-iprimary-blue-tertiary sm:w-auto"
+            onClick={applyFilter}
+          >
+            Terapkan Filter
+          </Button>
+          <Button
+            className="btn w-full bg-yellow-500 text-white hover:bg-yellow-400 sm:w-auto"
+            onClick={resetFilter}
+          >
+            <FaArrowRotateLeft />
+          </Button>
+          <Button
+            className="btn w-full bg-red-500 text-white hover:bg-red-600 sm:w-auto"
+            onClick={() => setFilterOpen(false)}
+          >
+            Batal
+          </Button>
+        </div>
+      </ModalFilter>
     </div>
   );
 }

@@ -8,7 +8,7 @@ import { getDictionary } from "../../../../get-dictionary";
 import { qcCoaService } from "@/services";
 import { useLoading } from "@/context/loadingContext";
 import { ICoaCertificate } from "@/types/qc-coa";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import {
@@ -28,7 +28,9 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import QcPagination from "@/components/qc/QcPagination";
-import { Eye, MoreHorizontal } from "lucide-react";
+import { Eye, Filter, MoreHorizontal, RefreshCw } from "lucide-react";
+import { ModalFilter } from "@/components/custom/modalFilter";
+import { FaArrowRotateLeft } from "react-icons/fa6";
 
 type Dictionary = Awaited<
   ReturnType<typeof getDictionary>
@@ -89,6 +91,32 @@ export default function QcCoaList({
     batchId: "",
     conclusion: "",
   });
+
+  const [isFilterOpen, setFilterOpen] = useState(false);
+  const [pendingBatchId, setPendingBatchId] = useState("");
+  const [pendingConclusion, setPendingConclusion] = useState("");
+
+  const openFilter = () => {
+    setPendingBatchId(filters.batchId);
+    setPendingConclusion(filters.conclusion);
+    setFilterOpen(true);
+  };
+
+  const applyFilter = () => {
+    setFilters((prev) => ({
+      ...prev,
+      batchId: pendingBatchId,
+      conclusion: pendingConclusion,
+    }));
+    setFilterOpen(false);
+  };
+
+  const resetFilter = () => {
+    setPendingBatchId("");
+    setPendingConclusion("");
+    setFilters((prev) => ({ ...prev, batchId: "", conclusion: "" }));
+    setFilterOpen(false);
+  };
 
   const pageTitle = useMemo(
     () => dictionary?.title ?? "Kontrol Kualitas",
@@ -154,39 +182,38 @@ export default function QcCoaList({
       </div>
 
       <Card>
-        <CardHeader>
-          <CardTitle>COA List</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid gap-2 md:grid-cols-3">
-            <Input
-              placeholder="COA Number"
-              value={filters.coaNumber}
-              onChange={(e) =>
-                setFilters((prev) => ({ ...prev, coaNumber: e.target.value }))
-              }
-            />
-            <Input
-              placeholder="Batch ID"
-              value={filters.batchId}
-              onChange={(e) =>
-                setFilters((prev) => ({ ...prev, batchId: e.target.value }))
-              }
-            />
-            <Select
-              value={filters.conclusion || undefined}
-              onValueChange={(value) =>
-                setFilters((prev) => ({ ...prev, conclusion: value }))
-              }
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Conclusion" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="pass">Pass</SelectItem>
-                <SelectItem value="fail">Fail</SelectItem>
-              </SelectContent>
-            </Select>
+        <CardContent className="space-y-4 pt-6">
+          <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
+            <CardTitle>COA List</CardTitle>
+
+            <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
+              <Input
+                placeholder="COA Number"
+                value={filters.coaNumber}
+                onChange={(e) =>
+                  setFilters((prev) => ({ ...prev, coaNumber: e.target.value }))
+                }
+                className="sm:w-56"
+              />
+              <Button
+                variant="outline"
+                className="h-9 w-full justify-center gap-2 border-iprimary-blue text-iprimary-blue cursor-pointer hover:bg-iprimary-blue hover:text-white sm:w-9 sm:px-0"
+                onClick={openFilter}
+                aria-label="Filter"
+              >
+                <Filter className="h-4 w-4" />
+                <span className="sm:hidden">Filter</span>
+              </Button>
+              <Button
+                variant="outline"
+                className="h-9 w-full justify-center gap-2 border-iprimary-blue text-iprimary-blue cursor-pointer hover:bg-iprimary-blue hover:text-white sm:w-9 sm:px-0"
+                onClick={() => void fetchCoa()}
+                aria-label="Refresh"
+              >
+                <RefreshCw className="h-4 w-4" />
+                <span className="sm:hidden">Refresh</span>
+              </Button>
+            </div>
           </div>
 
           <div className="rounded-lg border">
@@ -268,6 +295,59 @@ export default function QcCoaList({
           />
         </CardContent>
       </Card>
+
+      <ModalFilter
+        isOpen={isFilterOpen}
+        onClose={() => setFilterOpen(false)}
+        title="Advance Filter"
+        onCancel={() => setFilterOpen(false)}
+      >
+        <div className="flex w-full flex-col gap-4 p-3">
+          <div className="flex w-full flex-col gap-2">
+            <span className="font-bold">Batch ID</span>
+            <Input
+              placeholder="Batch ID"
+              value={pendingBatchId}
+              onChange={(e) => setPendingBatchId(e.target.value)}
+            />
+          </div>
+          <div className="flex w-full flex-col gap-2">
+            <span className="font-bold">Conclusion</span>
+            <Select
+              value={pendingConclusion || undefined}
+              onValueChange={setPendingConclusion}
+            >
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Conclusion" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="pass">Pass</SelectItem>
+                <SelectItem value="fail">Fail</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+        <div className="sticky bottom-0 mt-10 flex flex-col gap-2 rounded-b-lg p-5 sm:flex-row sm:justify-end">
+          <Button
+            className="btn w-full bg-iprimary-blue text-white hover:bg-iprimary-blue-tertiary sm:w-auto"
+            onClick={applyFilter}
+          >
+            Terapkan Filter
+          </Button>
+          <Button
+            className="btn w-full bg-yellow-500 text-white hover:bg-yellow-400 sm:w-auto"
+            onClick={resetFilter}
+          >
+            <FaArrowRotateLeft />
+          </Button>
+          <Button
+            className="btn w-full bg-red-500 text-white hover:bg-red-600 sm:w-auto"
+            onClick={() => setFilterOpen(false)}
+          >
+            Batal
+          </Button>
+        </div>
+      </ModalFilter>
     </div>
   );
 }

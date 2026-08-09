@@ -34,15 +34,15 @@ export default function DashboardMainPage({
 
       <Tabs defaultValue="orders" className="gap-6">
         <TabsList className="h-auto w-full flex-wrap justify-start gap-2 rounded-2xl bg-slate-100 p-1.5 sm:w-fit">
-          <TabsTrigger value="orders" className="gap-2 rounded-xl px-4 py-2 data-[state=active]:bg-white">
+          <TabsTrigger value="orders" className="h-auto gap-2 rounded-xl px-4 py-2 data-[state=active]:bg-white">
             <ShoppingCart className="size-4" />
             Orders
           </TabsTrigger>
-          <TabsTrigger value="product-control" className="gap-2 rounded-xl px-4 py-2 data-[state=active]:bg-white">
+          <TabsTrigger value="product-control" className="h-auto gap-2 rounded-xl px-4 py-2 data-[state=active]:bg-white">
             <Package className="size-4" />
             Product Control
           </TabsTrigger>
-          <TabsTrigger value="financial-records" className="gap-2 rounded-xl px-4 py-2 data-[state=active]:bg-white">
+          <TabsTrigger value="financial-records" className="h-auto gap-2 rounded-xl px-4 py-2 data-[state=active]:bg-white">
             <Wallet className="size-4" />
             Financial Records
           </TabsTrigger>

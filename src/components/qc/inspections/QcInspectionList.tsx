@@ -9,7 +9,7 @@ import { useLoading } from "@/context/loadingContext";
 import { codeGeneratorService, qcCoaService, productionPlanService } from "@/services";
 import { IQcInspection, IQcTemplate } from "@/types/qc-coa";
 import { IProductionBatch } from "@/types/production";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -31,8 +31,10 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Modal } from "@/components/custom/modal";
+import { ModalFilter } from "@/components/custom/modalFilter";
 import QcPagination from "@/components/qc/QcPagination";
-import { Edit3, Eye, MoreHorizontal, RotateCcw, Trash2 } from "lucide-react";
+import { Edit3, Eye, Filter, MoreHorizontal, RefreshCw, RotateCcw, Trash2 } from "lucide-react";
+import { FaArrowRotateLeft } from "react-icons/fa6";
 
 type Dictionary = Awaited<
   ReturnType<typeof getDictionary>
@@ -186,6 +188,32 @@ export default function QcInspectionList({
     batchId: "",
     finalStatus: "",
   });
+
+  const [isFilterOpen, setFilterOpen] = useState(false);
+  const [pendingBatchId, setPendingBatchId] = useState("");
+  const [pendingFinalStatus, setPendingFinalStatus] = useState("");
+
+  const openFilter = () => {
+    setPendingBatchId(filters.batchId);
+    setPendingFinalStatus(filters.finalStatus);
+    setFilterOpen(true);
+  };
+
+  const applyFilter = () => {
+    setFilters((prev) => ({
+      ...prev,
+      batchId: pendingBatchId,
+      finalStatus: pendingFinalStatus,
+    }));
+    setFilterOpen(false);
+  };
+
+  const resetFilter = () => {
+    setPendingBatchId("");
+    setPendingFinalStatus("");
+    setFilters((prev) => ({ ...prev, batchId: "", finalStatus: "" }));
+    setFilterOpen(false);
+  };
 
   const [isModalOpen, setModalOpen] = useState(false);
   const [modalType, setModalType] = useState<"create" | "edit">("create");
@@ -442,6 +470,16 @@ export default function QcInspectionList({
     });
   };
 
+  const handleRefresh = () => {
+    void fetchInspections({
+      page,
+      limit,
+      qcNumber: filters.qcNumber || undefined,
+      batchId: filters.batchId || undefined,
+      finalStatus: filters.finalStatus || undefined,
+    });
+  };
+
   const handleGenerateQcNumber = async () => {
     try {
       setGeneratingQcNumber(true);
@@ -543,46 +581,49 @@ export default function QcInspectionList({
       </div>
 
       <Card>
-        <CardHeader className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-          <div>
-            <CardTitle>Inspection List</CardTitle>
-            <p className="text-sm text-slate-500">
-              Daftar QC inspection yang dibuat.
-            </p>
-          </div>
-          <Button onClick={() => void openCreate()}>Tambah QC</Button>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid gap-2 md:grid-cols-3">
-            <Input
-              placeholder="QC Number"
-              value={filters.qcNumber}
-              onChange={(e) =>
-                setFilters((prev) => ({ ...prev, qcNumber: e.target.value }))
-              }
-            />
-            <Input
-              placeholder="Batch ID"
-              value={filters.batchId}
-              onChange={(e) =>
-                setFilters((prev) => ({ ...prev, batchId: e.target.value }))
-              }
-            />
-            <Select
-              value={filters.finalStatus || undefined}
-              onValueChange={(value) =>
-                setFilters((prev) => ({ ...prev, finalStatus: value }))
-              }
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Final Status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="pending">Pending</SelectItem>
-                <SelectItem value="approved">Approved</SelectItem>
-                <SelectItem value="rejected">Rejected</SelectItem>
-              </SelectContent>
-            </Select>
+        <CardContent className="space-y-4 pt-6">
+          <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
+            <div>
+              <CardTitle>Inspection List</CardTitle>
+              <p className="text-sm text-slate-500">
+                Daftar QC inspection yang dibuat.
+              </p>
+            </div>
+
+            <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
+              <Input
+                placeholder="QC Number"
+                value={filters.qcNumber}
+                onChange={(e) =>
+                  setFilters((prev) => ({ ...prev, qcNumber: e.target.value }))
+                }
+                className="sm:w-56"
+              />
+              <Button
+                variant="outline"
+                className="h-9 w-full justify-center gap-2 border-iprimary-blue text-iprimary-blue cursor-pointer hover:bg-iprimary-blue hover:text-white sm:w-9 sm:px-0"
+                onClick={openFilter}
+                aria-label="Filter"
+              >
+                <Filter className="h-4 w-4" />
+                <span className="sm:hidden">Filter</span>
+              </Button>
+              <Button
+                variant="outline"
+                className="h-9 w-full justify-center gap-2 border-iprimary-blue text-iprimary-blue cursor-pointer hover:bg-iprimary-blue hover:text-white sm:w-9 sm:px-0"
+                onClick={handleRefresh}
+                aria-label="Refresh"
+              >
+                <RefreshCw className="h-4 w-4" />
+                <span className="sm:hidden">Refresh</span>
+              </Button>
+              <Button
+                className="shrink-0 cursor-pointer bg-iprimary-blue text-white hover:bg-iprimary-blue-tertiary"
+                onClick={() => void openCreate()}
+              >
+                Tambah QC
+              </Button>
+            </div>
           </div>
 
           <div className="rounded-lg border">
@@ -841,6 +882,60 @@ export default function QcInspectionList({
           </div>
         </div>
       </Modal>
+
+      <ModalFilter
+        isOpen={isFilterOpen}
+        onClose={() => setFilterOpen(false)}
+        title="Advance Filter"
+        onCancel={() => setFilterOpen(false)}
+      >
+        <div className="flex w-full flex-col gap-4 p-3">
+          <div className="flex w-full flex-col gap-2">
+            <span className="font-bold">Batch ID</span>
+            <Input
+              placeholder="Batch ID"
+              value={pendingBatchId}
+              onChange={(e) => setPendingBatchId(e.target.value)}
+            />
+          </div>
+          <div className="flex w-full flex-col gap-2">
+            <span className="font-bold">Final Status</span>
+            <Select
+              value={pendingFinalStatus || undefined}
+              onValueChange={setPendingFinalStatus}
+            >
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Final Status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="pending">Pending</SelectItem>
+                <SelectItem value="approved">Approved</SelectItem>
+                <SelectItem value="rejected">Rejected</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+        <div className="sticky bottom-0 mt-10 flex flex-col gap-2 rounded-b-lg p-5 sm:flex-row sm:justify-end">
+          <Button
+            className="btn w-full bg-iprimary-blue text-white hover:bg-iprimary-blue-tertiary sm:w-auto"
+            onClick={applyFilter}
+          >
+            Terapkan Filter
+          </Button>
+          <Button
+            className="btn w-full bg-yellow-500 text-white hover:bg-yellow-400 sm:w-auto"
+            onClick={resetFilter}
+          >
+            <FaArrowRotateLeft />
+          </Button>
+          <Button
+            className="btn w-full bg-red-500 text-white hover:bg-red-600 sm:w-auto"
+            onClick={() => setFilterOpen(false)}
+          >
+            Batal
+          </Button>
+        </div>
+      </ModalFilter>
     </div>
   );
 }

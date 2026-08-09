@@ -6,7 +6,7 @@ import { getDictionary } from "../../../../get-dictionary";
 import { useLoading } from "@/context/loadingContext";
 import { qcCoaService } from "@/services";
 import { IQcTemplate } from "@/types/qc-coa";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import {
@@ -26,7 +26,7 @@ import {
 } from "@/components/ui/table";
 import { Modal } from "@/components/custom/modal";
 import QcPagination from "@/components/qc/QcPagination";
-import { Edit3, MoreHorizontal, Trash2 } from "lucide-react";
+import { Edit3, MoreHorizontal, RefreshCw, Trash2 } from "lucide-react";
 
 type Dictionary = Awaited<
   ReturnType<typeof getDictionary>
@@ -40,9 +40,11 @@ type ParameterItem = {
 
 function toList<T>(response: unknown): T[] {
   const payload = response as {
-    data?: {
-      data?: T[];
-    } | T[];
+    data?:
+      | {
+          data?: T[];
+        }
+      | T[];
   };
   if (Array.isArray(payload?.data)) return payload.data;
   if (Array.isArray(payload?.data?.data)) return payload.data.data;
@@ -143,7 +145,7 @@ export default function QcTemplatesMain({
 
   const pageTitle = useMemo(
     () => dictionary?.title ?? "Kontrol Kualitas",
-    [dictionary]
+    [dictionary],
   );
 
   const fetchTemplates = useCallback(async () => {
@@ -207,7 +209,7 @@ export default function QcTemplatesMain({
     setParameters(
       normalizeTemplateParameters(template.parameters) ?? [
         { parameter: "", testMethod: "", specification: "" },
-      ]
+      ],
     );
     setModalOpen(true);
   };
@@ -222,12 +224,12 @@ export default function QcTemplatesMain({
   const updateParameterRow = (
     index: number,
     field: keyof ParameterItem,
-    value: string
+    value: string,
   ) => {
     setParameters((prev) =>
       prev.map((item, idx) =>
-        idx === index ? { ...item, [field]: value } : item
-      )
+        idx === index ? { ...item, [field]: value } : item,
+      ),
     );
   };
 
@@ -355,23 +357,38 @@ export default function QcTemplatesMain({
       </div>
 
       <Card>
-        <CardHeader className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-          <div>
-            <CardTitle>Template List</CardTitle>
-            <p className="text-sm text-slate-500">
-              Daftar template untuk inspeksi kualitas.
-            </p>
-          </div>
-          <Button onClick={openCreate}>Tambah Template</Button>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-            <Input
-              placeholder="Cari template..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="sm:max-w-sm"
-            />
+        <CardContent className="space-y-4 pt-6">
+          <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
+            <div>
+              <CardTitle>Template List</CardTitle>
+              <p className="text-sm text-slate-500">
+                Daftar template untuk inspeksi kualitas.
+              </p>
+            </div>
+
+            <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
+              <Input
+                placeholder="Cari template..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="sm:w-64"
+              />
+              <Button
+                variant="outline"
+                className="h-9 w-full justify-center gap-2 border-iprimary-blue text-iprimary-blue cursor-pointer hover:bg-iprimary-blue hover:text-white sm:w-9 sm:px-0"
+                onClick={() => void fetchTemplates()}
+                aria-label="Refresh"
+              >
+                <RefreshCw className="h-4 w-4" />
+                <span className="sm:hidden">Refresh</span>
+              </Button>
+              <Button
+                className="shrink-0 cursor-pointer bg-iprimary-blue text-white hover:bg-iprimary-blue-tertiary"
+                onClick={openCreate}
+              >
+                Tambah Template
+              </Button>
+            </div>
           </div>
 
           <div className="rounded-lg border">
@@ -506,11 +523,7 @@ export default function QcTemplatesMain({
                     placeholder="Spesifikasi"
                     value={param.specification ?? ""}
                     onChange={(e) =>
-                      updateParameterRow(
-                        index,
-                        "specification",
-                        e.target.value
-                      )
+                      updateParameterRow(index, "specification", e.target.value)
                     }
                   />
                   <div className="flex items-center justify-end">
