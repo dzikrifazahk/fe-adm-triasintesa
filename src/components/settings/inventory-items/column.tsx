@@ -2,6 +2,7 @@
 
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Switch } from "@/components/ui/switch";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -20,6 +21,7 @@ type ChildProps = {
   deleteData: (id: string) => void;
   editData: (id: string) => void;
   viewDetailData: (id: string) => void;
+  togglePublicUrl: (id: string, nextValue: boolean) => void;
   dictionary: Awaited<ReturnType<typeof getDictionary>>["inventory_item_page_dic"];
 };
 
@@ -116,6 +118,34 @@ export const columns = (props: ChildProps): ColumnDef<IInventoryItem>[] => [
         <ArrowUpDown className="ml-2 h-4 w-4" />
       </Button>
     ),
+  },
+  {
+    id: "Public URL",
+    accessorFn: (row) => (row.isPublicActive ? "public" : "private"),
+    header: () => <span className="px-3">Public URL</span>,
+    cell: ({ row }) => {
+      const data = row.original;
+      return (
+        <div className="flex items-center gap-2 px-3">
+          <Switch
+            checked={Boolean(data.isPublicActive)}
+            onCheckedChange={(value) =>
+              props.togglePublicUrl(String(data.id), Boolean(value))
+            }
+            onClick={(event) => event.stopPropagation()}
+            aria-label="Toggle public URL"
+          />
+          <span
+            className={`text-xs font-medium ${
+              data.isPublicActive ? "text-green-600" : "text-slate-400"
+            }`}
+          >
+            {data.isPublicActive ? "Aktif" : "Nonaktif"}
+          </span>
+        </div>
+      );
+    },
+    enableSorting: false,
   },
   {
     id: props.dictionary.column.is_active,

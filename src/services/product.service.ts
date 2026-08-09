@@ -1,6 +1,12 @@
 import { BaseHttpService } from "./base.service";
-import { IProductUpsert } from "@/types/product";
 
+/**
+ * Public product endpoints (company profile).
+ *
+ * Product CRUD has been merged into the inventory item master
+ * (inventoryService / /inventory-items). This service keeps the public
+ * read endpoints and the file-upload helpers used by the item master UI.
+ */
 export class ProductService extends BaseHttpService {
   constructor() {
     super();
@@ -13,23 +19,8 @@ export class ProductService extends BaseHttpService {
     return response.data;
   }
 
-  async getProduct(id: string) {
-    const response = await this.httpClient.get(`/product/${id}`);
-    return response.data;
-  }
-
-  async createProduct(payload: IProductUpsert) {
-    const response = await this.httpClient.post("/product", payload);
-    return response.data;
-  }
-
-  async updateProduct(id: string, payload: IProductUpsert) {
-    const response = await this.httpClient.patch(`/product/${id}`, payload);
-    return response.data;
-  }
-
-  async deleteProduct(id: string) {
-    const response = await this.httpClient.delete(`/product/${id}`);
+  async getProduct(idOrSlug: string) {
+    const response = await this.httpClient.get(`/product/${idOrSlug}`);
     return response.data;
   }
 
