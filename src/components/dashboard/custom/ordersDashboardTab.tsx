@@ -58,6 +58,13 @@ function formatCurrency(value: number): string {
   }).format(Number(value || 0));
 }
 
+function formatCompactNumber(value: number): string {
+  return new Intl.NumberFormat("id-ID", {
+    notation: "compact",
+    maximumFractionDigits: 1,
+  }).format(Number(value || 0));
+}
+
 function defaultDateRange() {
   const to = new Date();
   const from = new Date(to.getTime() - 29 * 24 * 60 * 60 * 1000);
@@ -231,12 +238,12 @@ export default function OrdersDashboardTab() {
                 <CardTitle className="text-base">Order Volume Trend</CardTitle>
                 <CardDescription>Jumlah pesanan masuk harian</CardDescription>
               </CardHeader>
-              <CardContent>
-                <ChartContainer config={orderVolumeChartConfig} className="h-64 w-full">
-                  <AreaChart data={data?.orderVolume?.series ?? []}>
+              <CardContent className="overflow-hidden px-2 sm:px-6">
+                <ChartContainer config={orderVolumeChartConfig} className="aspect-auto h-56 w-full sm:h-64">
+                  <AreaChart data={data?.orderVolume?.series ?? []} margin={{ left: 0, right: 8 }}>
                     <CartesianGrid vertical={false} />
                     <XAxis dataKey="date" tickLine={false} axisLine={false} tickMargin={8} />
-                    <YAxis tickLine={false} axisLine={false} width={32} />
+                    <YAxis tickLine={false} axisLine={false} width={40} tickFormatter={formatCompactNumber} />
                     <ChartTooltip content={<ChartTooltipContent />} />
                     <Area
                       dataKey="count"
@@ -255,12 +262,12 @@ export default function OrdersDashboardTab() {
                 <CardTitle className="text-base">Revenue Trend</CardTitle>
                 <CardDescription>Pendapatan bulanan dari order selesai</CardDescription>
               </CardHeader>
-              <CardContent>
-                <ChartContainer config={revenueChartConfig} className="h-64 w-full">
-                  <BarChart data={data?.revenueTrend ?? []}>
+              <CardContent className="overflow-hidden px-2 sm:px-6">
+                <ChartContainer config={revenueChartConfig} className="aspect-auto h-56 w-full sm:h-64">
+                  <BarChart data={data?.revenueTrend ?? []} margin={{ left: 0, right: 8 }}>
                     <CartesianGrid vertical={false} />
                     <XAxis dataKey="month" tickLine={false} axisLine={false} tickMargin={8} />
-                    <YAxis tickLine={false} axisLine={false} width={32} />
+                    <YAxis tickLine={false} axisLine={false} width={48} tickFormatter={formatCompactNumber} />
                     <ChartTooltip content={<ChartTooltipContent />} />
                     <Bar dataKey="revenue" fill="var(--color-revenue)" radius={4} />
                   </BarChart>
