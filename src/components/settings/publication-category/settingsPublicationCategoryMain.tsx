@@ -20,6 +20,7 @@ import {
 } from "@/types/publication-category";
 import { publicationCategoryService } from "@/services";
 
+import { useFormText } from "@/hooks/use-form-text";
 const slugify = (value: string) =>
   value
     .toLowerCase()
@@ -40,6 +41,7 @@ export default function SettingsPublicationCategoryMain({
 }: {
   dictionary: Awaited<ReturnType<typeof getDictionary>>["settings_publication_category"];
 }) {
+  const t = useFormText();
   const { setIsLoading } = useLoading();
   const { isMobile } = useContext(MobileContext);
 
@@ -287,7 +289,7 @@ export default function SettingsPublicationCategoryMain({
         <div className="flex flex-col gap-4 p-5">
           <div>
             <span>
-              Nama <span className="text-red-500">*</span>
+              {t.publication.categoryName} <span className="text-red-500">*</span>
             </span>
             <Input
               value={name}
@@ -298,7 +300,7 @@ export default function SettingsPublicationCategoryMain({
 
           <div>
             <span>
-              Slug <span className="text-red-500">*</span>
+              {t.publication.slug} <span className="text-red-500">*</span>
             </span>
             <Input
               value={slug}
@@ -308,7 +310,7 @@ export default function SettingsPublicationCategoryMain({
           </div>
 
           <div>
-            <span>Deskripsi</span>
+            <span>{t.role.description}</span>
             <Textarea
               value={description}
               onChange={(e) => setDescription(e.target.value)}

@@ -3,14 +3,6 @@
 import { DateRangeCustom } from "@/components/custom/dateRangeCustom";
 import { ModalFilter } from "@/components/custom/modalFilter";
 import { Button } from "@/components/ui/button";
-import {
-  Select,
-  SelectContent,
-  SelectGroup,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { IProductionBatch } from "@/types/production";
 import { getDictionary } from "../../../get-dictionary";
 import { format } from "date-fns";
@@ -19,6 +11,8 @@ import { DateRange } from "react-day-picker";
 import { FaArrowRotateLeft } from "react-icons/fa6";
 import { openSwal } from "@/lib/swal";
 
+import { Combobox } from "@/components/ui/combobox";
+import { useFormText } from "@/hooks/use-form-text";
 type DetailDictionary = Awaited<
   ReturnType<typeof getDictionary>
 >["production_page_dic"]["production_plan"]["detail"];
@@ -47,6 +41,7 @@ export function ModalFilterProductionJirigen({
   title,
   batches,
 }: Props) {
+  const t = useFormText();
   const [selectedDateRange, setSelectedDateRange] = useState<
     DateRange | undefined
   >(undefined);
@@ -102,32 +97,21 @@ export function ModalFilterProductionJirigen({
 
         <div className="flex w-full flex-col gap-2">
           <span className="font-bold">{dictionary.jirigen_batch}</span>
-          <Select
-            value={selectedBatchId || "default"}
-            onValueChange={(value) => {
-              if (value === "default") {
-                setSelectedBatchId("");
-                return;
-              }
-              setSelectedBatchId(value);
-            }}
-          >
-            <SelectTrigger className="w-full">
-              <SelectValue placeholder={dictionary.jirigen_batch_placeholder} />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectGroup>
-                <SelectItem className="font-bold" value="default">
-                  {dictionary.jirigen_batch_placeholder}
-                </SelectItem>
-                {batches.map((batch) => (
-                  <SelectItem key={batch.id} value={String(batch.id)}>
-                    {batch.batchNumber}
-                  </SelectItem>
-                ))}
-              </SelectGroup>
-            </SelectContent>
-          </Select>
+          <Combobox
+            options={[
+              { value: "__all__", label: t.common.allBatch },
+              ...batches.map((batch) => ({
+                value: String(batch.id),
+                label: batch.batchNumber,
+              })),
+            ]}
+            value={selectedBatchId || "__all__"}
+            onValueChange={(value) =>
+              setSelectedBatchId(value === "__all__" ? "" : value)
+            }
+            placeholder={dictionary.jirigen_batch_placeholder}
+            searchPlaceholder="Cari nomor batch..."
+          />
         </div>
       </div>
 

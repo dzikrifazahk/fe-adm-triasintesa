@@ -90,6 +90,14 @@ export class ProductionPlanService extends BaseHttpService {
     return response.data;
   }
 
+  async updateProductionJirigen(
+    id: string,
+    payload: Partial<Pick<IAddProductionJirigen, "jirigenNumber" | "volumeLiter" | "productionDatetime" | "notes">>,
+  ) {
+    const response = await this.httpClient.patch(`/production-jirigen/${id}`, payload);
+    return response.data;
+  }
+
   async printProductionJirigenBarcode(id: string) {
     const response = await this.httpClient.get(
       `/production-jirigen/${id}/print-barcode`,

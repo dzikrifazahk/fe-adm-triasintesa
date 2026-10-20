@@ -2,16 +2,18 @@
 
 import { Modal } from "@/components/custom/modal";
 import { MobileContext } from "@/hooks/use-mobile-ssr";
-import { ITank, TankType } from "@/types/tanks";
+import { ITank, ITankUpsert, TankType } from "@/types/tanks";
 import { useContext, useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { Combobox } from "@/components/ui/combobox";
 import { Pencil } from "lucide-react";
 import { openSwal } from "@/lib/swal";
 import { useLoading } from "@/context/loadingContext";
-import { codeGeneratorService } from "@/services";
+import { codeGeneratorService, tanksService } from "@/services";
 
+import { useFormText } from "@/hooks/use-form-text";
 type Props = {
   isOpen: boolean;
   title: string;
@@ -42,6 +44,7 @@ export function ModalUpsertTanks({
   onCancel,
   isGetData,
 }: Props) {
+  const t = useFormText();
   const { isMobile } = useContext(MobileContext);
   const { setIsLoading } = useLoading();
 
@@ -124,6 +127,28 @@ export function ModalUpsertTanks({
       return;
     }
 
+    if (!status) {
+      openSwal({
+        icon: "warning",
+        title: "Status tank wajib dipilih",
+        toast: true,
+        position: "top-right",
+        showConfirmButton: false,
+        timer: 2500,
+      });
+      return;
+    }
+
+    const payload: ITankUpsert = {
+      tankCode,
+      tankName,
+      totalCapacity: Number(totalCapacity),
+      location,
+      tankType,
+      status,
+      notes,
+    };
+
     const isEditMode =
       type === "edit" || (type === "detail" && isDetailEditing);
 
@@ -141,6 +166,12 @@ export function ModalUpsertTanks({
 
       try {
         setIsLoading(true);
+
+        if (isEditMode) {
+          await tanksService.updateTank(String(detailData?.id), payload);
+        } else {
+          await tanksService.createTank(payload);
+        }
 
         isGetData?.();
         openSwal({
@@ -286,23 +317,23 @@ export function ModalUpsertTanks({
 
               <div className="mt-4 grid grid-cols-1 gap-3 md:grid-cols-4">
                 <InfoCard
-                  label="Current Volume"
+                  label={t.tank.currentVolume}
                   value={`${formatNumber(currentVolumeNumber)} Liter`}
                 />
                 <InfoCard
-                  label="Total Capacity"
+                  label={t.tank.totalCapacity}
                   value={`${formatNumber(totalCapacityNumber)} Liter`}
                 />
                 <InfoCard
-                  label="Location"
+                  label={t.tank.location}
                   value={location || detailData?.location || "-"}
                 />
                 <InfoCard
-                  label="Tipe"
+                  label={t.tank.type}
                   value={getTankTypeLabel(tankType || detailData?.tankType)}
                 />
                 <InfoCard
-                  label="Status"
+                  label={t.common.status}
                   value={(status || detailData?.status || "-").replaceAll(
                     "_",
                     " ",
@@ -313,12 +344,12 @@ export function ModalUpsertTanks({
           )}
 
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-            <Field label="Tank Code" required>
+            <Field label={t.tank.code} required>
               <div className="flex gap-2">
                 <Input
                   value={tankCode}
                   onChange={(e) => setTankCode(e.target.value)}
-                  placeholder="Masukkan kode tank"
+                  placeholder={t.tank.codePlaceholder}
                   disabled={!canEditCode}
                   required
                 />
@@ -335,79 +366,70 @@ export function ModalUpsertTanks({
               </div>
             </Field>
 
-            <Field label="Tank Name" required>
+            <Field label={t.tank.name} required>
               <Input
                 value={tankName}
                 onChange={(e) => setTankName(e.target.value)}
-                placeholder="Masukkan nama tank"
+                placeholder={t.tank.namePlaceholder}
                 disabled={isReadOnly}
                 required
               />
             </Field>
 
-            <Field label="Total Capacity" required>
+            <Field label={t.tank.totalCapacity} required>
               <Input
                 type="number"
                 value={totalCapacity}
                 onChange={(e) => setTotalCapacity(Number(e.target.value))}
-                placeholder="Masukkan total kapasitas"
+                placeholder={t.tank.totalCapacityPlaceholder}
                 min={0}
                 disabled={isReadOnly}
                 required
               />
             </Field>
 
-            <Field label="Location" required>
+            <Field label={t.tank.location} required>
               <Input
                 value={location}
                 onChange={(e) => setLocation(e.target.value)}
-                placeholder="Masukkan lokasi"
+                placeholder={t.tank.locationPlaceholder}
                 disabled={isReadOnly}
                 required
               />
             </Field>
 
-            <Field label="Tipe" required>
-              <select
+            <Field label={t.tank.type} required>
+              <Combobox
+                options={tankTypeOptions.map((item) => ({ ...item }))}
                 value={tankType}
-                onChange={(e) =>
-                  setTankType((e.target.value || "") as TankType | "")
-                }
-                className="h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                onValueChange={(value) => setTankType(value as TankType)}
+                placeholder={t.tank.selectType}
+                searchPlaceholder={t.tank.searchType}
                 disabled={isReadOnly}
-                required
-              >
-                <option value="">Pilih tipe tank</option>
-                {tankTypeOptions.map((item) => (
-                  <option key={item.value} value={item.value}>
-                    {item.label}
-                  </option>
-                ))}
-              </select>
+              />
             </Field>
 
-            <Field label="Status" required>
-              <select
+            <Field label={t.common.status} required>
+              <Combobox
+                options={statusOptions.map((item) => ({
+                  value: item,
+                  label: item.replaceAll("_", " "),
+                }))}
                 value={status}
-                onChange={(e) => setStatus(e.target.value)}
-                className="h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                onValueChange={setStatus}
+                placeholder={t.common.selectStatus}
+                searchPlaceholder={t.common.searchStatus}
                 disabled={isReadOnly}
-                required
-              >
-                <option value="">Pilih status</option>
-                {statusOptions.map((item) => (
-                  <option key={item} value={item}>
-                    {item.replaceAll("_", " ")}
-                  </option>
-                ))}
-              </select>
+                className="capitalize"
+                contentClassName="capitalize"
+              />
             </Field>
 
-            <Field label="Notes" className="md:col-span-2">
+            <Field label={t.common.notes} className="md:col-span-2">
               <Textarea
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
-                placeholder="Masukkan catatan"
+                placeholder={t.common.notesPlaceholder}
                 rows={4}
                 disabled={isReadOnly}
               />
@@ -422,12 +444,12 @@ export function ModalUpsertTanks({
 
               <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
                 <InfoRow
-                  label="Last Refill Date"
+                  label={t.tank.lastRefill}
                   value={detailData.lastRefillDate}
                 />
-                <InfoRow label="Last Updated" value={detailData.lastUpdated} />
-                <InfoRow label="Created At" value={detailData.createdAt} />
-                <InfoRow label="Updated At" value={detailData.updatedAt} />
+                <InfoRow label={t.tank.lastUpdated} value={detailData.lastUpdated} />
+                <InfoRow label={t.common.createdAt} value={detailData.createdAt} />
+                <InfoRow label={t.common.updatedAt} value={detailData.updatedAt} />
               </div>
             </div>
           )}

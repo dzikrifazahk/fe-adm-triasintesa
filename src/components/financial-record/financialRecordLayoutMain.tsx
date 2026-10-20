@@ -11,7 +11,7 @@ export function FinancialRecordLayoutMain({ dictionary, children }: Props) {
   return (
     <div
       data-page={dictionary?.title ?? "Financial Record"}
-      className="flex h-full min-h-0 w-full min-w-0 rounded-[28px]  bg-card p-4 shadow-sm lg:p-6"
+      className="flex h-full min-h-0 w-full min-w-0 md:rounded-[28px] md:bg-card md:p-4 md:shadow-sm lg:p-6"
     >
       {children}
     </div>

@@ -13,6 +13,7 @@ export interface IProductionPlan {
   startDate: string;
   endDate: string;
   tankId: number;
+  itemId?: number | null;
   targetBatches: number;
   targetJirigenTotal: number;
   notes: string;
@@ -25,6 +26,7 @@ export interface IProductionPlan {
   deletedAt: string;
   id: number;
   tank: ITank;
+  item?: { id: number; itemCode: string; itemName: string; uom?: string | null } | null;
   creator: ICreator;
   qcSummary?: IProductionPlanQcSummary;
 }
@@ -33,6 +35,7 @@ export interface IAddOrUpdateProductionPlan {
   startDate: string;
   endDate: string;
   tankId: number;
+  itemId?: number | null;
   targetBatches: number;
   targetJirigenTotal: number;
   notes: string;
@@ -82,6 +85,12 @@ export interface IProductionJirigen {
   volumeLiter: number;
   productionDatetime: string;
   notes: string;
+  isScanned?: boolean;
+  scannedAt?: string | null;
+  /** jumlah barcode jirigen ini yang sudah ada di Stok Barang */
+  inStockCount?: number;
+  batch?: { id: number; batchNumber: string } | null;
+  status?: string;
   createdAt?: string;
   updatedAt?: string;
 }

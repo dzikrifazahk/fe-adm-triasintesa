@@ -64,15 +64,11 @@ import {
   X,
 } from "lucide-react";
 import { ModalFilter } from "@/components/custom/modalFilter";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { FaArrowRotateLeft } from "react-icons/fa6";
 
+import { Combobox } from "@/components/ui/combobox";
+import { CurrencyInput } from "@/components/ui/currency-input";
+import { useFormText } from "@/hooks/use-form-text";
 type ListPayload<T> = {
   data: T[];
   meta?: {
@@ -205,6 +201,7 @@ export default function SalesOrderMain({
 }: {
   dictionary: Awaited<ReturnType<typeof getDictionary>>["sales_order_page_dic"];
 }) {
+  const t = useFormText();
   const actionItemClassName =
     "cursor-pointer rounded-md border px-3 py-2 focus:bg-slate-50 dark:focus:bg-[#1F2023]";
 
@@ -868,7 +865,7 @@ export default function SalesOrderMain({
 
             <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
               <Input
-                placeholder="Cari nomor SO"
+                placeholder={t.salesOrder.search}
                 value={search}
                 onChange={(event) => {
                   setSearch(event.target.value);
@@ -880,19 +877,19 @@ export default function SalesOrderMain({
                 variant="outline"
                 className="h-9 w-full justify-center gap-2 border-iprimary-blue text-iprimary-blue cursor-pointer hover:bg-iprimary-blue hover:text-white sm:w-9 sm:px-0"
                 onClick={openFilter}
-                aria-label="Filter"
+                aria-label={t.common.filter}
               >
                 <Filter className="h-4 w-4" />
-                <span className="sm:hidden">Filter</span>
+                <span className="sm:hidden">{t.common.filter}</span>
               </Button>
               <Button
                 variant="outline"
                 className="h-9 w-full justify-center gap-2 border-iprimary-blue text-iprimary-blue cursor-pointer hover:bg-iprimary-blue hover:text-white sm:w-9 sm:px-0"
                 onClick={() => fetchOrders(1, pageSize)}
-                aria-label="Refresh"
+                aria-label={t.common.refresh}
               >
                 <RefreshCw className="h-4 w-4" />
-                <span className="sm:hidden">Refresh</span>
+                <span className="sm:hidden">{t.common.refresh}</span>
               </Button>
               <Button
                 className="w-full shrink-0 cursor-pointer bg-iprimary-blue text-white hover:bg-iprimary-blue-tertiary sm:w-auto"
@@ -907,8 +904,8 @@ export default function SalesOrderMain({
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>SO Number</TableHead>
-                  <TableHead>Customer</TableHead>
+                  <TableHead>{t.salesOrder.soNumber}</TableHead>
+                  <TableHead>{t.salesOrder.customer}</TableHead>
                   <TableHead>Tanggal</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Total</TableHead>
@@ -953,76 +950,80 @@ export default function SalesOrderMain({
                                   <Eye className="text-slate-600" />
                                   Detail
                                 </DropdownMenuItem>
-                                <DropdownMenuItem
-                                  className={`${actionItemClassName} border-yellow-500`}
-                                  onClick={() => openEdit(order)}
-                                  disabled={
-                                    order.status !== "pending_approval" &&
-                                    order.status !== "approved"
-                                  }
-                                >
-                                  <Edit3 className="text-yellow-500" />
-                                  Edit
-                                </DropdownMenuItem>
-                                <DropdownMenuItem
-                                  className={`${actionItemClassName} border-emerald-500`}
-                                  onClick={() => callStatusAction(order.id, "approve")}
-                                  disabled={order.status !== "pending_approval"}
-                                >
-                                  <ShieldCheck className="text-emerald-600" />
-                                  Approve
-                                </DropdownMenuItem>
-                                <DropdownMenuItem
-                                  className={`${actionItemClassName} border-blue-500`}
-                                  onClick={() => callStatusAction(order.id, "accept")}
-                                  disabled={order.status !== "approved"}
-                                >
-                                  <Check className="text-blue-500" />
-                                  Accept
-                                </DropdownMenuItem>
-                                <DropdownMenuItem
-                                  className={`${actionItemClassName} border-amber-500`}
-                                  onClick={() => callStatusAction(order.id, "ready")}
-                                  disabled={order.status !== "processing"}
-                                >
-                                  <PackageCheck className="text-amber-500" />
-                                  Ready
-                                </DropdownMenuItem>
-                                <DropdownMenuItem
-                                  className={`${actionItemClassName} border-cyan-500`}
-                                  onClick={() => callStatusAction(order.id, "shipment")}
-                                  disabled={order.status !== "ready_to_ship"}
-                                >
-                                  <Send className="text-cyan-500" />
-                                  Shipment
-                                </DropdownMenuItem>
-                                <DropdownMenuItem
-                                  className={`${actionItemClassName} border-emerald-600`}
-                                  onClick={() => callStatusAction(order.id, "complete")}
-                                  disabled={order.status !== "shipped"}
-                                >
-                                  <Check className="text-emerald-600" />
-                                  Complete
-                                </DropdownMenuItem>
-                                <DropdownMenuItem
-                                  className={`${actionItemClassName} border-slate-500`}
-                                  onClick={() => callStatusAction(order.id, "cancel")}
-                                  disabled={
-                                    order.status === "completed" ||
-                                    order.status === "cancelled"
-                                  }
-                                >
-                                  <Ban className="text-slate-600" />
-                                  Cancel
-                                </DropdownMenuItem>
-                                <DropdownMenuItem
-                                  className={`${actionItemClassName} border-red-500`}
-                                  onClick={() => deleteOrder(order.id)}
-                                  disabled={order.status !== "pending_approval"}
-                                >
-                                  <Trash2 className="text-red-500" />
-                                  Delete
-                                </DropdownMenuItem>
+                                {(order.status === "pending_approval" ||
+                                  order.status === "approved") && (
+                                  <DropdownMenuItem
+                                    className={`${actionItemClassName} border-yellow-500`}
+                                    onClick={() => openEdit(order)}
+                                  >
+                                    <Edit3 className="text-yellow-500" />
+                                    Edit
+                                  </DropdownMenuItem>
+                                )}
+                                {order.status === "pending_approval" && (
+                                  <DropdownMenuItem
+                                    className={`${actionItemClassName} border-emerald-500`}
+                                    onClick={() => callStatusAction(order.id, "approve")}
+                                  >
+                                    <ShieldCheck className="text-emerald-600" />
+                                    Approve
+                                  </DropdownMenuItem>
+                                )}
+                                {order.status === "approved" && (
+                                  <DropdownMenuItem
+                                    className={`${actionItemClassName} border-blue-500`}
+                                    onClick={() => callStatusAction(order.id, "accept")}
+                                  >
+                                    <Check className="text-blue-500" />
+                                    Accept
+                                  </DropdownMenuItem>
+                                )}
+                                {order.status === "processing" && (
+                                  <DropdownMenuItem
+                                    className={`${actionItemClassName} border-amber-500`}
+                                    onClick={() => callStatusAction(order.id, "ready")}
+                                  >
+                                    <PackageCheck className="text-amber-500" />
+                                    Ready
+                                  </DropdownMenuItem>
+                                )}
+                                {order.status === "ready_to_ship" && (
+                                  <DropdownMenuItem
+                                    className={`${actionItemClassName} border-cyan-500`}
+                                    onClick={() => callStatusAction(order.id, "shipment")}
+                                  >
+                                    <Send className="text-cyan-500" />
+                                    Shipment
+                                  </DropdownMenuItem>
+                                )}
+                                {order.status === "shipped" && (
+                                  <DropdownMenuItem
+                                    className={`${actionItemClassName} border-emerald-600`}
+                                    onClick={() => callStatusAction(order.id, "complete")}
+                                  >
+                                    <Check className="text-emerald-600" />
+                                    Complete
+                                  </DropdownMenuItem>
+                                )}
+                                {order.status !== "completed" &&
+                                  order.status !== "cancelled" && (
+                                  <DropdownMenuItem
+                                    className={`${actionItemClassName} border-slate-500`}
+                                    onClick={() => callStatusAction(order.id, "cancel")}
+                                  >
+                                    <Ban className="text-slate-600" />
+                                    Cancel
+                                  </DropdownMenuItem>
+                                )}
+                                {order.status === "pending_approval" && (
+                                  <DropdownMenuItem
+                                    className={`${actionItemClassName} border-red-500`}
+                                    onClick={() => deleteOrder(order.id)}
+                                  >
+                                    <Trash2 className="text-red-500" />
+                                    Delete
+                                  </DropdownMenuItem>
+                                )}
                               </div>
                             </DropdownMenuContent>
                           </DropdownMenu>
@@ -1039,22 +1040,22 @@ export default function SalesOrderMain({
               Menampilkan {orders.length} dari total {totalRows} data
             </p>
             <div className="flex items-center gap-2">
-              <select
-                className="h-9 rounded-md border bg-background px-2 text-sm"
+              <Combobox
+                options={[10, 20, 50, 100].map((size) => ({
+                  value: String(size),
+                  label: `${size} / halaman`,
+                }))}
                 value={String(pageSize)}
-                onChange={(event) => {
-                  const nextSize = Number(event.target.value);
+                onValueChange={(value) => {
+                  const nextSize = Number(value);
                   setPage(1);
                   setPageSize(nextSize);
                   void fetchOrders(1, nextSize);
                 }}
-              >
-                {[10, 20, 50, 100].map((size) => (
-                  <option key={size} value={size}>
-                    {size} / halaman
-                  </option>
-                ))}
-              </select>
+                searchable={false}
+                className="h-9 w-[140px]"
+                contentClassName="min-w-[140px]"
+              />
               <Button
                 variant="outline"
                 onClick={() => void fetchOrders(page - 1, pageSize)}
@@ -1092,23 +1093,22 @@ export default function SalesOrderMain({
               </div>
               <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                 <div className="space-y-2">
-                  <Label htmlFor="customerId">Customer</Label>
-                  <select
+                  <Label htmlFor="customerId">{t.salesOrder.customer} <span className="ml-0.5 text-red-500">*</span></Label>
+                  <Combobox
                     id="customerId"
-                    className="h-10 w-full rounded-md border bg-background px-3 text-sm"
-                    value={form.customerId}
-                    onChange={(event) => setField("customerId", event.target.value)}
-                  >
-                    <option value="">Pilih customer</option>
-                    {customers.map((customer) => (
-                      <option key={customer.id} value={customer.id}>
-                        {customer.companyName}
-                      </option>
-                    ))}
-                  </select>
+                    options={customers.map((customer) => ({
+                      value: String(customer.id),
+                      label: customer.companyName,
+                    }))}
+                    value={String(form.customerId ?? "")}
+                    onValueChange={(value) => setField("customerId", value)}
+                    placeholder={t.customer.selectCustomer}
+                    searchPlaceholder={t.customer.searchCustomer}
+                    emptyText={t.customer.customerNotFound}
+                  />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="soNumber">SO Number</Label>
+                  <Label htmlFor="soNumber">{t.salesOrder.soNumber} <span className="ml-0.5 text-red-500">*</span></Label>
                   <div className="flex gap-2">
                     <Input
                       id="soNumber"
@@ -1128,7 +1128,7 @@ export default function SalesOrderMain({
                   </div>
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="orderDate">Order Date</Label>
+                  <Label htmlFor="orderDate">{t.salesOrder.orderDate} <span className="ml-0.5 text-red-500">*</span></Label>
                   <Input
                     id="orderDate"
                     type="date"
@@ -1137,16 +1137,15 @@ export default function SalesOrderMain({
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="shippingCost">Biaya Kirim</Label>
-                  <Input
+                  <Label htmlFor="shippingCost">{t.salesOrder.shippingCost}</Label>
+                  <CurrencyInput
                     id="shippingCost"
-                    type="number"
                     value={form.shippingCost}
-                    onChange={(event) => setField("shippingCost", event.target.value)}
+                    onValueChange={(value) => setField("shippingCost", value)}
                   />
                 </div>
                 <div className="space-y-2 md:col-span-2">
-                  <Label htmlFor="shippingAddress">Alamat Pengiriman</Label>
+                  <Label htmlFor="shippingAddress">{t.salesOrder.shippingAddress}</Label>
                   <Textarea
                     id="shippingAddress"
                     value={form.shippingAddress}
@@ -1155,7 +1154,7 @@ export default function SalesOrderMain({
                   />
                 </div>
                 <div className="space-y-2 md:col-span-2">
-                  <Label htmlFor="notes">Catatan</Label>
+                  <Label htmlFor="notes">{t.common.notes}</Label>
                   <Textarea
                     id="notes"
                     value={form.notes}
@@ -1173,19 +1172,24 @@ export default function SalesOrderMain({
               </div>
               <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
                 <div className="space-y-2">
-                  <Label htmlFor="paymentMethod">Payment Method</Label>
-                  <select
+                  <Label htmlFor="paymentMethod">{t.salesOrder.paymentMethod} <span className="ml-0.5 text-red-500">*</span></Label>
+                  <Combobox
                     id="paymentMethod"
-                    className="h-10 w-full rounded-md border bg-background px-3 text-sm"
+                    options={[
+                      { value: "cash", label: "Cash" },
+                      { value: "termin", label: "Termin" },
+                    ]}
                     value={form.paymentMethod}
-                    onChange={(event) => setField("paymentMethod", event.target.value)}
-                  >
-                    <option value="cash">cash</option>
-                    <option value="termin">termin</option>
-                  </select>
+                    onValueChange={(value) => setField("paymentMethod", value)}
+                    placeholder={t.salesOrder.selectPaymentMethod}
+                    searchable={false}
+                  />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="paymentTermDays">Payment Term (hari)</Label>
+                  <Label htmlFor="paymentTermDays">
+                    Payment Term (hari){" "}
+                    {form.paymentMethod === "termin" ? <span className="ml-0.5 text-red-500">*</span> : null}
+                  </Label>
                   <Input
                     id="paymentTermDays"
                     type="number"
@@ -1195,30 +1199,42 @@ export default function SalesOrderMain({
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="discountType">Tipe Diskon</Label>
-                  <select
+                  <Label htmlFor="discountType">{t.salesOrder.discountType}</Label>
+                  <Combobox
                     id="discountType"
-                    className="h-10 w-full rounded-md border bg-background px-3 text-sm"
+                    options={[
+                      { value: "nominal", label: "Nominal (Rp)" },
+                      { value: "percentage", label: "Persen (%)" },
+                    ]}
                     value={form.discountType}
-                    onChange={(event) => setField("discountType", event.target.value)}
-                  >
-                    <option value="nominal">Nominal (Rp)</option>
-                    <option value="percentage">Persen (%)</option>
-                  </select>
+                    onValueChange={(value) => setField("discountType", value)}
+                    placeholder={t.salesOrder.selectDiscountType}
+                    searchable={false}
+                  />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="discountValue">
                     Nilai Diskon {form.discountType === "percentage" ? "(%)" : "(Rp)"}
                   </Label>
-                  <Input
-                    id="discountValue"
-                    type="number"
-                    value={form.discountValue}
-                    onChange={(event) => setField("discountValue", event.target.value)}
-                  />
+                  {form.discountType === "percentage" ? (
+                    <Input
+                      id="discountValue"
+                      type="number"
+                      min={0}
+                      max={100}
+                      value={form.discountValue}
+                      onChange={(event) => setField("discountValue", event.target.value)}
+                    />
+                  ) : (
+                    <CurrencyInput
+                      id="discountValue"
+                      value={form.discountValue}
+                      onValueChange={(value) => setField("discountValue", value)}
+                    />
+                  )}
                 </div>
                 <div className="space-y-2 md:col-span-2">
-                  <Label htmlFor="ppnPercentage">PPN (%)</Label>
+                  <Label htmlFor="ppnPercentage">{t.salesOrder.ppn}</Label>
                   <Input
                     id="ppnPercentage"
                     type="number"
@@ -1254,29 +1270,28 @@ export default function SalesOrderMain({
                           onClick={() => removeDetailRow(index)}
                           disabled={form.details.length === 1}
                           className="h-8 w-8 text-red-600 hover:bg-red-50 hover:text-red-700"
-                          aria-label="Hapus item"
+                          aria-label={t.salesOrder.removeItem}
                         >
                           <X className="h-4 w-4" />
                         </Button>
                       </div>
                       <div className="grid grid-cols-1 gap-3 md:grid-cols-12">
                         <div className="space-y-2 md:col-span-5">
-                          <Label>Item</Label>
-                          <select
-                            className="h-10 w-full rounded-md border bg-background px-3 text-sm"
-                            value={detail.itemId}
-                            onChange={(event) => setDetailItem(index, event.target.value)}
-                          >
-                            <option value="">Pilih Item</option>
-                            {formItemOptions.map((item) => (
-                              <option key={item.id} value={item.id}>
-                                {item.itemName} - stok {item.stock ?? 0} - {formatCurrency(item.unitPrice)}
-                              </option>
-                            ))}
-                          </select>
+                          <Label>{t.salesOrder.item} <span className="ml-0.5 text-red-500">*</span></Label>
+                          <Combobox
+                            options={formItemOptions.map((item) => ({
+                              value: String(item.id),
+                              label: `${item.itemName} - stok ${item.stock ?? 0} - ${formatCurrency(item.unitPrice)}`,
+                            }))}
+                            value={String(detail.itemId ?? "")}
+                            onValueChange={(value) => setDetailItem(index, value)}
+                            placeholder={t.salesOrder.selectItem}
+                            searchPlaceholder={t.salesOrder.searchItem}
+                            emptyText={t.common.itemNotFound}
+                          />
                         </div>
                         <div className="space-y-2 md:col-span-2">
-                          <Label>Quantity</Label>
+                          <Label>{t.salesOrder.quantity} <span className="ml-0.5 text-red-500">*</span></Label>
                           <Input
                             type="number"
                             min={1}
@@ -1285,13 +1300,13 @@ export default function SalesOrderMain({
                           />
                         </div>
                         <div className="space-y-2 md:col-span-2">
-                          <Label>Harga Master</Label>
+                          <Label>{t.salesOrder.masterPrice}</Label>
                           <div className="flex h-10 items-center rounded-md border bg-white px-3 text-sm font-medium text-slate-800">
                             {formatCurrency(toNumber(detail.unitPrice))}
                           </div>
                         </div>
                         <div className="space-y-2 md:col-span-3">
-                          <Label>Subtotal</Label>
+                          <Label>{t.salesOrder.subtotal}</Label>
                           <div className="flex h-10 items-center rounded-md border bg-white px-3 text-sm font-semibold text-slate-900">
                             {formatCurrency(detailSubtotal(detail))}
                           </div>
@@ -1314,11 +1329,11 @@ export default function SalesOrderMain({
                 </Badge>
               </div>
               <div className="grid grid-cols-1 gap-3 text-sm md:grid-cols-3">
-                <SummaryValue label="Subtotal" value={formatCurrency(calculationPreview.subtotal)} />
+                <SummaryValue label={t.salesOrder.subtotal} value={formatCurrency(calculationPreview.subtotal)} />
                 <SummaryValue label="Diskon" value={formatCurrency(calculationPreview.discountAmount)} />
                 <SummaryValue label="DPP" value={formatCurrency(calculationPreview.dppAmount)} />
                 <SummaryValue label="PPN" value={formatCurrency(calculationPreview.ppnAmount)} />
-                <SummaryValue label="Biaya Kirim" value={formatCurrency(calculationPreview.shippingCost)} />
+                <SummaryValue label={t.salesOrder.shippingCost} value={formatCurrency(calculationPreview.shippingCost)} />
                 <SummaryValue label="Grand Total" value={formatCurrency(calculationPreview.grandTotal)} strong />
               </div>
             </section>
@@ -1376,10 +1391,10 @@ export default function SalesOrderMain({
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Item</TableHead>
+                      <TableHead>{t.salesOrder.item}</TableHead>
                       <TableHead>Qty</TableHead>
                       <TableHead>Harga</TableHead>
-                      <TableHead>Subtotal</TableHead>
+                      <TableHead>{t.salesOrder.subtotal}</TableHead>
                       <TableHead>Alokasi</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -1433,23 +1448,24 @@ export default function SalesOrderMain({
         <div className="flex w-full flex-col gap-4 p-3">
           <div className="flex w-full flex-col gap-2">
             <span className="font-bold">Status</span>
-            <Select
-              value={pendingStatusFilter || undefined}
-              onValueChange={setPendingStatusFilter}
-            >
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder="Semua status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="pending_approval">pending approval</SelectItem>
-                <SelectItem value="approved">approved</SelectItem>
-                <SelectItem value="processing">processing</SelectItem>
-                <SelectItem value="ready_to_ship">ready to ship</SelectItem>
-                <SelectItem value="shipped">shipped</SelectItem>
-                <SelectItem value="completed">completed</SelectItem>
-                <SelectItem value="cancelled">cancelled</SelectItem>
-              </SelectContent>
-            </Select>
+            <Combobox
+              options={[
+                { value: "__all__", label: t.common.allStatus },
+                { value: "pending_approval", label: "Pending approval" },
+                { value: "approved", label: "Approved" },
+                { value: "processing", label: "Processing" },
+                { value: "ready_to_ship", label: "Ready to ship" },
+                { value: "shipped", label: "Shipped" },
+                { value: "completed", label: "Completed" },
+                { value: "cancelled", label: "Cancelled" },
+              ]}
+              value={pendingStatusFilter || "__all__"}
+              onValueChange={(value) =>
+                setPendingStatusFilter(value === "__all__" ? "" : value)
+              }
+              placeholder={t.common.allStatus}
+              searchPlaceholder={t.common.searchStatus}
+            />
           </div>
         </div>
         <div className="sticky bottom-0 mt-10 flex flex-col gap-2 rounded-b-lg p-5 sm:flex-row sm:justify-end">

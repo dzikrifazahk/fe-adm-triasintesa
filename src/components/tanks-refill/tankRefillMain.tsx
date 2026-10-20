@@ -92,6 +92,11 @@ export default function TanksRefillMain({
 
   const [actionState, setActionState] =
     useState<VolumeActionState>(initialActionState);
+  // Konfirmasi & error ditampilkan di dalam dialog (bukan SweetAlert di atas
+  // Dialog Radix yang sedang menutup → popup kadang hilang / tidak bisa diklik)
+  const [isConfirming, setIsConfirming] = useState(false);
+  const [isSubmittingAction, setIsSubmittingAction] = useState(false);
+  const [actionError, setActionError] = useState("");
 
   const getTanks = async () => {
     setIsLoading(true);
@@ -207,6 +212,8 @@ export default function TanksRefillMain({
       getTankLogs(tank.id, 1);
     }
 
+    setIsConfirming(false);
+    setActionError("");
     setActionState({
       open: true,
       tank,
@@ -216,107 +223,93 @@ export default function TanksRefillMain({
     });
   };
 
-  const closeActionModal = () =>
+  const closeActionModal = () => {
     setActionState((prev) => ({ ...prev, open: false }));
+    setIsConfirming(false);
+    setActionError("");
+  };
 
-  const handleSubmitAction = async (event: React.FormEvent) => {
-    event.preventDefault();
-    if (!selectedTank) return;
+  const updateActionField = (patch: Partial<VolumeActionState>) => {
+    setActionState((prev) => ({ ...prev, ...patch }));
+    setIsConfirming(false);
+    setActionError("");
+  };
 
-    const pendingAction = { ...actionState };
-
+  const getNextVolume = () => {
+    if (!selectedTank) return 0;
     const amount = normalizeNumber(actionState.amount);
     const totalCapacity = normalizeNumber(selectedTank.totalCapacity);
     const currentVolume = normalizeNumber(selectedTank.currentVolume);
-
-    let nextVolume = currentVolume;
     if (actionState.mode === "increase") {
-      nextVolume = Math.min(totalCapacity, currentVolume + amount);
-    } else if (actionState.mode === "decrease") {
-      nextVolume = Math.max(0, currentVolume - amount);
+      return Math.min(totalCapacity, currentVolume + amount);
     }
+    if (actionState.mode === "decrease") {
+      return Math.max(0, currentVolume - amount);
+    }
+    return currentVolume;
+  };
+
+  const handleSubmitAction = async (event: React.FormEvent) => {
+    event.preventDefault();
+    if (!selectedTank || isSubmittingAction) return;
 
     if (actionState.mode === "logs") {
       closeActionModal();
       return;
     }
 
+    const amount = normalizeNumber(actionState.amount);
     if (amount <= 0) {
-      openSwal({
-        icon: "warning",
-        title: dictionary.toast.amount_warning,
-        toast: true,
-        position: "top-right",
-        showConfirmButton: false,
-        timer: 2000,
-      });
+      setActionError(dictionary.toast.amount_warning);
       return;
     }
 
-    const titleMap: Record<RefillMode, string> = {
-      logs: dictionary.modal.logs_title,
-      increase: dictionary.toast.increase_confirm,
-      decrease: dictionary.toast.decrease_confirm,
-    };
-
-    closeActionModal();
-
-    const confirm = await openSwal({
-      icon: "question",
-      title: titleMap[actionState.mode],
-      text: `Volume akhir akan menjadi ${formatNumber(nextVolume)} Liter`,
-      showCancelButton: true,
-      confirmButtonText: dictionary.toast.confirm_button,
-      cancelButtonText: dictionary.toast.cancel_button,
-      confirmButtonColor: "#2B59FF",
-    });
-
-    if (!confirm.isConfirmed) {
-      setActionState(pendingAction);
+    // langkah 1: tampilkan konfirmasi di dalam dialog
+    if (!isConfirming) {
+      setIsConfirming(true);
       return;
     }
 
+    // langkah 2: simpan
     try {
-      setIsLoading(true);
-      if (pendingAction.mode === "increase") {
+      setIsSubmittingAction(true);
+      setActionError("");
+      if (actionState.mode === "increase") {
         await tanksService.increaseTankVolume({
           tankId: selectedTank.id,
           volumeAdded: amount,
           notes:
-            pendingAction.notes || dictionary.modal.notes_increase_placeholder,
+            actionState.notes || dictionary.modal.notes_increase_placeholder,
         });
       } else {
         await tanksService.decreaseTankVolume({
           tankId: selectedTank.id,
           volumeReduced: amount,
           notes:
-            pendingAction.notes || dictionary.modal.notes_decrease_placeholder,
+            actionState.notes || dictionary.modal.notes_decrease_placeholder,
         });
       }
 
+      closeActionModal();
       await getTanks();
 
-      openSwal({
-        icon: "success",
-        title: dictionary.toast.success_title,
-        toast: true,
-        position: "top-right",
-        showConfirmButton: false,
-        timer: 2000,
-      });
+      // tunggu animasi tutup dialog selesai sebelum menampilkan toast
+      setTimeout(() => {
+        openSwal({
+          icon: "success",
+          title: dictionary.toast.success_title,
+          toast: true,
+          position: "top-right",
+          showConfirmButton: false,
+          timer: 2000,
+        });
+      }, 250);
     } catch (error) {
       console.error(error);
-      openSwal({
-        icon: "error",
-        title: dictionary.toast.error_title,
-        text: dictionary.toast.error_text,
-        position: "top-right",
-        toast: true,
-        showConfirmButton: false,
-        timer: 2500,
-      });
+      setIsConfirming(false);
+      setActionError(`${dictionary.toast.error_title}. ${dictionary.toast.error_text}`);
     } finally {
-      setIsLoading(false);
+      setIsSubmittingAction(false);
     }
   };
 
@@ -579,7 +572,7 @@ export default function TanksRefillMain({
               <>
                 <div className="space-y-2">
                   <Label htmlFor="adjustAmount">
-                    {dictionary.modal.amount_label}
+                    {dictionary.modal.amount_label} <span className="ml-0.5 text-red-500">*</span>
                   </Label>
                   <Input
                     id="adjustAmount"
@@ -587,10 +580,7 @@ export default function TanksRefillMain({
                     min={0}
                     value={actionState.amount}
                     onChange={(event) =>
-                      setActionState((prev) => ({
-                        ...prev,
-                        amount: Number(event.target.value),
-                      }))
+                      updateActionField({ amount: Number(event.target.value) })
                     }
                   />
                 </div>
@@ -603,10 +593,7 @@ export default function TanksRefillMain({
                     id="refillNotes"
                     value={actionState.notes}
                     onChange={(event) =>
-                      setActionState((prev) => ({
-                        ...prev,
-                        notes: event.target.value,
-                      }))
+                      updateActionField({ notes: event.target.value })
                     }
                     placeholder={
                       actionState.mode === "increase"
@@ -616,12 +603,50 @@ export default function TanksRefillMain({
                   />
                 </div>
 
-                <Button
-                  type="submit"
-                  className="w-full bg-iprimary-blue text-white hover:bg-iprimary-blue/90 cursor-pointer"
-                >
-                  {dictionary.modal.submit}
-                </Button>
+                {actionError ? (
+                  <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-500/30 dark:bg-red-500/10 dark:text-red-300">
+                    {actionError}
+                  </div>
+                ) : null}
+
+                {isConfirming ? (
+                  <div className="space-y-3 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-200">
+                    <div className="font-semibold">
+                      {actionState.mode === "increase"
+                        ? dictionary.toast.increase_confirm
+                        : dictionary.toast.decrease_confirm}
+                    </div>
+                    <div>
+                      Volume akhir akan menjadi{" "}
+                      <b>{formatNumber(getNextVolume())} Liter</b>.
+                    </div>
+                    <div className="flex gap-2">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        className="flex-1 cursor-pointer"
+                        onClick={() => setIsConfirming(false)}
+                        disabled={isSubmittingAction}
+                      >
+                        {dictionary.toast.cancel_button}
+                      </Button>
+                      <Button
+                        type="submit"
+                        className="flex-1 bg-iprimary-blue text-white hover:bg-iprimary-blue/90 cursor-pointer"
+                        disabled={isSubmittingAction}
+                      >
+                        {isSubmittingAction ? "Menyimpan..." : dictionary.toast.confirm_button}
+                      </Button>
+                    </div>
+                  </div>
+                ) : (
+                  <Button
+                    type="submit"
+                    className="w-full bg-iprimary-blue text-white hover:bg-iprimary-blue/90 cursor-pointer"
+                  >
+                    {dictionary.modal.submit}
+                  </Button>
+                )}
               </>
             )}
           </form>

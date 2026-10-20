@@ -7,7 +7,7 @@ interface Props {
 
 export function TanksRefillLayoutMain({ dictionary, children }: Props) {
   return (
-    <div className="bg-card flex h-full min-h-0 w-full min-w-0 shadow rounded-lg border p-6">
+    <div className="flex h-full min-h-0 w-full min-w-0 md:rounded-lg md:border md:bg-card md:p-6 md:shadow">
       {children}
     </div>
   );

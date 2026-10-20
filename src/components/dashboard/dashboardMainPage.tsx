@@ -14,8 +14,8 @@ export default function DashboardMainPage({
   dictionary?: Awaited<ReturnType<typeof getDictionary>>["dashboard"];
 }) {
   return (
-    <div className="flex min-h-0 w-full flex-1 flex-col gap-6 overflow-auto p-6">
-      <section className="relative shrink-0 overflow-hidden rounded-[32px] border border-slate-200 bg-[radial-gradient(circle_at_top_left,_rgba(56,189,248,0.18),_transparent_28%),radial-gradient(circle_at_bottom_right,_rgba(45,212,191,0.16),_transparent_24%),linear-gradient(135deg,_#0f172a_0%,_#132144_38%,_#0f766e_100%)] p-6 text-white shadow-sm lg:p-8">
+    <div className="flex min-h-0 w-full flex-1 flex-col gap-4 overflow-auto p-0 md:gap-6 md:p-6">
+      <section className="relative shrink-0 overflow-hidden rounded-[32px] border border-slate-200 dark:border-white/10 bg-[radial-gradient(circle_at_top_left,_rgba(56,189,248,0.18),_transparent_28%),radial-gradient(circle_at_bottom_right,_rgba(45,212,191,0.16),_transparent_24%),linear-gradient(135deg,_#0f172a_0%,_#132144_38%,_#0f766e_100%)] p-6 text-white shadow-sm lg:p-8">
         <div className="absolute -left-10 top-10 h-32 w-32 rounded-full bg-cyan-300/10 blur-3xl" />
         <div className="absolute -right-8 bottom-0 h-40 w-40 rounded-full bg-emerald-300/10 blur-3xl" />
         <div className="relative space-y-3">
@@ -33,16 +33,16 @@ export default function DashboardMainPage({
       </section>
 
       <Tabs defaultValue="orders" className="gap-6">
-        <TabsList className="h-auto w-full flex-wrap justify-start gap-2 rounded-2xl bg-slate-100 p-1.5 sm:w-fit">
-          <TabsTrigger value="orders" className="h-auto gap-2 rounded-xl px-4 py-2 data-[state=active]:bg-white">
+        <TabsList className="h-auto w-full flex-wrap justify-start gap-2 rounded-2xl bg-slate-100 p-1.5 dark:bg-white/5 sm:w-fit">
+          <TabsTrigger value="orders" className="h-auto gap-2 rounded-xl px-4 py-2 data-[state=active]:bg-white dark:data-[state=active]:bg-white/10 dark:data-[state=active]:text-white">
             <ShoppingCart className="size-4" />
             Orders
           </TabsTrigger>
-          <TabsTrigger value="product-control" className="h-auto gap-2 rounded-xl px-4 py-2 data-[state=active]:bg-white">
+          <TabsTrigger value="product-control" className="h-auto gap-2 rounded-xl px-4 py-2 data-[state=active]:bg-white dark:data-[state=active]:bg-white/10 dark:data-[state=active]:text-white">
             <Package className="size-4" />
             Product Control
           </TabsTrigger>
-          <TabsTrigger value="financial-records" className="h-auto gap-2 rounded-xl px-4 py-2 data-[state=active]:bg-white">
+          <TabsTrigger value="financial-records" className="h-auto gap-2 rounded-xl px-4 py-2 data-[state=active]:bg-white dark:data-[state=active]:bg-white/10 dark:data-[state=active]:text-white">
             <Wallet className="size-4" />
             Financial Records
           </TabsTrigger>

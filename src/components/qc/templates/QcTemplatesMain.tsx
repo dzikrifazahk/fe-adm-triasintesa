@@ -24,10 +24,19 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Modal } from "@/components/custom/modal";
 import QcPagination from "@/components/qc/QcPagination";
-import { Edit3, MoreHorizontal, RefreshCw, Trash2 } from "lucide-react";
+import {
+  Edit3,
+  FileText,
+  ListChecks,
+  MoreHorizontal,
+  Plus,
+  RefreshCw,
+  Trash2,
+} from "lucide-react";
 
+import { FormModal } from "@/components/custom/formModal";
+import { useFormText } from "@/hooks/use-form-text";
 type Dictionary = Awaited<
   ReturnType<typeof getDictionary>
 >["quality_control_page_dic"];
@@ -126,6 +135,7 @@ export default function QcTemplatesMain({
 }: {
   dictionary: Dictionary;
 }) {
+  const t = useFormText();
   const actionItemClassName =
     "cursor-pointer rounded-md border px-3 py-2 focus:bg-slate-50 dark:focus:bg-[#1F2023]";
 
@@ -368,7 +378,7 @@ export default function QcTemplatesMain({
 
             <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
               <Input
-                placeholder="Cari template..."
+                placeholder={t.qc.templateSearch}
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 className="sm:w-64"
@@ -377,10 +387,10 @@ export default function QcTemplatesMain({
                 variant="outline"
                 className="h-9 w-full justify-center gap-2 border-iprimary-blue text-iprimary-blue cursor-pointer hover:bg-iprimary-blue hover:text-white sm:w-9 sm:px-0"
                 onClick={() => void fetchTemplates()}
-                aria-label="Refresh"
+                aria-label={t.common.refresh}
               >
                 <RefreshCw className="h-4 w-4" />
-                <span className="sm:hidden">Refresh</span>
+                <span className="sm:hidden">{t.common.refresh}</span>
               </Button>
               <Button
                 className="shrink-0 cursor-pointer bg-iprimary-blue text-white hover:bg-iprimary-blue-tertiary"
@@ -395,7 +405,7 @@ export default function QcTemplatesMain({
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Nama Template</TableHead>
+                  <TableHead>{t.qc.templateName}</TableHead>
                   <TableHead>Jumlah Parameter</TableHead>
                   <TableHead className="text-right">Aksi</TableHead>
                 </TableRow>
@@ -470,79 +480,114 @@ export default function QcTemplatesMain({
         </CardContent>
       </Card>
 
-      <Modal
+      <FormModal
         isOpen={isModalOpen}
         onClose={() => setModalOpen(false)}
-        title={modalType === "create" ? "Tambah Template" : "Ubah Template"}
-        width="w-[90vw] md:w-[70vw]"
         onSubmit={handleSubmit}
-        onCancel={() => setModalOpen(false)}
+        title={modalType === "create" ? "Tambah Template" : "Ubah Template"}
+        description="Buat template parameter uji untuk digunakan pada proses QC."
+        icon={<FileText className="size-6" />}
+        width="w-[92vw] md:w-[860px]"
       >
-        <div className="flex flex-col gap-4 p-5">
-          <div>
-            <span className="text-sm font-medium">Nama Template</span>
+        <div className="space-y-4">
+          <div className="space-y-2 rounded-2xl border bg-slate-50/60 p-4 dark:border-white/10 dark:bg-white/[0.03]">
+            <label className="text-sm font-semibold text-slate-900 dark:text-slate-100">
+              {t.qc.templateName} <span className="text-red-500">*</span>
+            </label>
             <Input
+              className="h-11 bg-background"
+              placeholder={t.qc.templateNamePlaceholder}
               value={templateName}
               onChange={(e) => setTemplateName(e.target.value)}
             />
           </div>
 
-          <div>
-            <div className="flex items-center justify-between">
-              <span className="text-sm font-medium">Parameter Uji</span>
+          <div className="rounded-2xl border p-4 dark:border-white/10">
+            <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+              <div className="flex items-start gap-3">
+                <span className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-blue-50 text-iprimary-blue dark:bg-blue-500/15 dark:text-blue-300">
+                  <ListChecks className="size-5" />
+                </span>
+                <div>
+                  <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100">
+                    Parameter Uji
+                  </h3>
+                  <p className="text-sm text-slate-500 dark:text-slate-400">
+                    Tambahkan parameter uji, metode uji, dan spesifikasi sesuai kebutuhan template.
+                  </p>
+                </div>
+              </div>
               <Button
                 type="button"
-                variant="outline"
-                size="sm"
                 onClick={addParameterRow}
+                className="h-10 shrink-0 bg-blue-50 text-iprimary-blue hover:bg-blue-100 dark:bg-blue-500/15 dark:text-blue-300 dark:hover:bg-blue-500/25"
               >
+                <Plus className="size-4" />
                 Tambah Baris
               </Button>
             </div>
-            <div className="mt-3 space-y-3">
+
+            <div className="space-y-3">
               {parameters.map((param, index) => (
                 <div
                   key={`param-${index}`}
-                  className="grid gap-2 rounded-lg border p-3 md:grid-cols-4"
+                  className="grid gap-3 rounded-xl border bg-slate-50/40 p-4 md:grid-cols-[1fr_1fr_1fr_auto] md:items-end dark:border-white/10 dark:bg-white/[0.02]"
                 >
-                  <Input
-                    placeholder="Parameter"
-                    value={param.parameter ?? ""}
-                    onChange={(e) =>
-                      updateParameterRow(index, "parameter", e.target.value)
-                    }
-                  />
-                  <Input
-                    placeholder="Metode Uji"
-                    value={param.testMethod ?? ""}
-                    onChange={(e) =>
-                      updateParameterRow(index, "testMethod", e.target.value)
-                    }
-                  />
-                  <Input
-                    placeholder="Spesifikasi"
-                    value={param.specification ?? ""}
-                    onChange={(e) =>
-                      updateParameterRow(index, "specification", e.target.value)
-                    }
-                  />
-                  <div className="flex items-center justify-end">
-                    <Button
-                      type="button"
-                      variant="destructive"
-                      size="sm"
-                      onClick={() => removeParameterRow(index)}
-                      disabled={parameters.length === 1}
-                    >
-                      Hapus
-                    </Button>
+                  <div className="space-y-1.5">
+                    <label className="text-sm font-medium text-slate-700 dark:text-slate-200">
+                      {t.qc.parameter} <span className="text-red-500">*</span>
+                    </label>
+                    <Input
+                      className="bg-background"
+                      placeholder={t.qc.parameterPlaceholder}
+                      value={param.parameter ?? ""}
+                      onChange={(e) =>
+                        updateParameterRow(index, "parameter", e.target.value)
+                      }
+                    />
                   </div>
+                  <div className="space-y-1.5">
+                    <label className="text-sm font-medium text-slate-700 dark:text-slate-200">
+                      {t.qc.testMethod}
+                    </label>
+                    <Input
+                      className="bg-background"
+                      placeholder={t.qc.testMethodPlaceholder}
+                      value={param.testMethod ?? ""}
+                      onChange={(e) =>
+                        updateParameterRow(index, "testMethod", e.target.value)
+                      }
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-sm font-medium text-slate-700 dark:text-slate-200">
+                      {t.qc.specification}
+                    </label>
+                    <Input
+                      className="bg-background"
+                      placeholder={t.qc.specificationPlaceholder}
+                      value={param.specification ?? ""}
+                      onChange={(e) =>
+                        updateParameterRow(index, "specification", e.target.value)
+                      }
+                    />
+                  </div>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => removeParameterRow(index)}
+                    disabled={parameters.length === 1}
+                    className="border-red-200 bg-red-50 text-red-600 hover:bg-red-100 hover:text-red-700 dark:border-red-500/30 dark:bg-red-500/10 dark:text-red-300"
+                  >
+                    <Trash2 className="size-4" />
+                    Hapus
+                  </Button>
                 </div>
               ))}
             </div>
           </div>
         </div>
-      </Modal>
+      </FormModal>
     </div>
   );
 }

@@ -12,15 +12,7 @@ import { Modal } from "@/components/custom/modal";
 import { DetailModalContact } from "./detailModalContact";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import {
-  Select,
-  SelectContent,
-  SelectGroup,
-  SelectItem,
-  SelectLabel,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { Combobox } from "@/components/ui/combobox";
 import { useLoading } from "@/context/loadingContext";
 import { MobileContext } from "@/hooks/use-mobile-ssr";
 import { Card, CardContent } from "@/components/ui/card";
@@ -586,18 +578,16 @@ export default function SettingsContactMain({
                   <span className="text-sm md:text-lg font-poppins">
                     Tipe Kontak <span className="text-red-500 ml-1">*</span>
                   </span>
-                  <Select value={contactType} onValueChange={setContactType}>
-                    <SelectTrigger className="w-full">
-                      <SelectValue placeholder="Pilih Tipe Kontak" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectGroup>
-                        <SelectLabel>Tipe Kontak</SelectLabel>
-                        <SelectItem value="1">Vendor</SelectItem>
-                        <SelectItem value="2">Client</SelectItem>
-                      </SelectGroup>
-                    </SelectContent>
-                  </Select>
+                  <Combobox
+                    options={[
+                      { value: "1", label: "Vendor" },
+                      { value: "2", label: "Client" },
+                    ]}
+                    value={contactType}
+                    onValueChange={setContactType}
+                    placeholder="Pilih Tipe Kontak"
+                    searchPlaceholder="Cari tipe kontak..."
+                  />
                   {contactType === "1" && (
                     <div>
                       <div className="flex flex-col w-full gap-2">

@@ -4,7 +4,7 @@ import { IProductionJirigen } from "@/types/production";
 import { getDictionary } from "../../../get-dictionary";
 import { ReactNode } from "react";
 import { Button } from "../ui/button";
-import { ChevronDown, Loader2, Plus } from "lucide-react";
+import { CheckCircle2, ChevronDown, Eye, Loader2, Pencil, Plus, ScanLine } from "lucide-react";
 import { FaArrowRotateLeft, FaFilter } from "react-icons/fa6";
 
 type DetailDictionary = Awaited<
@@ -23,6 +23,9 @@ type Props = {
   onCreate: () => void;
   onPrintBarcode: (jirigenId: string) => void;
   printingBarcodeId?: string | null;
+  onScan: (jirigenId: string) => void;
+  onDetail: (jirigen: IProductionJirigen) => void;
+  onEdit: (jirigen: IProductionJirigen) => void;
   onOpenFilter: () => void;
   onRefresh: () => void;
   formatDate: (value?: string) => string;
@@ -41,6 +44,9 @@ export function ProductionJirigenSection({
   onCreate,
   onPrintBarcode,
   printingBarcodeId,
+  onScan,
+  onDetail,
+  onEdit,
   onOpenFilter,
   onRefresh,
   formatDate,
@@ -118,13 +124,60 @@ export function ProductionJirigenSection({
               >
                 <div>
                   <div className="text-sm font-semibold text-slate-900 dark:text-slate-100">
-                    Jirigen #{jirigen.jirigenNumber}
+                    {jirigen.jirigenNumber} jirigen × {Number(jirigen.volumeLiter)} L
+                    <span className="ml-2 font-normal text-slate-500 dark:text-slate-400">
+                      (total {(Number(jirigen.jirigenNumber) * Number(jirigen.volumeLiter)).toLocaleString("id-ID")} L)
+                    </span>
                   </div>
                   <div className="text-xs text-slate-500 dark:text-slate-400">
-                    {dictionary.batch_id} {jirigen.batchId} •{" "}
+                    {jirigen.batch?.batchNumber ?? `Batch #${jirigen.batchId}`} •{" "}
                     {formatDate(jirigen.productionDatetime)}
                   </div>
                 </div>
+                <div className="flex flex-wrap items-center gap-2">
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  className="w-fit"
+                  onClick={() => onDetail(jirigen)}
+                  aria-label="Lihat detail jirigen"
+                >
+                  <Eye className="mr-1.5 h-4 w-4" /> Detail
+                </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  className="w-fit border-yellow-400 text-yellow-700 hover:bg-yellow-50 dark:text-yellow-300 dark:hover:bg-yellow-500/10"
+                  onClick={() => onEdit(jirigen)}
+                  aria-label="Edit jirigen"
+                >
+                  <Pencil className="mr-1.5 h-4 w-4" /> Edit
+                </Button>
+                {(jirigen.inStockCount ?? 0) >= Number(jirigen.jirigenNumber) ? (
+                  <span className="inline-flex items-center gap-1 rounded-md border border-green-200 bg-green-100 px-2.5 py-1 text-xs font-medium text-green-700 dark:border-green-500/30 dark:bg-green-500/10 dark:text-green-300">
+                    <CheckCircle2 className="h-3.5 w-3.5" />
+                    Sudah masuk stok
+                  </span>
+                ) : (
+                  <>
+                    {(jirigen.inStockCount ?? 0) > 0 ? (
+                      <span className="text-xs text-amber-600 dark:text-amber-400">
+                        {jirigen.inStockCount}/{jirigen.jirigenNumber} di stok
+                      </span>
+                    ) : null}
+                    <Button
+                      type="button"
+                      size="sm"
+                      className="w-fit bg-iprimary-blue text-white hover:bg-iprimary-blue/90"
+                      onClick={() => onScan(String(jirigen.id))}
+                    >
+                      <ScanLine className="mr-2 h-4 w-4" />
+                      Scan Produksi
+                    </Button>
+                  </>
+                )}
                 <Button
                   type="button"
                   size="sm"
@@ -142,6 +195,7 @@ export function ProductionJirigenSection({
                     "Cetak Barcode"
                   )}
                 </Button>
+                </div>
               </div>
             ))
           ) : (

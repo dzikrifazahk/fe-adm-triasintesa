@@ -1,12 +1,6 @@
 import { Table } from "@tanstack/react-table";
 import { Button } from "../ui/button";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "../ui/select";
+import { Combobox } from "../ui/combobox";
 
 interface DataTablePaginationProps<TData> {
   isSelectItem?: boolean;
@@ -30,6 +24,10 @@ export const DataTablePagination = <TData,>({
   layout = "horizontal",
 }: DataTablePaginationProps<TData>) => {
   const pageSizes = [5, 10, 20, 30, 40, 50];
+  const pageSizeOptions = pageSizes.map((pageSize) => ({
+    value: String(pageSize),
+    label: String(pageSize),
+  }));
   const handlePageChange = (actions: string) => {
     let newPage: number = currentPage;
     if (actions === "prev") {
@@ -72,21 +70,14 @@ export const DataTablePagination = <TData,>({
                 <span className="whitespace-nowrap text-xs">
                   Halaman {currentPage} dari {lastPage}
                 </span>
-                <Select
+                <Combobox
+                  options={pageSizeOptions}
                   value={String(currentPageSize)}
                   onValueChange={handlePageSizeChange}
-                >
-                  <SelectTrigger className="w-auto shrink-0">
-                    <SelectValue placeholder="Select Page Size" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {pageSizes.map((pageSize) => (
-                      <SelectItem key={pageSize} value={String(pageSize)}>
-                        {pageSize}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                  searchable={false}
+                  className="w-[90px] shrink-0"
+                  contentClassName="min-w-[90px]"
+                />
               </div>
               <Button
                 variant="outline"
@@ -123,21 +114,14 @@ export const DataTablePagination = <TData,>({
               <span className="whitespace-nowrap text-xs">
                 Halaman {currentPage} dari {lastPage}
               </span>
-              <Select
+              <Combobox
+                options={pageSizeOptions}
                 value={String(currentPageSize)}
                 onValueChange={handlePageSizeChange}
-              >
-                <SelectTrigger className="w-auto shrink-0">
-                  <SelectValue placeholder="Select Page Size" />
-                </SelectTrigger>
-                <SelectContent>
-                  {pageSizes.map((pageSize) => (
-                    <SelectItem key={pageSize} value={String(pageSize)}>
-                      {pageSize}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                searchable={false}
+                className="w-[90px] shrink-0"
+                contentClassName="min-w-[90px]"
+              />
               <Button
                 variant="outline"
                 size="sm"

@@ -24,6 +24,7 @@ import { getDictionary } from "../../../get-dictionary";
 import { IInvJirigen } from "@/types/inventory";
 import { FaPencil, FaTrash } from "react-icons/fa6";
 
+import { Combobox } from "@/components/ui/combobox";
 type Dictionary = Awaited<ReturnType<typeof getDictionary>>["inventory_page_dic"];
 
 type Props = {
@@ -249,17 +250,17 @@ export function InventoryRecentTable(props: Props) {
             Halaman {page} dari {lastPage}
           </div>
           <div className="flex items-center gap-2">
-            <select
-              className="h-9 rounded-md border bg-background px-2 text-sm"
+            <Combobox
+              options={[10, 20, 50, 100].map((size) => ({
+                value: String(size),
+                label: `${size} / halaman`,
+              }))}
               value={String(pageSize)}
-              onChange={(event) => onPageSizeChange(Number(event.target.value))}
-            >
-              {[10, 20, 50, 100].map((size) => (
-                <option key={size} value={size}>
-                  {size} / halaman
-                </option>
-              ))}
-            </select>
+              onValueChange={(value) => onPageSizeChange(Number(value))}
+              searchable={false}
+              className="h-9 w-[140px]"
+              contentClassName="min-w-[140px]"
+            />
             <Button
               variant="outline"
               onClick={() => onPageChange(page - 1)}

@@ -210,7 +210,7 @@ export function InventoryBarcodeScanner({
   return (
     <div>
       <label className="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-200">
-        {dictionary.scanner.barcode_label}
+        {dictionary.scanner.barcode_label} <span className="ml-0.5 text-red-500">*</span>
       </label>
       <div className="mb-3 flex flex-wrap items-center gap-2">
         <Button

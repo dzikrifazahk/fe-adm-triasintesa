@@ -156,6 +156,17 @@ export const columns = (props: ChildProps): ColumnDef<IInventoryItem>[] => [
         <ArrowUpDown className="ml-2 h-4 w-4" />
       </Button>
     ),
+    cell: ({ row }) => (
+      <span
+        className={`inline-block whitespace-nowrap rounded-md border px-3 py-1 text-xs font-medium capitalize ${
+          row.original.isActive
+            ? "bg-green-100 text-green-700 border-green-200"
+            : "bg-red-100 text-red-700 border-red-200"
+        }`}
+      >
+        {row.original.isActive ? "active" : "inactive"}
+      </span>
+    ),
   },
   {
     id: props.dictionary.column.created_at,

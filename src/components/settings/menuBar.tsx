@@ -29,6 +29,7 @@ import {
 import clsx from "clsx";
 import { MobileContext } from "@/hooks/use-mobile-ssr";
 import { Popover, PopoverTrigger, PopoverContent } from "../ui/popover";
+import { Tooltip, TooltipContent, TooltipTrigger } from "../ui/tooltip";
 
 /* ─────────────────────────── Types ─────────────────────────── */
 interface Props {
@@ -282,14 +283,23 @@ export function MenuBar({ dictionary, children }: Props) {
   return (
     <div className="h-full w-full overflow-hidden">
       <div className="flex h-full max-w-[100vw] gap-2 ">
-        {/* Sidebar */}
-        {!sidebarCollapsed && (
-          <aside
+        {/* Sidebar: lebar dianimasikan, panel expanded & rail saling fade */}
+        <aside
+          className={clsx(
+            "relative hidden md:block shrink-0 overflow-hidden rounded-lg border bg-white dark:bg-card",
+            "transition-[width] duration-300 ease-in-out motion-reduce:transition-none",
+            sidebarCollapsed ? "w-16" : "md:w-64 lg:w-72 xl:w-80"
+          )}
+        >
+          <div
+            inert={sidebarCollapsed}
             className={clsx(
-              "hidden md:flex flex-col bg-white dark:bg-card rounded-lg border",
-              "overflow-y-auto min-h-0",
-              "transition-[width] duration-200 ease-in-out",
-              "md:w-64 lg:w-72 xl:w-80"
+              "absolute inset-y-0 left-0 flex flex-col overflow-y-auto min-h-0",
+              "md:w-64 lg:w-72 xl:w-80",
+              "transition-[opacity,transform] duration-300 ease-in-out motion-reduce:transition-none",
+              sidebarCollapsed
+                ? "pointer-events-none -translate-x-6 opacity-0"
+                : "translate-x-0 opacity-100"
             )}
           >
             {/* Header sticky */}
@@ -422,22 +432,73 @@ export function MenuBar({ dictionary, children }: Props) {
                 );
               })}
             </nav>
-          </aside>
-        )}
-
-        {/* Rail (collapsed) */}
-        {sidebarCollapsed && (
-          <div className="hidden md:flex items-center justify-center md:w-10 border rounded-lg bg-white">
-            <button
-              onClick={() => setSidebarCollapsed(false)}
-              className="text-gray-500 hover:text-black"
-              aria-label="Expand sidebar"
-              title="Expand sidebar"
-            >
-              <ChevronRight />
-            </button>
           </div>
-        )}
+
+          {/* Rail (collapsed) */}
+          <div
+            inert={!sidebarCollapsed}
+            className={clsx(
+              "absolute inset-y-0 left-0 flex w-16 flex-col items-center overflow-y-auto min-h-0",
+              "transition-opacity duration-200 ease-in-out motion-reduce:transition-none",
+              sidebarCollapsed
+                ? "opacity-100 delay-150"
+                : "pointer-events-none opacity-0"
+            )}
+          >
+            <div className="sticky top-0 z-10 w-full flex justify-center bg-white dark:bg-card py-5 border-b">
+              <button
+                onClick={() => setSidebarCollapsed(false)}
+                className="text-gray-500 hover:text-black dark:hover:text-white"
+                aria-label="Expand sidebar"
+                title="Expand sidebar"
+              >
+                <ChevronRight />
+              </button>
+            </div>
+
+            <nav className="flex flex-col items-center gap-1 py-3 w-full px-2">
+              {menu.map((node, idx) => {
+                if (node.kind === "header") {
+                  return idx === 0 ? null : (
+                    <div key={`rail-hdr-${idx}`} className="my-2 w-8 border-t" />
+                  );
+                }
+
+                const item = node;
+                const activeItem =
+                  isActive(item.to) ||
+                  !!item.subItems?.some((sub) => isActive(sub.to));
+
+                return (
+                  <Tooltip key={`rail-itm-${item.title}`}>
+                    <TooltipTrigger asChild>
+                      <Link
+                        href={buildFull(item.to)}
+                        aria-label={item.title}
+                        className={clsx(
+                          "flex items-center justify-center w-11 h-11 rounded-lg transition-colors",
+                          activeItem
+                            ? "bg-iprimary-blue text-white"
+                            : "text-iprimary-blue dark:text-white hover:bg-iprimary-blue hover:text-white"
+                        )}
+                        onClick={(e) => {
+                          if (isActive(item.to)) {
+                            e.preventDefault();
+                            return;
+                          }
+                          setIsLoading(true);
+                        }}
+                      >
+                        {item.icon}
+                      </Link>
+                    </TooltipTrigger>
+                    <TooltipContent side="right">{item.title}</TooltipContent>
+                  </Tooltip>
+                );
+              })}
+            </nav>
+          </div>
+        </aside>
 
         {/* Content */}
         <main className="flex-1 min-w-0 h-full overflow-y-auto rounded-lg ">

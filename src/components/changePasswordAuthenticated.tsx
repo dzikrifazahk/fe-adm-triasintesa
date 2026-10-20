@@ -17,6 +17,7 @@ import { useLoading } from "@/context/loadingContext";
 import { authService } from "@/services";
 import { deleteCookie, getCookies } from "cookies-next";
 
+import { useFormText } from "@/hooks/use-form-text";
 interface Props {
   dictionary: Awaited<ReturnType<typeof getDictionary>>["primary_sidebar"];
   isOpen: boolean;
@@ -32,6 +33,7 @@ export function ChangePasswordAuthenticated({
   onClose,
   isGetData,
 }: Props) {
+  const t = useFormText();
   const { setIsLoading } = useLoading();
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
@@ -146,7 +148,7 @@ export function ChangePasswordAuthenticated({
         onSubmit={handleSubmit}
       >
         <div className="p-5">
-          <div className="mb-5 rounded-2xl border border-slate-200 bg-gradient-to-br from-slate-50 to-white p-4 shadow-sm">
+          <div className="mb-5 rounded-2xl border border-slate-200 bg-gradient-to-br from-slate-50 to-white p-4 shadow-sm dark:border-white/10 dark:from-white/5 dark:to-white/[0.02]">
             <div className="flex items-start gap-3">
               <button
                 type="button"
@@ -164,19 +166,19 @@ export function ChangePasswordAuthenticated({
 
               <div className="flex-1">
                 <div className="flex flex-wrap items-center gap-2">
-                  <h3 className="text-sm font-semibold text-slate-900">
+                  <h3 className="text-sm font-semibold text-slate-900 dark:text-white">
                     Ubah Password
                   </h3>
                   <button
                     type="button"
                     onClick={() => setIsRuleDialogOpen(true)}
-                    className="rounded-full bg-blue-50 px-2.5 py-1 text-xs font-medium text-iprimary-blue transition hover:bg-blue-100"
+                    className="rounded-full bg-blue-50 px-2.5 py-1 text-xs font-medium text-iprimary-blue transition hover:bg-blue-100 dark:bg-blue-500/15 dark:text-blue-300 dark:hover:bg-blue-500/25"
                   >
                     Lihat aturan password
                   </button>
                 </div>
 
-                <p className="mt-1 text-sm text-slate-500">
+                <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
                   Masukkan password saat ini dan password baru untuk memperbarui
                   keamanan akun Anda.
                 </p>
@@ -185,10 +187,10 @@ export function ChangePasswordAuthenticated({
           </div>
 
           <div className="space-y-5">
-            <div className="space-y-4 rounded-2xl border border-slate-200 bg-slate-50 p-4">
+            <div className="space-y-4 rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-white/10 dark:bg-white/5">
               <div className="space-y-2">
-                <label className="text-sm font-medium text-slate-700">
-                  Password Saat Ini <span className="ml-1 text-red-500">*</span>
+                <label className="text-sm font-medium text-slate-700 dark:text-slate-200">
+                  {t.password.current} <span className="ml-1 text-red-500">*</span>
                 </label>
 
                 <div className="relative">
@@ -196,7 +198,7 @@ export function ChangePasswordAuthenticated({
                     type={showCurrentPassword ? "text" : "password"}
                     value={currentPassword}
                     onChange={(e) => setCurrentPassword(e.target.value)}
-                    placeholder="Masukkan password saat ini"
+                    placeholder={t.password.currentPlaceholder}
                     className="pr-12"
                     required
                   />
@@ -204,7 +206,7 @@ export function ChangePasswordAuthenticated({
                   <button
                     type="button"
                     onClick={() => setShowCurrentPassword((prev) => !prev)}
-                    className="absolute inset-y-0 right-0 flex w-11 items-center justify-center text-slate-500 transition hover:text-slate-700"
+                    className="absolute inset-y-0 right-0 flex w-11 items-center justify-center text-slate-500 transition hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200"
                   >
                     {showCurrentPassword ? (
                       <EyeOff className="h-4 w-4" />
@@ -216,8 +218,8 @@ export function ChangePasswordAuthenticated({
               </div>
 
               <div className="space-y-2">
-                <label className="text-sm font-medium text-slate-700">
-                  Password Baru <span className="ml-1 text-red-500">*</span>
+                <label className="text-sm font-medium text-slate-700 dark:text-slate-200">
+                  {t.password.next} <span className="ml-1 text-red-500">*</span>
                 </label>
 
                 <div className="relative">
@@ -225,7 +227,7 @@ export function ChangePasswordAuthenticated({
                     type={showNewPassword ? "text" : "password"}
                     value={newPassword}
                     onChange={(e) => setNewPassword(e.target.value)}
-                    placeholder="Masukkan password baru"
+                    placeholder={t.password.nextPlaceholder}
                     className="pr-12"
                     required
                   />
@@ -233,7 +235,7 @@ export function ChangePasswordAuthenticated({
                   <button
                     type="button"
                     onClick={() => setShowNewPassword((prev) => !prev)}
-                    className="absolute inset-y-0 right-0 flex w-11 items-center justify-center text-slate-500 transition hover:text-slate-700"
+                    className="absolute inset-y-0 right-0 flex w-11 items-center justify-center text-slate-500 transition hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200"
                   >
                     {showNewPassword ? (
                       <EyeOff className="h-4 w-4" />
@@ -244,7 +246,7 @@ export function ChangePasswordAuthenticated({
                 </div>
               </div>
 
-              <div className="rounded-xl border border-dashed border-blue-200 bg-blue-50/60 px-3 py-2 text-xs text-slate-600">
+              <div className="rounded-xl border border-dashed border-blue-200 bg-blue-50/60 px-3 py-2 text-xs text-slate-600 dark:border-blue-400/30 dark:bg-blue-500/10 dark:text-slate-300">
                 Tips: klik ikon alert biru untuk melihat panduan password dengan
                 detail.
               </div>
@@ -256,7 +258,7 @@ export function ChangePasswordAuthenticated({
       <Dialog open={isRuleDialogOpen} onOpenChange={setIsRuleDialogOpen}>
         <DialogContent className="sm:max-w-[560px] rounded-2xl">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-slate-900">
+            <DialogTitle className="flex items-center gap-2 text-slate-900 dark:text-white">
               <LockKeyhole className="h-5 w-5 text-iprimary-blue" />
               Aturan Password Baru
             </DialogTitle>
@@ -266,8 +268,8 @@ export function ChangePasswordAuthenticated({
           </DialogHeader>
 
           <div className="space-y-4">
-            <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-              <p className="mb-3 text-sm font-semibold text-slate-800">
+            <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-white/10 dark:bg-white/5">
+              <p className="mb-3 text-sm font-semibold text-slate-800 dark:text-slate-100">
                 Password baru sebaiknya memiliki:
               </p>
 
@@ -288,7 +290,7 @@ export function ChangePasswordAuthenticated({
               </div>
             </div>
 
-            <div className="rounded-2xl border border-blue-100 bg-blue-50 p-4 text-sm text-slate-600">
+            <div className="rounded-2xl border border-blue-100 bg-blue-50 p-4 text-sm text-slate-600 dark:border-blue-400/20 dark:bg-blue-500/10 dark:text-slate-300">
               Hindari menggunakan nama sendiri, tanggal lahir, atau kombinasi
               yang mudah ditebak.
             </div>
@@ -304,8 +306,8 @@ function PasswordRule({ label, valid }: { label: string; valid: boolean }) {
     <div
       className={`rounded-xl border px-3 py-2 text-sm transition ${
         valid
-          ? "border-green-200 bg-green-50 text-green-700"
-          : "border-slate-200 bg-white text-slate-500"
+          ? "border-green-200 bg-green-50 text-green-700 dark:border-green-400/30 dark:bg-green-500/10 dark:text-green-300"
+          : "border-slate-200 bg-white text-slate-500 dark:border-white/10 dark:bg-white/5 dark:text-slate-400"
       }`}
     >
       {label}

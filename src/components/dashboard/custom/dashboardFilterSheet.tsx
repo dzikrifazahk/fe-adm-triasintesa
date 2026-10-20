@@ -42,7 +42,7 @@ export function DashboardFilterSheet({
   return (
     <Sheet>
       <SheetTrigger asChild>
-        <Button variant="outline" className="gap-2 rounded-xl border-slate-200">
+        <Button variant="outline" className="gap-2 rounded-xl border-border">
           <Filter className="size-4" />
           Filter
         </Button>
@@ -60,7 +60,7 @@ export function DashboardFilterSheet({
               type="date"
               value={dateFrom}
               onChange={(event) => onDateFromChange(event.target.value)}
-              className="rounded-xl border-slate-200"
+              className="rounded-xl border-border"
             />
           </div>
           <div className="grid gap-2">
@@ -69,7 +69,7 @@ export function DashboardFilterSheet({
               type="date"
               value={dateTo}
               onChange={(event) => onDateToChange(event.target.value)}
-              className="rounded-xl border-slate-200"
+              className="rounded-xl border-border"
             />
           </div>
 
@@ -82,7 +82,7 @@ export function DashboardFilterSheet({
             Reset
           </Button>
           <SheetClose asChild>
-            <Button className="flex-1 rounded-xl bg-slate-900 hover:bg-slate-800" onClick={onApply}>
+            <Button className="flex-1 rounded-xl bg-slate-900 hover:bg-slate-800 dark:bg-white dark:text-slate-900 dark:hover:bg-slate-200" onClick={onApply}>
               Terapkan
             </Button>
           </SheetClose>

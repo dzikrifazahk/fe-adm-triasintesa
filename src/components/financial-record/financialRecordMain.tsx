@@ -18,23 +18,38 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import {
+  Building2,
+  CalendarDays,
   CheckCircle2,
   CircleDollarSign,
   CreditCard,
   FileClock,
+  FileText,
+  Info,
+  NotebookPen,
+  Paperclip,
   Plus,
   ReceiptText,
   RefreshCcw,
+  Save,
+  StickyNote,
+  Tag,
+  Type,
   Upload,
+  Users,
+  Wallet,
   WalletCards,
+  X,
 } from "lucide-react";
 import { openSwal } from "@/lib/swal";
 import { IFinancialRecordItem } from "@/types/financial-record";
+import { Combobox } from "@/components/ui/combobox";
 
+import { CurrencyInput } from "@/components/ui/currency-input";
+import { useFormText } from "@/hooks/use-form-text";
 type Dictionary = Awaited<
   ReturnType<typeof getDictionary>
 >["financial_record_page_dic"];
@@ -42,6 +57,101 @@ type Dictionary = Awaited<
 type Props = {
   dictionary: Dictionary;
 };
+
+const NOTES_MAX_LENGTH = 500;
+
+const EXPENSE_TYPE_OPTIONS: { value: FinancialSource; label: string; icon: React.ReactNode }[] = [
+  { value: "flash_cash", label: "Flash Cash", icon: <Wallet className="size-4" /> },
+  { value: "invoice", label: "Invoice", icon: <FileText className="size-4" /> },
+  { value: "reimbursement", label: "Reimbursement", icon: <ReceiptText className="size-4" /> },
+  { value: "man_power", label: "Man Power", icon: <Users className="size-4" /> },
+];
+
+function FieldIcon({ children, className }: { children: React.ReactNode; className?: string }) {
+  return (
+    <span
+      className={cn(
+        "flex size-8 items-center justify-center rounded-md bg-slate-100 text-slate-500 dark:bg-white/10 dark:text-slate-300",
+        className,
+      )}
+    >
+      {children}
+    </span>
+  );
+}
+
+function FormSection({
+  icon,
+  title,
+  description,
+  children,
+  className,
+}: {
+  icon: React.ReactNode;
+  title: string;
+  description: string;
+  children: React.ReactNode;
+  className?: string;
+}) {
+  return (
+    <section
+      className={cn(
+        "rounded-2xl border border-slate-200 bg-slate-50/60 p-4 dark:border-white/10 dark:bg-white/[0.03]",
+        className,
+      )}
+    >
+      <div className="mb-4 flex items-start gap-3">
+        <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-blue-50 text-iprimary-blue dark:bg-blue-500/15 dark:text-blue-300">
+          {icon}
+        </span>
+        <div>
+          <h3 className="font-semibold text-slate-900 dark:text-slate-100">{title}</h3>
+          <p className="text-xs text-slate-500 dark:text-slate-400">{description}</p>
+        </div>
+      </div>
+      {children}
+    </section>
+  );
+}
+
+function FormLabel({ children, required }: { children: React.ReactNode; required?: boolean }) {
+  return (
+    <Label className="text-sm font-medium text-slate-700 dark:text-slate-200">
+      {children}
+      {required ? <span className="text-red-500">*</span> : null}
+    </Label>
+  );
+}
+
+function IconCurrencyInput({
+  icon,
+  className,
+  ...props
+}: React.ComponentProps<typeof CurrencyInput> & { icon: React.ReactNode }) {
+  return (
+    <div className="relative">
+      <span className="pointer-events-none absolute inset-y-0 left-1.5 flex items-center">
+        {icon}
+      </span>
+      <CurrencyInput className={cn("h-11 pl-12", className)} {...props} />
+    </div>
+  );
+}
+
+function IconInput({
+  icon,
+  className,
+  ...props
+}: React.ComponentProps<typeof Input> & { icon: React.ReactNode }) {
+  return (
+    <div className="relative">
+      <span className="pointer-events-none absolute inset-y-0 left-1.5 flex items-center">
+        {icon}
+      </span>
+      <Input className={cn("h-11 pl-12", className)} {...props} />
+    </div>
+  );
+}
 
 type FinancialStage = "submission" | "payment_request" | "paid";
 type FinancialPriority = "high" | "medium" | "low";
@@ -200,6 +310,7 @@ function getStageIcon(stage: FinancialStage) {
 }
 
 export default function FinancialRecordMain({ dictionary }: Props) {
+  const t = useFormText();
   const copy = dictionary;
   const [activeTab, setActiveTab] = useState<FinancialStage>("submission");
   const [recordsByStage, setRecordsByStage] = useState<StageCache>({
@@ -599,116 +710,253 @@ export default function FinancialRecordMain({ dictionary }: Props) {
       </div>
 
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="max-h-[92vh] overflow-y-auto sm:max-w-3xl">
-          <DialogHeader>
-            <DialogTitle>
-              {editingRecordId
-                ? copy?.form?.edit_title ?? "Edit Expense"
-                : copy?.form?.create_title ?? "Add Expense"}
-            </DialogTitle>
-            <DialogDescription>
-              {copy?.form?.attachment_hint ?? "Attachment only allows images or PDF up to 3MB."}
-            </DialogDescription>
+        <DialogContent className="max-h-[92vh] overflow-y-auto p-0 sm:max-w-3xl">
+          <DialogHeader className="flex-row items-start gap-4 space-y-0 px-6 pt-6 text-left">
+            <span className="flex size-14 shrink-0 items-center justify-center rounded-2xl bg-blue-50 text-iprimary-blue dark:bg-blue-500/15 dark:text-blue-300">
+              <FileText className="size-6" />
+            </span>
+            <div className="space-y-1">
+              <DialogTitle className="text-2xl">
+                {editingRecordId
+                  ? copy?.form?.edit_title ?? "Edit Expense"
+                  : copy?.form?.create_title ?? "Tambah Expense"}
+              </DialogTitle>
+              <DialogDescription>
+                Lengkapi informasi pengeluaran dan unggah bukti pembayaran.
+              </DialogDescription>
+            </div>
           </DialogHeader>
 
-          <div className="grid gap-4 py-2 md:grid-cols-2">
-            <div className="space-y-2">
-              <Label>{copy?.form?.expense_type_label ?? "Expense Type"}</Label>
-              <Select value={form.sourceType} onValueChange={(value) => handleSourceChange(value as FinancialSource)}>
-                <SelectTrigger className="cursor-pointer">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="flash_cash" className="cursor-pointer">Flash Cash</SelectItem>
-                  <SelectItem value="invoice" className="cursor-pointer">Invoice</SelectItem>
-                  <SelectItem value="reimbursement" className="cursor-pointer">Reimbursement</SelectItem>
-                  <SelectItem value="man_power" className="cursor-pointer">Man Power</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2">
-              <Label>{copy?.form?.category_label ?? "Category"}</Label>
-              <Select value={form.category} onValueChange={(value) => handleFormChange("category", value)}>
-                <SelectTrigger className="cursor-pointer">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {sourceCategories[form.sourceType].map((category) => (
-                    <SelectItem key={category} value={category} className="cursor-pointer">{category}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+          <div className="space-y-4 px-6">
+            <div className="flex items-center gap-3 rounded-xl bg-blue-50 px-4 py-3 text-sm text-iprimary-blue dark:bg-blue-500/10 dark:text-blue-300">
+              <Info className="size-5 shrink-0" />
+              {copy?.form?.attachment_hint ?? "Attachment hanya gambar atau PDF dengan ukuran maksimal 3MB."}
             </div>
 
-            <div className="space-y-2 md:col-span-2">
-              <Label>{copy?.form?.title_label ?? "Expense Title"}</Label>
-              <Input value={form.title} onChange={(event) => handleFormChange("title", event.target.value)} placeholder={copy?.form?.title_placeholder ?? "Example: Material purchase"} />
-            </div>
-            <div className="space-y-2">
-              <Label>{form.sourceType === "reimbursement" ? copy?.form?.claimant_label ?? "Claimant" : copy?.form?.vendor_label ?? "Vendor / Recipient"}</Label>
-              <Input value={form.vendor} onChange={(event) => handleFormChange("vendor", event.target.value)} placeholder={copy?.form?.vendor_placeholder ?? "Vendor or recipient name"} />
-            </div>
-            <div className="space-y-2">
-              <Label>{copy?.form?.amount_label ?? "Amount"}</Label>
-              <Input type="number" min="0" value={form.amount} onChange={(event) => handleFormChange("amount", event.target.value)} placeholder={copy?.form?.amount_placeholder ?? "0"} />
-            </div>
-
-            {!isRangeType ? (
-              <div className="space-y-2">
-                <Label>{copy?.form?.date_label ?? "Date"}</Label>
-                <Input type="date" value={form.expenseDate} onChange={(event) => handleFormChange("expenseDate", event.target.value)} />
+            <FormSection
+              icon={<NotebookPen className="size-4" />}
+              title="Informasi Utama"
+              description="Pilih tipe, kategori, dan masukkan judul pengeluaran."
+            >
+              <div className="grid gap-4 md:grid-cols-2">
+                <div className="space-y-2">
+                  <FormLabel required>{copy?.form?.expense_type_label ?? "Tipe Pengeluaran"}</FormLabel>
+                  <Combobox
+                    options={EXPENSE_TYPE_OPTIONS}
+                    value={form.sourceType}
+                    onValueChange={(value) => handleSourceChange(value as FinancialSource)}
+                    placeholder={t.finance.selectExpenseType}
+                    searchable={false}
+                    className="h-11 pl-1.5 bg-background"
+                    icon={
+                      <FieldIcon className="bg-blue-50 text-iprimary-blue dark:bg-blue-500/15 dark:text-blue-300">
+                        {EXPENSE_TYPE_OPTIONS.find((option) => option.value === form.sourceType)?.icon ?? (
+                          <Wallet className="size-4" />
+                        )}
+                      </FieldIcon>
+                    }
+                  />
+                </div>
+                <div className="space-y-2">
+                  <FormLabel required>{copy?.form?.category_label ?? "Kategori"}</FormLabel>
+                  <Combobox
+                    options={sourceCategories[form.sourceType].map((category) => ({
+                      value: category,
+                      label: category,
+                    }))}
+                    value={form.category}
+                    onValueChange={(value) => handleFormChange("category", value)}
+                    placeholder={t.common.selectCategory}
+                    searchPlaceholder={t.common.searchCategory}
+                    className="h-11 pl-1.5 bg-background capitalize"
+                    contentClassName="capitalize"
+                    icon={
+                      <FieldIcon className="bg-violet-50 text-violet-600 dark:bg-violet-500/15 dark:text-violet-300">
+                        <Tag className="size-4" />
+                      </FieldIcon>
+                    }
+                  />
+                </div>
+                <div className="space-y-2 md:col-span-2">
+                  <FormLabel required>{copy?.form?.title_label ?? "Judul Expense"}</FormLabel>
+                  <IconInput
+                    icon={<FieldIcon><Type className="size-4" /></FieldIcon>}
+                    value={form.title}
+                    onChange={(event) => handleFormChange("title", event.target.value)}
+                    placeholder={copy?.form?.title_placeholder ?? "Contoh: Pengadaan bahan baku tambahan"}
+                  />
+                </div>
               </div>
-            ) : (
-              <>
-                <div className="space-y-2">
-                  <Label>{copy?.form?.period_start_label ?? "Start Date"}</Label>
-                  <Input type="date" value={form.periodStartDate} onChange={(event) => handleFormChange("periodStartDate", event.target.value)} />
-                </div>
-                <div className="space-y-2">
-                  <Label>{copy?.form?.period_end_label ?? "End Date"}</Label>
-                  <Input type="date" value={form.periodEndDate} onChange={(event) => {
-                    handleFormChange("periodEndDate", event.target.value);
-                    handleFormChange("dueDate", event.target.value);
-                  }} />
-                </div>
-              </>
-            )}
+            </FormSection>
 
-            <div className="space-y-2">
-              <Label>{copy?.form?.due_date_label ?? "Due Date"}</Label>
-              <Input type="date" value={form.dueDate} onChange={(event) => handleFormChange("dueDate", event.target.value)} />
+            <FormSection
+              icon={<CalendarDays className="size-4" />}
+              title="Detail Transaksi"
+              description="Isi informasi vendor, nominal, dan tanggal transaksi."
+            >
+              <div className="grid gap-4 md:grid-cols-2">
+                <div className="space-y-2">
+                  <FormLabel>
+                    {form.sourceType === "reimbursement"
+                      ? copy?.form?.claimant_label ?? "Claimant"
+                      : copy?.form?.vendor_label ?? "Vendor"}
+                  </FormLabel>
+                  <IconInput
+                    icon={<FieldIcon><Building2 className="size-4" /></FieldIcon>}
+                    value={form.vendor}
+                    onChange={(event) => handleFormChange("vendor", event.target.value)}
+                    placeholder={copy?.form?.vendor_placeholder ?? "Nama vendor"}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <FormLabel required>{copy?.form?.amount_label ?? "Nominal"}</FormLabel>
+                  <IconCurrencyInput
+                    icon={
+                      <FieldIcon className="bg-emerald-50 text-[11px] font-bold text-emerald-600 dark:bg-emerald-500/15 dark:text-emerald-300">
+                        Rp
+                      </FieldIcon>
+                    }
+                    showPrefix={false}
+                    value={form.amount}
+                    onValueChange={(value) => handleFormChange("amount", value)}
+                    placeholder={copy?.form?.amount_placeholder ?? "0"}
+                  />
+                </div>
+
+                {!isRangeType ? (
+                  <div className="space-y-2">
+                    <FormLabel required>{copy?.form?.date_label ?? "Tanggal"}</FormLabel>
+                    <IconInput
+                      icon={<FieldIcon><CalendarDays className="size-4" /></FieldIcon>}
+                      type="date"
+                      value={form.expenseDate}
+                      onChange={(event) => handleFormChange("expenseDate", event.target.value)}
+                    />
+                  </div>
+                ) : (
+                  <>
+                    <div className="space-y-2">
+                      <FormLabel required>{copy?.form?.period_start_label ?? "Tanggal Mulai"}</FormLabel>
+                      <IconInput
+                        icon={<FieldIcon><CalendarDays className="size-4" /></FieldIcon>}
+                        type="date"
+                        value={form.periodStartDate}
+                        onChange={(event) => handleFormChange("periodStartDate", event.target.value)}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <FormLabel required>{copy?.form?.period_end_label ?? "Tanggal Selesai"}</FormLabel>
+                      <IconInput
+                        icon={<FieldIcon><CalendarDays className="size-4" /></FieldIcon>}
+                        type="date"
+                        value={form.periodEndDate}
+                        onChange={(event) => {
+                          handleFormChange("periodEndDate", event.target.value);
+                          handleFormChange("dueDate", event.target.value);
+                        }}
+                      />
+                    </div>
+                  </>
+                )}
+
+                <div className="space-y-2">
+                  <FormLabel>{copy?.form?.due_date_label ?? "Due Date"}</FormLabel>
+                  <IconInput
+                    icon={<FieldIcon><CalendarDays className="size-4" /></FieldIcon>}
+                    type="date"
+                    value={form.dueDate}
+                    onChange={(event) => handleFormChange("dueDate", event.target.value)}
+                  />
+                </div>
+              </div>
+            </FormSection>
+
+            <div className="grid gap-4 md:grid-cols-2">
+              <FormSection
+                icon={<Paperclip className="size-4" />}
+                title={copy?.form?.attachment_label ?? "Attachment"}
+                description="Unggah bukti pengeluaran."
+              >
+                <label className="flex min-h-28 cursor-pointer flex-col items-center justify-center gap-1 rounded-xl border-2 border-dashed border-blue-200 bg-background px-4 py-4 text-center transition hover:border-iprimary-blue hover:bg-blue-50/50 dark:border-blue-400/30 dark:hover:bg-blue-500/5">
+                  <input
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp,application/pdf"
+                    className="hidden"
+                    onChange={(event) => setAttachment(event.target.files?.[0] ?? null)}
+                  />
+                  {attachment ? (
+                    <>
+                      <FileText className="size-6 text-iprimary-blue dark:text-blue-300" />
+                      <span className="max-w-full truncate text-sm font-medium text-slate-800 dark:text-slate-100">
+                        {attachment.name}
+                      </span>
+                      <span className="text-xs text-slate-500 dark:text-slate-400">
+                        {(attachment.size / 1024 / 1024).toFixed(2)} MB • klik untuk ganti
+                      </span>
+                      <button
+                        type="button"
+                        onClick={(event) => {
+                          event.preventDefault();
+                          setAttachment(null);
+                        }}
+                        className="mt-1 inline-flex items-center gap-1 text-xs text-red-500 hover:underline"
+                      >
+                        <X className="size-3" /> Hapus file
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      <Upload className="size-6 text-slate-500 dark:text-slate-400" />
+                      <span className="text-sm font-medium text-iprimary-blue dark:text-blue-300">
+                        {copy?.form?.attachment_placeholder ?? "Upload gambar / PDF"}
+                      </span>
+                      <span className="text-xs text-slate-500 dark:text-slate-400">Maksimal 3MB per file</span>
+                    </>
+                  )}
+                </label>
+              </FormSection>
+
+              <FormSection
+                icon={<StickyNote className="size-4" />}
+                title={copy?.form?.notes_label ?? "Catatan"}
+                description="Tambahkan catatan review, invoice, atau konteks pembayaran."
+              >
+                <div className="relative">
+                  <span className="pointer-events-none absolute left-2 top-2">
+                    <FieldIcon><NotebookPen className="size-4" /></FieldIcon>
+                  </span>
+                  <Textarea
+                    value={form.description}
+                    onChange={(event) => handleFormChange("description", event.target.value)}
+                    maxLength={NOTES_MAX_LENGTH}
+                    className="min-h-28 bg-background pl-12"
+                    placeholder={copy?.form?.notes_placeholder ?? "Tambahkan catatan review, invoice, atau konteks pembayaran"}
+                  />
+                </div>
+                <div className="mt-1 text-right text-xs text-slate-500 dark:text-slate-400">
+                  {form.description.length}/{NOTES_MAX_LENGTH}
+                </div>
+              </FormSection>
             </div>
-            <div className="space-y-2">
-              <Label>{copy?.form?.attachment_label ?? "Attachment"}</Label>
-              <label className="flex h-10 cursor-pointer items-center gap-2 rounded-md border px-3 text-sm text-slate-600">
-                <Upload className="size-4" />
-                <span className="truncate">
-                  {attachment?.name || copy?.form?.attachment_placeholder || "Upload image / PDF"}
-                </span>
-                <input
-                  type="file"
-                  accept="image/jpeg,image/png,image/webp,application/pdf"
-                  className="hidden"
-                  onChange={(event) => setAttachment(event.target.files?.[0] ?? null)}
-                />
-              </label>
-            </div>
-            <div className="space-y-2 md:col-span-2">
-              <Label>{copy?.form?.notes_label ?? "Description"}</Label>
-              <Textarea value={form.description} onChange={(event) => handleFormChange("description", event.target.value)} className="min-h-28" placeholder={copy?.form?.notes_placeholder ?? "Add notes or expense context"} />
-            </div>
+
+            {hasValidationError ? (
+              <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-200">
+                {copy?.form?.validation ?? "Lengkapi tipe, judul, kategori, tanggal, dan nominal lebih dari 0."}
+              </div>
+            ) : null}
           </div>
 
-          {hasValidationError ? (
-            <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
-              {copy?.form?.validation ?? "Complete expense type, title, category, date, and amount greater than 0."}
-            </div>
-          ) : null}
-
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsDialogOpen(false)}>{copy?.button_cancel ?? "Cancel"}</Button>
-            <Button className="bg-slate-900 text-white hover:bg-slate-800" onClick={handleSaveRecord} disabled={hasValidationError}>
-              {editingRecordId ? copy?.button_save_changes ?? "Save Changes" : copy?.button_save ?? "Save Expense"}
+          <DialogFooter className="border-t px-6 py-4 dark:border-white/10">
+            <Button variant="outline" className="h-11 px-6" onClick={() => setIsDialogOpen(false)}>
+              {copy?.button_cancel ?? "Batal"}
+            </Button>
+            <Button
+              className="h-11 bg-iprimary-blue px-6 text-white hover:bg-iprimary-blue-tertiary"
+              onClick={handleSaveRecord}
+              disabled={hasValidationError}
+            >
+              <Save className="size-4" />
+              {editingRecordId ? copy?.button_save_changes ?? "Simpan Perubahan" : copy?.button_save ?? "Simpan Expense"}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -724,11 +972,11 @@ export default function FinancialRecordMain({ dictionary }: Props) {
           </DialogHeader>
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label>{copy?.payment?.date_label ?? "Payment Date"}</Label>
+              <Label>{copy?.payment?.date_label ?? "Payment Date"} <span className="ml-0.5 text-red-500">*</span></Label>
               <Input type="date" value={paymentDate} onChange={(event) => setPaymentDate(event.target.value)} />
             </div>
             <div className="space-y-2">
-              <Label>{copy?.payment?.proof_label ?? "Payment Proof"}</Label>
+              <Label>{copy?.payment?.proof_label ?? "Payment Proof"} <span className="ml-0.5 text-red-500">*</span></Label>
               <label className="flex h-10 cursor-pointer items-center gap-2 rounded-md border px-3 text-sm text-slate-600">
                 <Upload className="size-4" />
                 <span className="truncate">

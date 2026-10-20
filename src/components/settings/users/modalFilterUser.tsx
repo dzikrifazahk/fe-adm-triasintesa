@@ -1,14 +1,6 @@
 import { DateRangeCustom } from "@/components/custom/dateRangeCustom";
 import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectGroup,
-  SelectItem,
-  SelectLabel,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { Combobox } from "@/components/ui/combobox";
 import {
   ComboboxItem,
   ComboboxPopoverCustom,
@@ -27,6 +19,7 @@ import { ModalFilter } from "@/components/custom/modalFilter";
 import { Button } from "@/components/ui/button";
 import { getDictionary } from "../../../../get-dictionary";
 
+import { useFormText } from "@/hooks/use-form-text";
 interface ModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -48,6 +41,7 @@ export const ModalFilterUser = ({
   isClearPayload,
   dictionary
 }: ModalProps) => {
+  const t = useFormText();
   const [selectedDateRange, setSelectedDateRange] = useState<
     DateRange | undefined
   >(undefined);
@@ -134,27 +128,18 @@ export const ModalFilterUser = ({
           </div>
           <div className="w-full flex flex-col gap-2">
             <span className="font-bold">Role Pengguna</span>
-            <Select
-              value={roleId || "default"}
-              onValueChange={(value) => {
-                if (value !== "default") setRoleId(value);
-              }}
-            >
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder="Pilih Role" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectGroup>
-                  <SelectItem className="font-bold" value="default" disabled>
-                    Role
-                  </SelectItem>
-                  <SelectItem value="1">Owner</SelectItem>
-                  <SelectItem value="2">Admin</SelectItem>
-                  <SelectItem value="3">Supervisor</SelectItem>
-                  <SelectItem value="4">Karyawan</SelectItem>
-                </SelectGroup>
-              </SelectContent>
-            </Select>
+            <Combobox
+              options={[
+                { value: "1", label: "Owner" },
+                { value: "2", label: "Admin" },
+                { value: "3", label: "Supervisor" },
+                { value: "4", label: "Karyawan" },
+              ]}
+              value={roleId}
+              onValueChange={setRoleId}
+              placeholder={t.user.selectRole}
+              searchPlaceholder={t.user.searchRole}
+            />
           </div>
           <div className="w-full flex flex-col gap-2">
             <Label className="font-bold text-md">{dictionary.column.status}</Label>

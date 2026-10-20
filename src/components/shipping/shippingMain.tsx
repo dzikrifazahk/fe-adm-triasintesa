@@ -56,15 +56,10 @@ import {
   Upload,
 } from "lucide-react";
 import { ModalFilter } from "@/components/custom/modalFilter";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { FaArrowRotateLeft } from "react-icons/fa6";
 
+import { Combobox } from "@/components/ui/combobox";
+import { useFormText } from "@/hooks/use-form-text";
 type ListPayload<T> = {
   data: T[];
   meta?: {
@@ -151,6 +146,7 @@ export default function ShippingMain({
 }: {
   dictionary: Awaited<ReturnType<typeof getDictionary>>["shipping_page_dic"];
 }) {
+  const t = useFormText();
   const actionItemClassName =
     "cursor-pointer rounded-md border px-3 py-2 focus:bg-slate-50 dark:focus:bg-[#1F2023]";
 
@@ -614,7 +610,7 @@ export default function ShippingMain({
 
             <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
               <Input
-                placeholder="Cari nomor DO"
+                placeholder={t.shipping.search}
                 value={search}
                 onChange={(event) => {
                   setSearch(event.target.value);
@@ -626,19 +622,19 @@ export default function ShippingMain({
                 variant="outline"
                 className="h-9 w-full justify-center gap-2 border-iprimary-blue text-iprimary-blue cursor-pointer hover:bg-iprimary-blue hover:text-white sm:w-9 sm:px-0"
                 onClick={openFilter}
-                aria-label="Filter"
+                aria-label={t.common.filter}
               >
                 <Filter className="h-4 w-4" />
-                <span className="sm:hidden">Filter</span>
+                <span className="sm:hidden">{t.common.filter}</span>
               </Button>
               <Button
                 variant="outline"
                 className="h-9 w-full justify-center gap-2 border-iprimary-blue text-iprimary-blue cursor-pointer hover:bg-iprimary-blue hover:text-white sm:w-9 sm:px-0"
                 onClick={() => fetchDeliveries(1, pageSize)}
-                aria-label="Refresh"
+                aria-label={t.common.refresh}
               >
                 <RefreshCw className="h-4 w-4" />
-                <span className="sm:hidden">Refresh</span>
+                <span className="sm:hidden">{t.common.refresh}</span>
               </Button>
               <Button
                 className="w-full shrink-0 cursor-pointer bg-iprimary-blue text-white hover:bg-iprimary-blue-tertiary sm:w-auto"
@@ -701,7 +697,7 @@ export default function ShippingMain({
               <TableHeader>
                 <TableRow>
                   <TableHead>DO Number</TableHead>
-                  <TableHead>Sales Order</TableHead>
+                  <TableHead>{t.shipping.salesOrder}</TableHead>
                   <TableHead>Tanggal</TableHead>
                   <TableHead>Driver</TableHead>
                   <TableHead>Status</TableHead>
@@ -748,62 +744,69 @@ export default function ShippingMain({
                                   <Eye className="text-slate-600" />
                                   Detail
                                 </DropdownMenuItem>
-                                <DropdownMenuItem
-                                  className={`${actionItemClassName} border-yellow-500`}
-                                  onClick={() => openEdit(delivery)}
-                                  disabled={delivery.status !== "pending"}
-                                >
-                                  <Edit3 className="text-yellow-500" />
-                                  Edit
-                                </DropdownMenuItem>
-                                <DropdownMenuItem
-                                  className={`${actionItemClassName} border-blue-500`}
-                                  onClick={() => callAction(delivery.id, "in_transit")}
-                                  disabled={delivery.status !== "pending"}
-                                >
-                                  <Send className="text-blue-500" />
-                                  In Transit
-                                </DropdownMenuItem>
-                                <DropdownMenuItem
-                                  className={`${actionItemClassName} border-cyan-500`}
-                                  onClick={() => openUploadProof(delivery)}
-                                  disabled={delivery.status !== "in_transit"}
-                                >
-                                  <Upload className="text-cyan-500" />
-                                  Upload Proof
-                                </DropdownMenuItem>
-                                <DropdownMenuItem
-                                  className={`${actionItemClassName} border-emerald-500`}
-                                  onClick={() => callAction(delivery.id, "delivered")}
-                                  disabled={delivery.status !== "in_transit" || !delivery.deliveryProofPhoto}
-                                >
-                                  <Check className="text-emerald-600" />
-                                  Delivered
-                                </DropdownMenuItem>
-                                <DropdownMenuItem
-                                  className={`${actionItemClassName} border-amber-500`}
-                                  onClick={() => callAction(delivery.id, "returned")}
-                                  disabled={delivery.status !== "in_transit"}
-                                >
-                                  <RotateCcw className="text-amber-500" />
-                                  Returned
-                                </DropdownMenuItem>
-                                <DropdownMenuItem
-                                  className={`${actionItemClassName} border-violet-500`}
-                                  onClick={() => callAction(delivery.id, "reminder")}
-                                  disabled={Boolean(delivery.reminderSent)}
-                                >
-                                  <BellRing className="text-violet-500" />
-                                  {delivery.reminderSent ? "Reminder Terkirim" : "Reminder"}
-                                </DropdownMenuItem>
-                                <DropdownMenuItem
-                                  className={`${actionItemClassName} border-red-500`}
-                                  onClick={() => deleteDelivery(delivery.id)}
-                                  disabled={delivery.status !== "pending"}
-                                >
-                                  <Trash2 className="text-red-500" />
-                                  Delete
-                                </DropdownMenuItem>
+                                {delivery.status === "pending" && (
+                                  <DropdownMenuItem
+                                    className={`${actionItemClassName} border-yellow-500`}
+                                    onClick={() => openEdit(delivery)}
+                                  >
+                                    <Edit3 className="text-yellow-500" />
+                                    Edit
+                                  </DropdownMenuItem>
+                                )}
+                                {delivery.status === "pending" && (
+                                  <DropdownMenuItem
+                                    className={`${actionItemClassName} border-blue-500`}
+                                    onClick={() => callAction(delivery.id, "in_transit")}
+                                  >
+                                    <Send className="text-blue-500" />
+                                    In Transit
+                                  </DropdownMenuItem>
+                                )}
+                                {delivery.status === "in_transit" && (
+                                  <DropdownMenuItem
+                                    className={`${actionItemClassName} border-cyan-500`}
+                                    onClick={() => openUploadProof(delivery)}
+                                  >
+                                    <Upload className="text-cyan-500" />
+                                    Upload Proof
+                                  </DropdownMenuItem>
+                                )}
+                                {delivery.status === "in_transit" && Boolean(delivery.deliveryProofPhoto) && (
+                                  <DropdownMenuItem
+                                    className={`${actionItemClassName} border-emerald-500`}
+                                    onClick={() => callAction(delivery.id, "delivered")}
+                                  >
+                                    <Check className="text-emerald-600" />
+                                    Delivered
+                                  </DropdownMenuItem>
+                                )}
+                                {delivery.status === "in_transit" && (
+                                  <DropdownMenuItem
+                                    className={`${actionItemClassName} border-amber-500`}
+                                    onClick={() => callAction(delivery.id, "returned")}
+                                  >
+                                    <RotateCcw className="text-amber-500" />
+                                    Returned
+                                  </DropdownMenuItem>
+                                )}
+                                {!delivery.reminderSent && (
+                                  <DropdownMenuItem
+                                    className={`${actionItemClassName} border-violet-500`}
+                                    onClick={() => callAction(delivery.id, "reminder")}
+                                  >
+                                    <BellRing className="text-violet-500" />
+                                    Reminder
+                                  </DropdownMenuItem>
+                                )}
+                                {delivery.status === "pending" && (
+                                  <DropdownMenuItem
+                                    className={`${actionItemClassName} border-red-500`}
+                                    onClick={() => deleteDelivery(delivery.id)}
+                                  >
+                                    <Trash2 className="text-red-500" />
+                                    Delete
+                                  </DropdownMenuItem>
+                                )}
                               </div>
                             </DropdownMenuContent>
                           </DropdownMenu>
@@ -820,22 +823,22 @@ export default function ShippingMain({
               Menampilkan {deliveries.length} dari total {totalRows} data
             </p>
             <div className="flex items-center gap-2">
-              <select
-                className="h-9 rounded-md border bg-background px-2 text-sm"
+              <Combobox
+                options={[10, 20, 50, 100].map((size) => ({
+                  value: String(size),
+                  label: `${size} / halaman`,
+                }))}
                 value={String(pageSize)}
-                onChange={(event) => {
-                  const nextSize = Number(event.target.value);
+                onValueChange={(value) => {
+                  const nextSize = Number(value);
                   setPage(1);
                   setPageSize(nextSize);
                   void fetchDeliveries(1, nextSize);
                 }}
-              >
-                {[10, 20, 50, 100].map((size) => (
-                  <option key={size} value={size}>
-                    {size} / halaman
-                  </option>
-                ))}
-              </select>
+                searchable={false}
+                className="h-9 w-[140px]"
+                contentClassName="min-w-[140px]"
+              />
               <Button
                 variant="outline"
                 onClick={() => void fetchDeliveries(page - 1, pageSize)}
@@ -869,23 +872,22 @@ export default function ShippingMain({
 
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             <div className="space-y-2">
-              <Label htmlFor="salesOrderId">Sales Order</Label>
-              <select
+              <Label htmlFor="salesOrderId">{t.shipping.salesOrder} <span className="ml-0.5 text-red-500">*</span></Label>
+              <Combobox
                 id="salesOrderId"
-                className="h-9 w-full rounded-md border bg-background px-3 text-sm"
-                value={form.salesOrderId}
-                onChange={(event) => setField("salesOrderId", event.target.value)}
-              >
-                <option value="">Pilih sales order</option>
-                {eligibleSalesOrders.map((order) => (
-                  <option key={order.id} value={order.id}>
-                    {order.soNumber} ({order.status.replaceAll("_", " ")})
-                  </option>
-                ))}
-              </select>
+                options={eligibleSalesOrders.map((order) => ({
+                  value: String(order.id),
+                  label: `${order.soNumber} (${order.status.replaceAll("_", " ")})`,
+                }))}
+                value={String(form.salesOrderId ?? "")}
+                onValueChange={(value) => setField("salesOrderId", value)}
+                placeholder={t.shipping.selectSalesOrder}
+                searchPlaceholder={t.shipping.searchSalesOrder}
+                emptyText={t.shipping.salesOrderNotFound}
+              />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="deliveryDate">Tanggal Kirim</Label>
+              <Label htmlFor="deliveryDate">{t.shipping.deliveryDate} <span className="ml-0.5 text-red-500">*</span></Label>
               <Input
                 id="deliveryDate"
                 type="date"
@@ -894,7 +896,7 @@ export default function ShippingMain({
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="deliveryTime">Waktu Kirim (HH:mm:ss)</Label>
+              <Label htmlFor="deliveryTime">{t.shipping.deliveryTime} <span className="ml-0.5 text-red-500">*</span></Label>
               <Input
                 id="deliveryTime"
                 value={form.deliveryTime}
@@ -902,7 +904,7 @@ export default function ShippingMain({
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="driverName">Nama Driver</Label>
+              <Label htmlFor="driverName">{t.shipping.driverName} <span className="ml-0.5 text-red-500">*</span></Label>
               <Input
                 id="driverName"
                 value={form.driverName}
@@ -910,7 +912,7 @@ export default function ShippingMain({
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="vehicleNumber">Nomor Kendaraan</Label>
+              <Label htmlFor="vehicleNumber">{t.shipping.vehicleNumber} <span className="ml-0.5 text-red-500">*</span></Label>
               <Input
                 id="vehicleNumber"
                 value={form.vehicleNumber}
@@ -918,7 +920,7 @@ export default function ShippingMain({
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="vehicleType">Tipe Kendaraan</Label>
+              <Label htmlFor="vehicleType">{t.shipping.vehicleType} <span className="ml-0.5 text-red-500">*</span></Label>
               <Input
                 id="vehicleType"
                 value={form.vehicleType}
@@ -926,7 +928,7 @@ export default function ShippingMain({
               />
             </div>
             <div className="space-y-2 md:col-span-2">
-              <Label htmlFor="shippingAddress">Alamat Pengiriman</Label>
+              <Label htmlFor="shippingAddress">{t.shipping.shippingAddress} <span className="ml-0.5 text-red-500">*</span></Label>
               <Textarea
                 id="shippingAddress"
                 value={form.shippingAddress}
@@ -934,7 +936,7 @@ export default function ShippingMain({
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="recipientName">Nama Penerima</Label>
+              <Label htmlFor="recipientName">{t.shipping.recipientName} <span className="ml-0.5 text-red-500">*</span></Label>
               <Input
                 id="recipientName"
                 value={form.recipientName}
@@ -942,7 +944,7 @@ export default function ShippingMain({
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="recipientPhone">Telepon Penerima</Label>
+              <Label htmlFor="recipientPhone">{t.shipping.recipientPhone} <span className="ml-0.5 text-red-500">*</span></Label>
               <Input
                 id="recipientPhone"
                 value={form.recipientPhone}
@@ -950,7 +952,7 @@ export default function ShippingMain({
               />
             </div>
             <div className="space-y-2 md:col-span-2">
-              <Label htmlFor="deliveryNotes">Catatan</Label>
+              <Label htmlFor="deliveryNotes">{t.common.notes}</Label>
               <Textarea
                 id="deliveryNotes"
                 value={form.notes}
@@ -1032,13 +1034,19 @@ export default function ShippingMain({
             <DialogDescription>Upload foto bukti pengiriman sebelum mark delivered.</DialogDescription>
           </DialogHeader>
           <div className="space-y-3">
-            <Input
-              type="file"
-              accept="image/png,image/jpeg,image/webp"
-              onChange={(event) => setProofFile(event.target.files?.[0] ?? null)}
-            />
+            <div className="space-y-2">
+              <Label htmlFor="proofFile">{t.shipping.proofPhoto} <span className="ml-0.5 text-red-500">*</span></Label>
+              <Input
+                id="proofFile"
+                type="file"
+                accept="image/png,image/jpeg,image/webp"
+                onChange={(event) => setProofFile(event.target.files?.[0] ?? null)}
+              />
+            </div>
+            <Label htmlFor="proofNotes">{t.common.notes}</Label>
             <Textarea
-              placeholder="Catatan bukti kirim (opsional)"
+              id="proofNotes"
+              placeholder={t.shipping.proofNotesPlaceholder}
               value={proofNotes}
               onChange={(event) => setProofNotes(event.target.value)}
             />
@@ -1063,20 +1071,21 @@ export default function ShippingMain({
         <div className="flex w-full flex-col gap-4 p-3">
           <div className="flex w-full flex-col gap-2">
             <span className="font-bold">Status</span>
-            <Select
-              value={pendingStatusFilter || undefined}
-              onValueChange={setPendingStatusFilter}
-            >
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder="Semua status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="pending">pending</SelectItem>
-                <SelectItem value="in_transit">in transit</SelectItem>
-                <SelectItem value="delivered">delivered</SelectItem>
-                <SelectItem value="returned">returned</SelectItem>
-              </SelectContent>
-            </Select>
+            <Combobox
+              options={[
+                { value: "__all__", label: t.common.allStatus },
+                { value: "pending", label: "Pending" },
+                { value: "in_transit", label: "In transit" },
+                { value: "delivered", label: "Delivered" },
+                { value: "returned", label: "Returned" },
+              ]}
+              value={pendingStatusFilter || "__all__"}
+              onValueChange={(value) =>
+                setPendingStatusFilter(value === "__all__" ? "" : value)
+              }
+              placeholder={t.common.allStatus}
+              searchable={false}
+            />
           </div>
         </div>
         <div className="sticky bottom-0 mt-10 flex flex-col gap-2 rounded-b-lg p-5 sm:flex-row sm:justify-end">

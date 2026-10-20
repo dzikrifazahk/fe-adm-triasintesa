@@ -6,7 +6,6 @@ import { Modal } from "@/components/custom/modal";
 import { roleService } from "@/services";
 import { cn } from "@/lib/utils";
 import {
-  Loader2,
   Mail,
   ShieldCheck,
   User2,
@@ -19,16 +18,11 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { Combobox } from "@/components/ui/combobox";
 import { Textarea } from "@/components/ui/textarea";
 import { MobileContext } from "@/hooks/use-mobile-ssr";
 
+import { useFormText } from "@/hooks/use-form-text";
 type RoleOption = {
   id: string;
   name: string;
@@ -75,6 +69,7 @@ export function ModalUpsertUser({
   onSubmit,
   onChange,
 }: Props) {
+  const t = useFormText();
   const { isMobile } = useContext(MobileContext);
 
   const [roles, setRoles] = useState<RoleOption[]>([]);
@@ -266,15 +261,15 @@ export function ModalUpsertUser({
             <Card className="border shadow-sm">
               <CardContent className="space-y-3 p-4">
                 <p className="text-sm font-semibold">Quick Summary</p>
-                <SummaryItem label="Username" value={values.username || "-"} />
-                <SummaryItem label="Email" value={values.email || "-"} />
+                <SummaryItem label={t.user.username} value={values.username || "-"} />
+                <SummaryItem label={t.common.email} value={values.email || "-"} />
                 <SummaryItem
-                  label="Role"
+                  label={t.user.role}
                   value={
                     roles.find((item) => item.id === values.roleId)?.name || "-"
                   }
                 />
-                <SummaryItem label="Gender" value={values.gender || "-"} />
+                <SummaryItem label={t.user.gender} value={values.gender || "-"} />
               </CardContent>
             </Card>
           </div>
@@ -290,53 +285,41 @@ export function ModalUpsertUser({
 
                 <div className="mt-5 grid gap-4 md:grid-cols-2">
                   <FormInput
-                    label="Email"
+                    label={t.common.email}
                     value={values.email}
                     onChange={(val) => onChange("email", val)}
-                    placeholder="contoh@email.com"
+                    placeholder={t.user.emailPlaceholder}
                     required
                     icon={<Mail className="h-4 w-4" />}
                   />
 
                   <FormInput
-                    label="Username"
+                    label={t.user.username}
                     value={values.username}
                     onChange={(val) => onChange("username", val)}
-                    placeholder="Masukkan username"
+                    placeholder={t.user.usernamePlaceholder}
                     required
                     icon={<User2 className="h-4 w-4" />}
                   />
                 </div>
                 <div className="w-full gap-2 mt-2">
                   <Label className="text-sm font-medium">
-                    Role <span className="text-destructive">*</span>
+                    {t.user.role} <span className="text-red-500">*</span>
                   </Label>
-                  <Select
+                  <Combobox
+                    options={roles.map((role) => ({
+                      value: role.id,
+                      label: role.name,
+                    }))}
                     value={values.roleId}
                     onValueChange={(val) => onChange("roleId", val)}
-                  >
-                    <SelectTrigger className="h-11 rounded-xl w-full">
-                      <SelectValue
-                        placeholder={
-                          isLoadingRoles ? "Loading roles..." : "Select Role"
-                        }
-                      />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {isLoadingRoles ? (
-                        <div className="flex items-center gap-2 px-3 py-2 text-sm text-muted-foreground">
-                          <Loader2 className="h-4 w-4 animate-spin" />
-                          Loading roles...
-                        </div>
-                      ) : (
-                        roles.map((role) => (
-                          <SelectItem key={role.id} value={role.id}>
-                            {role.name}
-                          </SelectItem>
-                        ))
-                      )}
-                    </SelectContent>
-                  </Select>
+                    placeholder={
+                      isLoadingRoles ? "Loading..." : t.user.selectRole
+                    }
+                    searchPlaceholder={t.user.searchRole}
+                    disabled={isLoadingRoles}
+                    className="h-11 rounded-xl"
+                  />
                 </div>
               </CardContent>
             </Card>
@@ -351,62 +334,61 @@ export function ModalUpsertUser({
 
                 <div className="mt-5 grid gap-4 md:grid-cols-2">
                   <FormInput
-                    label="Full Name"
+                    label={t.user.fullName}
                     value={values.fullName}
                     onChange={(val) => onChange("fullName", val)}
-                    placeholder="Masukkan nama lengkap"
+                    placeholder={t.user.fullNamePlaceholder}
                     required
                   />
 
                   <FormInput
-                    label="Phone"
+                    label={t.user.phone}
                     value={values.phone}
                     onChange={(val) => onChange("phone", val)}
                     placeholder="08xxxxxxxxxx"
                   />
 
                   <FormInput
-                    label="City"
+                    label={t.user.city}
                     value={values.city}
                     onChange={(val) => onChange("city", val)}
-                    placeholder="Masukkan kota"
+                    placeholder={t.user.cityPlaceholder}
                   />
 
                   <FormInput
-                    label="Country"
+                    label={t.user.country}
                     value={values.country}
                     onChange={(val) => onChange("country", val)}
-                    placeholder="Masukkan negara"
+                    placeholder={t.user.countryPlaceholder}
                   />
 
                   <FormInput
-                    label="Postal Code"
+                    label={t.user.postalCode}
                     value={values.postalCode}
                     onChange={(val) => onChange("postalCode", val)}
-                    placeholder="Masukkan kode pos"
+                    placeholder={t.user.postalCodePlaceholder}
                   />
 
                   <FormInput
-                    label="Date of Birth"
+                    label={t.user.dateOfBirth}
                     type="date"
                     value={values.dob}
                     onChange={(val) => onChange("dob", val)}
                   />
 
                   <div className="grid gap-2">
-                    <Label className="text-sm font-medium">Gender</Label>
-                    <Select
+                    <Label className="text-sm font-medium">{t.user.gender}</Label>
+                    <Combobox
+                      options={[
+                        { value: "male", label: t.user.male },
+                        { value: "female", label: t.user.female },
+                      ]}
                       value={values.gender}
                       onValueChange={(val) => onChange("gender", val)}
-                    >
-                      <SelectTrigger className="h-11 rounded-xl">
-                        <SelectValue placeholder="Select Gender" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="male">Male</SelectItem>
-                        <SelectItem value="female">Female</SelectItem>
-                      </SelectContent>
-                    </Select>
+                      placeholder={t.user.selectGender}
+                      searchPlaceholder={t.user.searchGender}
+                      className="h-11 rounded-xl"
+                    />
                   </div>
                 </div>
 
@@ -414,18 +396,18 @@ export function ModalUpsertUser({
 
                 <div className="grid gap-4">
                   <FormInput
-                    label="Address"
+                    label={t.user.address}
                     value={values.address}
                     onChange={(val) => onChange("address", val)}
-                    placeholder="Masukkan alamat lengkap"
+                    placeholder={t.user.addressPlaceholder}
                   />
 
                   <div className="grid gap-2">
-                    <Label className="text-sm font-medium">Bio</Label>
+                    <Label className="text-sm font-medium">{t.user.bio}</Label>
                     <Textarea
                       value={values.bio}
                       onChange={(e) => onChange("bio", e.target.value)}
-                      placeholder="Tulis deskripsi singkat pengguna"
+                      placeholder={t.user.bioPlaceholder}
                       className="min-h-[110px] rounded-xl resize-none"
                     />
                   </div>
@@ -492,7 +474,7 @@ function FormInput({
   return (
     <div className="grid gap-2">
       <Label className="text-sm font-medium">
-        {label} {required ? <span className="text-destructive">*</span> : null}
+        {label} {required ? <span className="text-red-500">*</span> : null}
       </Label>
 
       <div className="relative">

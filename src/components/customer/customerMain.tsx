@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import axios from "axios";
 import { openSwal } from "@/lib/swal";
 import { getDictionary } from "../../../get-dictionary";
@@ -12,17 +12,9 @@ import {
   ICustomer,
   IUpdateCustomerPayload,
 } from "@/types/customer";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
 import {
   Dialog,
   DialogContent,
@@ -33,18 +25,15 @@ import {
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { Ban, Edit3, Eye, MoreHorizontal, Power, Trash2 } from "lucide-react";
+import { Combobox } from "@/components/ui/combobox";
+import useDebounce from "@/utils/useDebouncy";
+import { columns } from "./column";
+import { DataTable } from "./data-table";
+import { CustomerFilterPayload } from "./modalFilterCustomer";
 
+import { useFormText } from "@/hooks/use-form-text";
 type Dictionary = Awaited<ReturnType<typeof getDictionary>>["customer_page_dic"];
-type ListPayload<T> = { data: T[]; meta?: unknown };
+type ListPayload<T> = { data: T[]; meta?: { totalPages?: number } };
 
 type FormState = {
   customerCode: string;
@@ -90,20 +79,16 @@ function getErrorMessage(error: unknown): string {
   return "Terjadi kesalahan";
 }
 
-function statusClassName(status: CustomerStatus): string {
-  return status === "aktif"
-    ? "bg-emerald-600 text-white"
-    : "bg-slate-500 text-white";
-}
-
 export default function CustomerMain({ dictionary }: { dictionary: Dictionary }) {
-  const actionItemClassName =
-    "cursor-pointer rounded-md border px-3 py-2 focus:bg-slate-50 dark:focus:bg-[#1F2023]";
-
+  const t = useFormText();
   const { setIsLoading } = useLoading();
   const [customers, setCustomers] = useState<ICustomer[]>([]);
   const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState("");
+  const debouncedSearch = useDebounce(search, 800);
+  const [filterPayload, setFilterPayload] = useState<CustomerFilterPayload>({});
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+  const [lastPage, setLastPage] = useState(1);
 
   const [selectedCustomer, setSelectedCustomer] = useState<ICustomer | null>(null);
   const [isFormOpen, setIsFormOpen] = useState(false);
@@ -117,22 +102,18 @@ export default function CustomerMain({ dictionary }: { dictionary: Dictionary })
     dictionary?.description ??
     "Kelola data customer untuk proses sales order, pengiriman, dan invoice.";
 
-  const activeCount = useMemo(
-    () => customers.filter((item) => item.status === "aktif").length,
-    [customers],
-  );
-
-  const fetchCustomers = async () => {
+  const fetchCustomers = useCallback(async () => {
     try {
       setIsLoading(true);
       const response = await customerService.getCustomers({
-        page: 1,
-        limit: 100,
-        search: search || undefined,
-        status: (statusFilter as CustomerStatus) || undefined,
+        page,
+        limit: pageSize,
+        search: debouncedSearch || undefined,
+        status: filterPayload.status,
       });
       const payload = unwrapData<ListPayload<ICustomer>>(response);
       setCustomers(Array.isArray(payload.data) ? payload.data : []);
+      setLastPage(Math.max(payload.meta?.totalPages ?? 1, 1));
     } catch (error) {
       openSwal({
         icon: "error",
@@ -142,12 +123,51 @@ export default function CustomerMain({ dictionary }: { dictionary: Dictionary })
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [page, pageSize, debouncedSearch, filterPayload, setIsLoading]);
 
   useEffect(() => {
     fetchCustomers();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [fetchCustomers]);
+
+  const handleSearchChange = (value: string) => {
+    setSearch(value);
+    setPage(1);
+  };
+
+  const handlePageSizeChange = (value: number) => {
+    setPageSize(value);
+    setPage(1);
+  };
+
+  const handleFilterChange = (payload: CustomerFilterPayload) => {
+    setFilterPayload(payload);
+    setPage(1);
+  };
+
+  const handleClearPayload = () => {
+    setFilterPayload({});
+    setPage(1);
+    openSwal({
+      icon: "success",
+      title: "Filter Berhasil Dihapus",
+      position: "top-right",
+      toast: true,
+      showConfirmButton: false,
+      timer: 2000,
+    });
+  };
+
+  const handleRefreshData = async () => {
+    await fetchCustomers();
+    openSwal({
+      icon: "success",
+      title: "Data berhasil di refresh",
+      position: "top-right",
+      toast: true,
+      showConfirmButton: false,
+      timer: 2000,
+    });
+  };
 
   const setField = <K extends keyof FormState>(key: K, value: FormState[K]) => {
     setForm((prev) => ({ ...prev, [key]: value }));
@@ -316,148 +336,31 @@ export default function CustomerMain({ dictionary }: { dictionary: Dictionary })
   };
 
   return (
-    <div className="h-full w-full space-y-4">
-      <Card>
-        <CardHeader>
-          <CardTitle>{title}</CardTitle>
-          <p className="text-sm text-slate-600">{description}</p>
-          <div className="flex flex-wrap gap-2">
-            <Badge className="bg-slate-700 text-white">Total: {customers.length}</Badge>
-            <Badge className="bg-emerald-600 text-white">Aktif: {activeCount}</Badge>
-            <Badge className="bg-slate-500 text-white">
-              Nonaktif: {customers.length - activeCount}
-            </Badge>
-          </div>
-        </CardHeader>
-      </Card>
-
-      <Card className="h-full">
-        <CardHeader className="space-y-3">
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <CardTitle>Daftar Customer</CardTitle>
-            <div className="flex gap-2">
-              <Button variant="outline" onClick={fetchCustomers}>
-                Refresh
-              </Button>
-              <Button
-                className="bg-iprimary-blue text-white hover:bg-iprimary-blue-tertiary"
-                onClick={openCreate}
-              >
-                Tambah Customer
-              </Button>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 gap-2 md:grid-cols-3">
-            <Input
-              placeholder="Cari kode, nama, atau PIC..."
-              value={search}
-              onChange={(event) => setSearch(event.target.value)}
-            />
-            <select
-              className="h-10 rounded-md border border-slate-200 px-3 text-sm"
-              value={statusFilter}
-              onChange={(event) => setStatusFilter(event.target.value)}
-            >
-              <option value="">Semua Status</option>
-              <option value="aktif">Aktif</option>
-              <option value="nonaktif">Nonaktif</option>
-            </select>
-            <Button onClick={fetchCustomers}>Apply Filter</Button>
-          </div>
-        </CardHeader>
-
-        <CardContent>
-          <div className="rounded-md border">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Kode</TableHead>
-                  <TableHead>Perusahaan</TableHead>
-                  <TableHead>PIC</TableHead>
-                  <TableHead>Email</TableHead>
-                  <TableHead>Phone</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead className="text-right">Aksi</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {customers.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={7} className="h-20 text-center">
-                      Tidak ada data customer.
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  customers.map((customer) => (
-                    <TableRow key={customer.id}>
-                      <TableCell>{customer.customerCode}</TableCell>
-                      <TableCell>{customer.companyName}</TableCell>
-                      <TableCell>{customer.contactPerson}</TableCell>
-                      <TableCell>{customer.email}</TableCell>
-                      <TableCell>{customer.phone}</TableCell>
-                      <TableCell>
-                        <Badge className={statusClassName(customer.status)}>
-                          {customer.status}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex justify-end">
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" className="h-8 w-8 p-0">
-                                <span className="sr-only">Open actions</span>
-                                <MoreHorizontal className="h-4 w-4" />
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end" className="w-48">
-                              <DropdownMenuLabel className="text-center">
-                                Actions
-                              </DropdownMenuLabel>
-                              <div className="flex flex-col gap-2 p-1">
-                                <DropdownMenuItem
-                                  className={`${actionItemClassName} border-slate-300`}
-                                  onClick={() => openDetail(customer.id)}
-                                >
-                                  <Eye className="text-slate-600" />
-                                  Detail
-                                </DropdownMenuItem>
-                                <DropdownMenuItem
-                                  className={`${actionItemClassName} border-yellow-500`}
-                                  onClick={() => openEdit(customer)}
-                                >
-                                  <Edit3 className="text-yellow-500" />
-                                  Edit
-                                </DropdownMenuItem>
-                                <DropdownMenuItem
-                                  className={`${actionItemClassName} border-blue-500`}
-                                  onClick={() => toggleStatus(customer)}
-                                >
-                                  {customer.status === "aktif" ? (
-                                    <Ban className="text-blue-500" />
-                                  ) : (
-                                    <Power className="text-blue-500" />
-                                  )}
-                                  {customer.status === "aktif" ? "Deactivate" : "Activate"}
-                                </DropdownMenuItem>
-                                <DropdownMenuItem
-                                  className={`${actionItemClassName} border-red-500`}
-                                  onClick={() => removeCustomer(customer.id)}
-                                >
-                                  <Trash2 className="text-red-500" />
-                                  Delete
-                                </DropdownMenuItem>
-                              </div>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
-          </div>
+    <div className="h-full w-full">
+      <Card className="flex flex-col h-full">
+        <CardContent className="flex-1 min-h-0 overflow-auto">
+          <DataTable
+            columns={columns({
+              detailData: openDetail,
+              editData: openEdit,
+              toggleStatus,
+              deleteData: removeCustomer,
+            })}
+            data={customers}
+            title={title}
+            description={description}
+            addData={openCreate}
+            page={page}
+            pageSize={pageSize}
+            lastPage={lastPage}
+            onPageChange={setPage}
+            onPageSizeChange={handlePageSizeChange}
+            search={search}
+            onSearchChange={handleSearchChange}
+            onFilterChange={handleFilterChange}
+            isClearPayload={handleClearPayload}
+            isGetData={handleRefreshData}
+          />
         </CardContent>
       </Card>
 
@@ -470,7 +373,7 @@ export default function CustomerMain({ dictionary }: { dictionary: Dictionary })
 
           <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
             <div className="space-y-2">
-              <Label>Kode Customer</Label>
+              <Label>{t.customer.code} <span className="ml-0.5 text-red-500">*</span></Label>
               <div className="flex gap-2">
                 <Input
                   value={form.customerCode}
@@ -490,7 +393,7 @@ export default function CustomerMain({ dictionary }: { dictionary: Dictionary })
               </div>
             </div>
             <div className="space-y-2">
-              <Label>Nama Perusahaan</Label>
+              <Label>{t.customer.companyName} <span className="ml-0.5 text-red-500">*</span></Label>
               <Input
                 value={form.companyName}
                 onChange={(event) => setField("companyName", event.target.value)}
@@ -498,7 +401,7 @@ export default function CustomerMain({ dictionary }: { dictionary: Dictionary })
               />
             </div>
             <div className="space-y-2">
-              <Label>Contact Person</Label>
+              <Label>{t.customer.contactPerson}</Label>
               <Input
                 value={form.contactPerson}
                 onChange={(event) => setField("contactPerson", event.target.value)}
@@ -506,7 +409,7 @@ export default function CustomerMain({ dictionary }: { dictionary: Dictionary })
               />
             </div>
             <div className="space-y-2">
-              <Label>Email</Label>
+              <Label>{t.common.email}</Label>
               <Input
                 type="email"
                 value={form.email}
@@ -515,7 +418,7 @@ export default function CustomerMain({ dictionary }: { dictionary: Dictionary })
               />
             </div>
             <div className="space-y-2">
-              <Label>Telepon</Label>
+              <Label>{t.common.phone}</Label>
               <Input
                 value={form.phone}
                 onChange={(event) => setField("phone", event.target.value)}
@@ -523,18 +426,20 @@ export default function CustomerMain({ dictionary }: { dictionary: Dictionary })
               />
             </div>
             <div className="space-y-2">
-              <Label>Status</Label>
-              <select
-                className="h-10 w-full rounded-md border border-slate-200 px-3 text-sm"
+              <Label>{t.common.status}</Label>
+              <Combobox
+                options={[
+                  { value: "aktif", label: t.common.active },
+                  { value: "nonaktif", label: t.common.inactive },
+                ]}
                 value={form.status}
-                onChange={(event) => setField("status", event.target.value as CustomerStatus)}
-              >
-                <option value="aktif">aktif</option>
-                <option value="nonaktif">nonaktif</option>
-              </select>
+                onValueChange={(value) => setField("status", value as CustomerStatus)}
+                placeholder={t.common.selectStatus}
+                searchPlaceholder={t.common.searchStatus}
+              />
             </div>
             <div className="space-y-2 md:col-span-2">
-              <Label>Alamat</Label>
+              <Label>{t.common.address}</Label>
               <Textarea
                 value={form.address}
                 onChange={(event) => setField("address", event.target.value)}
@@ -542,11 +447,11 @@ export default function CustomerMain({ dictionary }: { dictionary: Dictionary })
               />
             </div>
             <div className="space-y-2 md:col-span-2">
-              <Label>Catatan</Label>
+              <Label>{t.common.notes}</Label>
               <Textarea
                 value={form.notes}
                 onChange={(event) => setField("notes", event.target.value)}
-                placeholder="Catatan tambahan customer"
+                placeholder={t.customer.notesPlaceholder}
               />
             </div>
           </div>

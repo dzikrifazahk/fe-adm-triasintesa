@@ -24,13 +24,6 @@ import {
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   CalendarRange,
@@ -48,6 +41,8 @@ import {
   XCircle,
 } from "lucide-react";
 
+import { Combobox } from "@/components/ui/combobox";
+import { useFormText } from "@/hooks/use-form-text";
 type Dictionary = Awaited<ReturnType<typeof getDictionary>>["report_page_dic"];
 
 type Props = {
@@ -132,6 +127,7 @@ const STATUS_CONFIG: Record<
 const JOBS_POLL_INTERVAL_MS = 5_000;
 
 export default function ReportMain({ dictionary }: Props) {
+  const t = useFormText();
   const [activeTab, setActiveTab] = useState<"generate" | "scheduler">("generate");
 
   // Generate form state
@@ -564,24 +560,22 @@ export default function ReportMain({ dictionary }: Props) {
 
               <CardContent className="space-y-5 pt-6">
                 <div className="space-y-2">
-                  <Label>{dictionary?.job_form?.module_label ?? "Module"}</Label>
-                  <Select value={selectedModuleKey} onValueChange={handleModuleChange}>
-                    <SelectTrigger className="w-full rounded-xl border-blue-200">
-                      <SelectValue
-                        placeholder={
-                          dictionary?.job_form?.module_placeholder ??
-                          "Pilih module report"
-                        }
-                      />
-                    </SelectTrigger>
-                    <SelectContent className="max-h-72">
-                      {modules.map((module) => (
-                        <SelectItem key={module.key} value={module.key}>
-                          {module.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <Label>{dictionary?.job_form?.module_label ?? "Module"} <span className="ml-0.5 text-red-500">*</span></Label>
+                  <Combobox
+                    options={modules.map((module) => ({
+                      value: module.key,
+                      label: module.label,
+                    }))}
+                    value={selectedModuleKey}
+                    onValueChange={handleModuleChange}
+                    placeholder={
+                      dictionary?.job_form?.module_placeholder ??
+                      "Pilih module report"
+                    }
+                    searchPlaceholder={t.report.searchModule}
+                    emptyText={t.report.moduleNotFound}
+                    className="rounded-xl border-blue-200"
+                  />
                   {selectedModule && (
                     <p className="flex items-start gap-2 rounded-xl bg-blue-50 p-3 text-xs leading-5 text-blue-800">
                       <Info className="mt-0.5 size-4 shrink-0" />
@@ -669,7 +663,7 @@ export default function ReportMain({ dictionary }: Props) {
                   <div>
                     <CardTitle className="flex items-center gap-2 text-lg text-slate-900">
                       <ListChecks className="size-5 text-blue-600" />
-                      {dictionary?.job_form?.fields_title ?? "Pilih field report"}
+                      {dictionary?.job_form?.fields_title ?? "Pilih field report"} <span className="ml-0.5 text-red-500">*</span>
                     </CardTitle>
                     <CardDescription className="mt-1 text-sm leading-6">
                       {dictionary?.job_form?.fields_description ??

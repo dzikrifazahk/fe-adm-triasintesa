@@ -14,7 +14,6 @@ import {
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import {
   Area,
@@ -29,6 +28,7 @@ import { ChartConfig, ChartContainer, ChartTooltip, ChartTooltipContent } from "
 import { DashboardFilterSheet } from "./dashboardFilterSheet";
 import { Package, TrendingUp, Truck, Wallet } from "lucide-react";
 
+import { Combobox } from "@/components/ui/combobox";
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null;
 }
@@ -139,8 +139,8 @@ export default function OrdersDashboardTab() {
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h2 className="text-lg font-semibold text-slate-900">Orders Overview</h2>
-          <p className="text-sm text-slate-500">
+          <h2 className="text-lg font-semibold text-foreground">Orders Overview</h2>
+          <p className="text-sm text-muted-foreground">
             Sales Order & Shipping — {data?.period?.from ?? dateFrom} s/d {data?.period?.to ?? dateTo}
           </p>
         </div>
@@ -156,18 +156,14 @@ export default function OrdersDashboardTab() {
         >
           <div className="grid gap-2">
             <Label>Status Order</Label>
-            <Select value={status} onValueChange={setStatus}>
-              <SelectTrigger className="w-full rounded-xl border-slate-200">
-                <SelectValue placeholder="Pilih status" />
-              </SelectTrigger>
-              <SelectContent>
-                {STATUS_OPTIONS.map((option) => (
-                  <SelectItem key={option.value} value={option.value}>
-                    {option.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <Combobox
+              options={STATUS_OPTIONS}
+              value={status}
+              onValueChange={setStatus}
+              placeholder="Pilih status"
+              searchPlaceholder="Cari status..."
+              className="rounded-xl border-border"
+            />
           </div>
         </DashboardFilterSheet>
       </div>
@@ -181,59 +177,59 @@ export default function OrdersDashboardTab() {
       ) : (
         <>
           <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-            <Card className="rounded-2xl border-slate-200">
+            <Card className="rounded-2xl border-border">
               <CardHeader className="pb-2">
-                <CardDescription className="flex items-center gap-2 text-slate-500">
+                <CardDescription className="flex items-center gap-2 text-muted-foreground">
                   <Package className="size-4" /> Order Volume
                 </CardDescription>
                 <CardTitle className="text-2xl">{data?.orderVolume?.total ?? 0}</CardTitle>
               </CardHeader>
-              <CardContent className="text-xs text-slate-500">
+              <CardContent className="text-xs text-muted-foreground">
                 {data?.orderVolume?.cancelled ?? 0} cancelled dalam periode ini
               </CardContent>
             </Card>
 
-            <Card className="rounded-2xl border-slate-200">
+            <Card className="rounded-2xl border-border">
               <CardHeader className="pb-2">
-                <CardDescription className="flex items-center gap-2 text-slate-500">
+                <CardDescription className="flex items-center gap-2 text-muted-foreground">
                   <Truck className="size-4" /> Shipping Lead Time (SLA)
                 </CardDescription>
                 <CardTitle className="text-2xl">
                   {data?.shippingLeadTimeAvgDays ?? 0} hari
                 </CardTitle>
               </CardHeader>
-              <CardContent className="text-xs text-slate-500">
+              <CardContent className="text-xs text-muted-foreground">
                 Rata-rata order dibuat sampai diterima konsumen
               </CardContent>
             </Card>
 
-            <Card className="rounded-2xl border-slate-200">
+            <Card className="rounded-2xl border-border">
               <CardHeader className="pb-2">
-                <CardDescription className="flex items-center gap-2 text-slate-500">
+                <CardDescription className="flex items-center gap-2 text-muted-foreground">
                   <TrendingUp className="size-4" /> Fulfillment Rate
                 </CardDescription>
                 <CardTitle className="text-2xl">{data?.fulfillmentRate ?? 0}%</CardTitle>
               </CardHeader>
-              <CardContent className="text-xs text-slate-500">
+              <CardContent className="text-xs text-muted-foreground">
                 Order selesai tepat waktu vs total order masuk
               </CardContent>
             </Card>
 
-            <Card className="rounded-2xl border-slate-200">
+            <Card className="rounded-2xl border-border">
               <CardHeader className="pb-2">
-                <CardDescription className="flex items-center gap-2 text-slate-500">
+                <CardDescription className="flex items-center gap-2 text-muted-foreground">
                   <Wallet className="size-4" /> Revenue
                 </CardDescription>
                 <CardTitle className="text-2xl">{formatCurrency(data?.revenue ?? 0)}</CardTitle>
               </CardHeader>
-              <CardContent className="text-xs text-slate-500">
+              <CardContent className="text-xs text-muted-foreground">
                 Margin approx. {data?.profitMargin ?? 0}% (COGS: {formatCurrency(data?.approxCogs ?? 0)})
               </CardContent>
             </Card>
           </div>
 
           <div className="grid gap-4 xl:grid-cols-2">
-            <Card className="rounded-2xl border-slate-200">
+            <Card className="rounded-2xl border-border">
               <CardHeader>
                 <CardTitle className="text-base">Order Volume Trend</CardTitle>
                 <CardDescription>Jumlah pesanan masuk harian</CardDescription>
@@ -257,7 +253,7 @@ export default function OrdersDashboardTab() {
               </CardContent>
             </Card>
 
-            <Card className="rounded-2xl border-slate-200">
+            <Card className="rounded-2xl border-border">
               <CardHeader>
                 <CardTitle className="text-base">Revenue Trend</CardTitle>
                 <CardDescription>Pendapatan bulanan dari order selesai</CardDescription>
@@ -277,60 +273,60 @@ export default function OrdersDashboardTab() {
           </div>
 
           <div className="grid gap-4 xl:grid-cols-2">
-            <Card className="rounded-2xl border-slate-200">
+            <Card className="rounded-2xl border-border">
               <CardHeader>
                 <CardTitle className="text-base">Delivery Status Breakdown</CardTitle>
                 <CardDescription>Status pengiriman real-time</CardDescription>
               </CardHeader>
               <CardContent className="grid grid-cols-2 gap-3 sm:grid-cols-5">
-                <div className="rounded-xl bg-slate-50 p-3 text-center">
-                  <p className="text-xs text-slate-500">Pending</p>
+                <div className="rounded-xl bg-slate-50 dark:bg-white/5 p-3 text-center">
+                  <p className="text-xs text-muted-foreground">Pending</p>
                   <p className="mt-1 text-xl font-semibold">{deliveryBreakdown?.pending ?? 0}</p>
                 </div>
-                <div className="rounded-xl bg-sky-50 p-3 text-center">
-                  <p className="text-xs text-sky-600">In Transit</p>
-                  <p className="mt-1 text-xl font-semibold text-sky-700">
+                <div className="rounded-xl bg-sky-50 dark:bg-sky-500/10 p-3 text-center">
+                  <p className="text-xs text-sky-600 dark:text-sky-400">In Transit</p>
+                  <p className="mt-1 text-xl font-semibold text-sky-700 dark:text-sky-300">
                     {deliveryBreakdown?.in_transit ?? 0}
                   </p>
                 </div>
-                <div className="rounded-xl bg-emerald-50 p-3 text-center">
-                  <p className="text-xs text-emerald-600">Delivered</p>
-                  <p className="mt-1 text-xl font-semibold text-emerald-700">
+                <div className="rounded-xl bg-emerald-50 dark:bg-emerald-500/10 p-3 text-center">
+                  <p className="text-xs text-emerald-600 dark:text-emerald-400">Delivered</p>
+                  <p className="mt-1 text-xl font-semibold text-emerald-700 dark:text-emerald-300">
                     {deliveryBreakdown?.delivered ?? 0}
                   </p>
                 </div>
-                <div className="rounded-xl bg-red-50 p-3 text-center">
-                  <p className="text-xs text-red-600">Delayed</p>
-                  <p className="mt-1 text-xl font-semibold text-red-700">
+                <div className="rounded-xl bg-red-50 dark:bg-red-500/10 p-3 text-center">
+                  <p className="text-xs text-red-600 dark:text-red-400">Delayed</p>
+                  <p className="mt-1 text-xl font-semibold text-red-700 dark:text-red-300">
                     {deliveryBreakdown?.delayed ?? 0}
                   </p>
                 </div>
-                <div className="rounded-xl bg-slate-50 p-3 text-center">
-                  <p className="text-xs text-slate-500">Returned</p>
+                <div className="rounded-xl bg-slate-50 dark:bg-white/5 p-3 text-center">
+                  <p className="text-xs text-muted-foreground">Returned</p>
                   <p className="mt-1 text-xl font-semibold">{deliveryBreakdown?.returned ?? 0}</p>
                 </div>
               </CardContent>
             </Card>
 
-            <Card className="rounded-2xl border-slate-200">
+            <Card className="rounded-2xl border-border">
               <CardHeader>
                 <CardTitle className="text-base">Cash Flow Monitoring</CardTitle>
                 <CardDescription>Arus kas masuk vs keluar periode ini</CardDescription>
               </CardHeader>
               <CardContent className="space-y-3">
-                <div className="flex items-center justify-between rounded-xl bg-emerald-50 p-3">
-                  <span className="text-sm text-emerald-700">Cash In</span>
-                  <span className="font-semibold text-emerald-700">
+                <div className="flex items-center justify-between rounded-xl bg-emerald-50 dark:bg-emerald-500/10 p-3">
+                  <span className="text-sm text-emerald-700 dark:text-emerald-300">Cash In</span>
+                  <span className="font-semibold text-emerald-700 dark:text-emerald-300">
                     {formatCurrency(data?.cashFlow?.cashIn ?? 0)}
                   </span>
                 </div>
-                <div className="flex items-center justify-between rounded-xl bg-red-50 p-3">
-                  <span className="text-sm text-red-700">Cash Out</span>
-                  <span className="font-semibold text-red-700">
+                <div className="flex items-center justify-between rounded-xl bg-red-50 dark:bg-red-500/10 p-3">
+                  <span className="text-sm text-red-700 dark:text-red-300">Cash Out</span>
+                  <span className="font-semibold text-red-700 dark:text-red-300">
                     {formatCurrency(data?.cashFlow?.cashOut ?? 0)}
                   </span>
                 </div>
-                <div className="flex items-center justify-between rounded-xl bg-slate-900 p-3 text-white">
+                <div className="flex items-center justify-between rounded-xl bg-slate-900 p-3 text-white dark:bg-white/10">
                   <span className="text-sm">Net Cash Flow</span>
                   <Badge className="border-white/20 bg-white/10 text-white">
                     {formatCurrency(data?.cashFlow?.net ?? 0)}

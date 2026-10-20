@@ -7,13 +7,6 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
   Table,
   TableBody,
   TableCell,
@@ -30,6 +23,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { ArrowRightLeft, CheckCircle2, FilePenLine, MoreHorizontal, Search } from "lucide-react";
 
+import { Combobox } from "@/components/ui/combobox";
 type Dictionary = Awaited<
   ReturnType<typeof getDictionary>
 >["financial_record_page_dic"];
@@ -147,21 +141,18 @@ export function FinancialRecordTableSection({
               className="h-11 rounded-xl border-slate-200 pl-9 dark:border-[#34363B] dark:bg-[#23252B]"
             />
           </div>
-          <Select value={categoryFilter} onValueChange={onCategoryFilterChange}>
-            <SelectTrigger className="h-11 cursor-pointer rounded-xl border-slate-200 dark:border-[#34363B] dark:bg-[#23252B]">
-              <SelectValue placeholder={dictionary?.toolbar?.all_category ?? "All categories"} />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all" className="cursor-pointer">
-                {dictionary?.toolbar?.all_category ?? "All categories"}
-              </SelectItem>
-              {categories.map((category) => (
-                <SelectItem key={category} value={category} className="cursor-pointer">
-                  {category}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <Combobox
+            options={[
+              { value: "all", label: dictionary?.toolbar?.all_category ?? "All categories" },
+              ...categories.map((category) => ({ value: category, label: category })),
+            ]}
+            value={categoryFilter}
+            onValueChange={onCategoryFilterChange}
+            placeholder={dictionary?.toolbar?.all_category ?? "All categories"}
+            searchPlaceholder="Cari kategori..."
+            className="h-11 rounded-xl border-slate-200 capitalize md:w-[200px] dark:border-[#34363B] dark:bg-[#23252B]"
+            contentClassName="capitalize"
+          />
           <Button variant="outline" className="h-11 rounded-xl" onClick={onClearFilters}>
             {dictionary?.button_reset ?? "Reset"}
           </Button>
@@ -289,15 +280,17 @@ export function FinancialRecordTableSection({
             {dictionary?.table?.showing_prefix ?? "Showing"} {rows.length} {dictionary?.table?.showing_middle ?? "of"} {totalRows} {dictionary?.table?.showing_suffix ?? "records"}
           </p>
           <div className="flex flex-wrap items-center gap-2">
-            <select
-              className="h-9 cursor-pointer rounded-md border bg-background px-2 text-sm"
+            <Combobox
+              options={[10, 20, 50, 100].map((size) => ({
+                value: String(size),
+                label: `${size} / ${dictionary?.table?.page_size_suffix ?? "page"}`,
+              }))}
               value={String(pageSize)}
-              onChange={(event) => onPageSizeChange(Number(event.target.value))}
-            >
-              {[10, 20, 50, 100].map((size) => (
-                  <option key={size} value={size}>{size} / {dictionary?.table?.page_size_suffix ?? "page"}</option>
-              ))}
-            </select>
+              onValueChange={(value) => onPageSizeChange(Number(value))}
+              searchable={false}
+              className="h-9 w-[140px]"
+              contentClassName="min-w-[140px]"
+            />
             <Button variant="outline" onClick={() => onPageChange(page - 1)} disabled={page <= 1}>
               {dictionary?.table?.prev ?? "Prev"}
             </Button>

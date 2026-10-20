@@ -2,6 +2,7 @@ import { BaseHttpService } from "./base.service";
 import {
   IReserveInvPayload,
   IScanInPayload,
+  IManualStockInPayload,
   InventoryStatus,
 } from "@/types/inventory";
 import { IAddOrUpdateInventoryItem } from "@/types/inventory-item";
@@ -9,6 +10,13 @@ import { IAddOrUpdateInventoryItem } from "@/types/inventory-item";
 export class InventoryService extends BaseHttpService {
   constructor() {
     super();
+  }
+
+  async getInventorySummary(locationId?: number) {
+    const response = await this.httpClient.get("/inv-items/summary", {
+      params: locationId ? { locationId } : {},
+    });
+    return response.data;
   }
 
   async getInvItems(queryParams: Record<string, unknown> = {}) {
@@ -40,6 +48,31 @@ export class InventoryService extends BaseHttpService {
     return response.data;
   }
 
+  async previewProductionJirigen(jirigenId: number | string) {
+    const response = await this.httpClient.get(
+      `/inv-items/production-jirigen/${jirigenId}/preview`,
+    );
+    return response.data;
+  }
+
+  async scanProductionJirigen(
+    jirigenId: number | string,
+    payload: { locationId: number; itemId?: number; expiryDate?: string },
+  ) {
+    const response = await this.httpClient.post(
+      `/inv-items/production-jirigen/${jirigenId}/scan`,
+      payload,
+    );
+    return response.data;
+  }
+
+  async getBarcodeInfo(barcode: string) {
+    const response = await this.httpClient.get(
+      `/inv-items/barcode-info/${encodeURIComponent(barcode)}`,
+    );
+    return response.data;
+  }
+
   async getInvJirigenByBarcode(barcode: string) {
     const response = await this.httpClient.get(`/inv-jirigen/barcode/${barcode}`);
     return response.data;
@@ -47,6 +80,11 @@ export class InventoryService extends BaseHttpService {
 
   async scanIn(payload: IScanInPayload) {
     const response = await this.httpClient.post("/inv-items/scan-in", payload);
+    return response.data;
+  }
+
+  async manualStockIn(payload: IManualStockInPayload) {
+    const response = await this.httpClient.post("/inv-items/manual-in", payload);
     return response.data;
   }
 

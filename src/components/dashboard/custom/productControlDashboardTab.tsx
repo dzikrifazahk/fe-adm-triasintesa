@@ -114,8 +114,8 @@ export default function ProductControlDashboardTab() {
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h2 className="text-lg font-semibold text-slate-900">Product Control</h2>
-          <p className="text-sm text-slate-500">
+          <h2 className="text-lg font-semibold text-foreground">Product Control</h2>
+          <p className="text-sm text-muted-foreground">
             Produksi, QC, Inventory & Tank — {data?.period?.from ?? dateFrom} s/d {data?.period?.to ?? dateTo}
           </p>
         </div>
@@ -140,61 +140,61 @@ export default function ProductControlDashboardTab() {
       ) : (
         <>
           <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-            <Card className="rounded-2xl border-slate-200">
+            <Card className="rounded-2xl border-border">
               <CardHeader className="pb-2">
-                <CardDescription className="flex items-center gap-2 text-slate-500">
+                <CardDescription className="flex items-center gap-2 text-muted-foreground">
                   <Factory className="size-4" /> Production Yield
                 </CardDescription>
                 <CardTitle className="text-2xl">
                   {data?.productionYield?.efficiency ?? 0}%
                 </CardTitle>
               </CardHeader>
-              <CardContent className="text-xs text-slate-500">
+              <CardContent className="text-xs text-muted-foreground">
                 {data?.productionYield?.actual ?? 0} / {data?.productionYield?.target ?? 0} jirigen
               </CardContent>
             </Card>
 
-            <Card className="rounded-2xl border-slate-200">
+            <Card className="rounded-2xl border-border">
               <CardHeader className="pb-2">
-                <CardDescription className="flex items-center gap-2 text-slate-500">
+                <CardDescription className="flex items-center gap-2 text-muted-foreground">
                   <Beaker className="size-4" /> QC Pass Rate
                 </CardDescription>
                 <CardTitle className="text-2xl">{data?.qc?.passRate ?? 0}%</CardTitle>
               </CardHeader>
-              <CardContent className="text-xs text-slate-500">
+              <CardContent className="text-xs text-muted-foreground">
                 {data?.qc?.breakdown?.approved ?? 0} lolos / {data?.qc?.breakdown?.rejected ?? 0} gagal uji
               </CardContent>
             </Card>
 
-            <Card className="rounded-2xl border-slate-200">
+            <Card className="rounded-2xl border-border">
               <CardHeader className="pb-2">
-                <CardDescription className="flex items-center gap-2 text-slate-500">
+                <CardDescription className="flex items-center gap-2 text-muted-foreground">
                   <AlertTriangle className="size-4" /> Low Stock Alert
                 </CardDescription>
                 <CardTitle className="text-2xl">{data?.inventory?.lowStockCount ?? 0}</CardTitle>
               </CardHeader>
-              <CardContent className="text-xs text-slate-500">
+              <CardContent className="text-xs text-muted-foreground">
                 Item di bawah batas minimum stock
               </CardContent>
             </Card>
 
-            <Card className="rounded-2xl border-slate-200">
+            <Card className="rounded-2xl border-border">
               <CardHeader className="pb-2">
-                <CardDescription className="flex items-center gap-2 text-slate-500">
+                <CardDescription className="flex items-center gap-2 text-muted-foreground">
                   <Droplets className="size-4" /> Tank Volume In/Out
                 </CardDescription>
                 <CardTitle className="text-2xl">
                   {(data?.tanks?.volumeIn ?? 0).toLocaleString("id-ID")} L
                 </CardTitle>
               </CardHeader>
-              <CardContent className="text-xs text-slate-500">
+              <CardContent className="text-xs text-muted-foreground">
                 Keluar: {(data?.tanks?.volumeOut ?? 0).toLocaleString("id-ID")} L
               </CardContent>
             </Card>
           </div>
 
           <div className="grid gap-4 xl:grid-cols-2">
-            <Card className="rounded-2xl border-slate-200">
+            <Card className="rounded-2xl border-border">
               <CardHeader>
                 <CardTitle className="text-base">Production Yield & Efficiency</CardTitle>
                 <CardDescription>Actual vs target produksi harian</CardDescription>
@@ -213,7 +213,7 @@ export default function ProductControlDashboardTab() {
               </CardContent>
             </Card>
 
-            <Card className="rounded-2xl border-slate-200">
+            <Card className="rounded-2xl border-border">
               <CardHeader>
                 <CardTitle className="text-base">QC Pass/Fail Rate</CardTitle>
                 <CardDescription>Hasil uji quality control periode ini</CardDescription>
@@ -233,7 +233,7 @@ export default function ProductControlDashboardTab() {
           </div>
 
           <div className="grid gap-4 xl:grid-cols-2">
-            <Card className="rounded-2xl border-slate-200">
+            <Card className="rounded-2xl border-border">
               <CardHeader>
                 <CardTitle className="text-base">Tank Utilization</CardTitle>
                 <CardDescription>Volume tangki saat ini vs kapasitas maksimal</CardDescription>
@@ -242,10 +242,10 @@ export default function ProductControlDashboardTab() {
                 {(data?.tanks?.utilization ?? []).map((tank) => (
                   <div key={tank.id} className="space-y-1.5">
                     <div className="flex items-center justify-between text-sm">
-                      <span className="font-medium text-slate-700">
+                      <span className="font-medium text-slate-700 dark:text-slate-200">
                         {tank.tankName} ({tank.tankCode})
                       </span>
-                      <span className="text-slate-500">
+                      <span className="text-muted-foreground">
                         {tank.currentVolume.toLocaleString("id-ID")} / {tank.totalCapacity.toLocaleString("id-ID")} L
                       </span>
                     </div>
@@ -253,12 +253,12 @@ export default function ProductControlDashboardTab() {
                   </div>
                 ))}
                 {!data?.tanks?.utilization?.length ? (
-                  <p className="text-sm text-slate-400">Belum ada data tank.</p>
+                  <p className="text-sm text-muted-foreground">Belum ada data tank.</p>
                 ) : null}
               </CardContent>
             </Card>
 
-            <Card className="rounded-2xl border-slate-200">
+            <Card className="rounded-2xl border-border">
               <CardHeader>
                 <CardTitle className="text-base">Low Stock Items</CardTitle>
                 <CardDescription>Item gudang di bawah batas minimum</CardDescription>
@@ -276,18 +276,18 @@ export default function ProductControlDashboardTab() {
                     {(data?.inventory?.lowStockItems ?? []).map((item) => (
                       <TableRow key={item.id}>
                         <TableCell>
-                          <p className="font-medium text-slate-800">{item.itemName}</p>
-                          <p className="text-xs text-slate-400">{item.itemCode}</p>
+                          <p className="font-medium text-foreground">{item.itemName}</p>
+                          <p className="text-xs text-muted-foreground">{item.itemCode}</p>
                         </TableCell>
                         <TableCell className="text-right">
                           <Badge variant="destructive">{item.stock}</Badge>
                         </TableCell>
-                        <TableCell className="text-right text-slate-500">{item.minStock}</TableCell>
+                        <TableCell className="text-right text-muted-foreground">{item.minStock}</TableCell>
                       </TableRow>
                     ))}
                     {!data?.inventory?.lowStockItems?.length ? (
                       <TableRow>
-                        <TableCell colSpan={3} className="text-center text-sm text-slate-400">
+                        <TableCell colSpan={3} className="text-center text-sm text-muted-foreground">
                           Semua stok aman.
                         </TableCell>
                       </TableRow>

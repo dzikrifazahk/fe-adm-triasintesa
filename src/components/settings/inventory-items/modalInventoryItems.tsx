@@ -13,6 +13,8 @@ import { openSwal } from "@/lib/swal";
 import { useLoading } from "@/context/loadingContext";
 import { inventoryService, productService } from "@/services";
 
+import { CurrencyInput } from "@/components/ui/currency-input";
+import { useFormText } from "@/hooks/use-form-text";
 type Props = {
   isOpen: boolean;
   title: string;
@@ -43,6 +45,7 @@ export function ModalUpsertInventoryItems({
   onCancel,
   isGetData,
 }: Props) {
+  const t = useFormText();
   const { isMobile } = useContext(MobileContext);
   const { setIsLoading } = useLoading();
 
@@ -333,46 +336,46 @@ export function ModalUpsertInventoryItems({
               </div>
 
               <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-                <InfoCard label="Item Code" value={detailData.itemCode} />
-                <InfoCard label="Item Name" value={detailData.itemName} />
-                <InfoCard label="UOM" value={detailData.uom || "-"} />
-                <InfoCard label="Category" value={detailData.category || "-"} />
-                <InfoCard label="Harga Satuan" value={formatCurrency(detailData.unitPrice)} />
-                <InfoCard label="Stock" value={detailData.stock ?? 0} />
-                <InfoCard label="Status" value={detailData.isActive ? "active" : "inactive"} />
+                <InfoCard label={t.item.code} value={detailData.itemCode} />
+                <InfoCard label={t.item.name} value={detailData.itemName} />
+                <InfoCard label={t.item.uom} value={detailData.uom || "-"} />
+                <InfoCard label={t.item.category} value={detailData.category || "-"} />
+                <InfoCard label={t.item.unitPrice} value={formatCurrency(detailData.unitPrice)} />
+                <InfoCard label={t.item.stock} value={detailData.stock ?? 0} />
+                <InfoCard label={t.common.status} value={detailData.isActive ? "active" : "inactive"} />
                 <InfoCard
-                  label="Public URL"
+                  label={t.item.publicUrl}
                   value={detailData.isPublicActive ? "Tampil di public URL" : "Tidak tampil"}
                 />
-                <InfoCard label="Slug" value={detailData.slug || "-"} />
-                <InfoCard label="Created At" value={formatDate(detailData.createdAt)} />
-                <InfoCard label="Updated At" value={formatDate(detailData.updatedAt)} />
+                <InfoCard label={t.item.slug} value={detailData.slug || "-"} />
+                <InfoCard label={t.common.createdAt} value={formatDate(detailData.createdAt)} />
+                <InfoCard label={t.common.updatedAt} value={formatDate(detailData.updatedAt)} />
               </div>
             </div>
           )}
 
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-            <Field label="Item Code" required>
+            <Field label={t.item.code} required>
               <Input
                 value={itemCode}
                 onChange={(e) => setItemCode(e.target.value)}
-                placeholder="Masukkan kode item"
+                placeholder={t.item.codePlaceholder}
                 disabled={isReadOnly}
                 required
               />
             </Field>
 
-            <Field label="Item Name" required>
+            <Field label={t.item.name} required>
               <Input
                 value={itemName}
                 onChange={(e) => handleItemNameChange(e.target.value)}
-                placeholder="Masukkan nama item"
+                placeholder={t.item.namePlaceholder}
                 disabled={isReadOnly}
                 required
               />
             </Field>
 
-            <Field label="UOM">
+            <Field label={t.item.uom}>
               <Input
                 value={uom}
                 onChange={(e) => setUom(e.target.value)}
@@ -381,7 +384,7 @@ export function ModalUpsertInventoryItems({
               />
             </Field>
 
-            <Field label="Category">
+            <Field label={t.item.category}>
               <Input
                 value={category}
                 onChange={(e) => setCategory(e.target.value)}
@@ -390,13 +393,11 @@ export function ModalUpsertInventoryItems({
               />
             </Field>
 
-            <Field label="Harga Satuan" required>
-              <Input
-                type="number"
-                min={0}
+            <Field label={t.item.unitPrice} required>
+              <CurrencyInput
                 value={unitPrice}
-                onChange={(e) => setUnitPrice(e.target.value)}
-                placeholder="35000"
+                onValueChange={setUnitPrice}
+                placeholder="Rp 35.000"
                 disabled={isReadOnly}
                 required
               />
@@ -429,7 +430,7 @@ export function ModalUpsertInventoryItems({
 
             {isPublicActive && (
               <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2">
-                <Field label="Slug" required>
+                <Field label={t.item.slug} required>
                   <Input
                     value={slug}
                     onChange={(e) => handleSlugChange(e.target.value)}
@@ -438,16 +439,16 @@ export function ModalUpsertInventoryItems({
                   />
                 </Field>
 
-                <Field label="Ringkasan (Excerpt)">
+                <Field label={t.item.excerpt}>
                   <Input
                     value={excerpt}
                     onChange={(e) => setExcerpt(e.target.value)}
-                    placeholder="Ringkasan singkat produk"
+                    placeholder={t.item.excerptPlaceholder}
                     disabled={isReadOnly}
                   />
                 </Field>
 
-                <Field label="Gambar Produk" className="md:col-span-2">
+                <Field label={t.item.image} className="md:col-span-2">
                   <Input
                     type="file"
                     accept=".jpeg,.jpg,.png,.webp"
@@ -463,7 +464,7 @@ export function ModalUpsertInventoryItems({
                   )}
                 </Field>
 
-                <Field label="Catalog PDF" className="md:col-span-2">
+                <Field label={t.item.catalog} className="md:col-span-2">
                   <Input
                     type="file"
                     accept=".pdf"
@@ -477,12 +478,12 @@ export function ModalUpsertInventoryItems({
                   ) : null}
                 </Field>
 
-                <Field label="Konten" className="md:col-span-2">
+                <Field label={t.item.content} className="md:col-span-2">
                   <Textarea
                     value={content}
                     onChange={(e) => setContent(e.target.value)}
                     rows={5}
-                    placeholder="Deskripsi lengkap produk untuk halaman public"
+                    placeholder={t.item.contentPlaceholder}
                     disabled={isReadOnly}
                   />
                 </Field>

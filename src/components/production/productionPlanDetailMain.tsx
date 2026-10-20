@@ -33,17 +33,14 @@ import {
 } from "../ui/dialog";
 import { Input } from "../ui/input";
 import { Label } from "../ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "../ui/select";
 import { Textarea } from "../ui/textarea";
 import { Loader2, Pencil, X } from "lucide-react";
 import { openSwal } from "@/lib/swal";
 
+import { Combobox } from "@/components/ui/combobox";
+import { ModalScanProductionJirigen } from "./modalScanProductionJirigen";
+import { JirigenModalState, ModalJirigenDetailEdit } from "./modalJirigenDetailEdit";
+import { useFormText } from "@/hooks/use-form-text";
 type Props = {
   dictionary: Awaited<ReturnType<typeof getDictionary>>["production_page_dic"];
   planId: string;
@@ -136,6 +133,7 @@ export default function ProductionPlanDetailMain({
   dictionary,
   planId,
 }: Props) {
+  const t = useFormText();
   const pathname = usePathname();
   const router = useRouter();
   const locale = pathname.split("/")[1] || "id";
@@ -178,6 +176,8 @@ export default function ProductionPlanDetailMain({
   const [jirigenFilters, setJirigenFilters] =
     useState<ProductionJirigenFilterPayload>({});
   const [selectedStatus, setSelectedStatus] = useState("");
+  const [scanningJirigenId, setScanningJirigenId] = useState<string | null>(null);
+  const [jirigenModal, setJirigenModal] = useState<JirigenModalState>(null);
   const [printingBarcodeId, setPrintingBarcodeId] = useState<string | null>(
     null,
   );
@@ -598,6 +598,11 @@ export default function ProductionPlanDetailMain({
     setIsJirigenOpen(true);
   };
 
+  // Scan Produksi = langsung masuk Stok Barang (lihat ModalScanProductionJirigen)
+  const handleScanJirigen = (jirigenId: string) => {
+    setScanningJirigenId(jirigenId);
+  };
+
   const handlePrintJirigenBarcode = async (jirigenId: string) => {
     try {
       setPrintingBarcodeId(jirigenId);
@@ -784,6 +789,14 @@ export default function ProductionPlanDetailMain({
               </div>
               <div className="rounded-xl border bg-white p-3 dark:border-[#34363B] dark:bg-[#26282D]">
                 <div className="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                  Produk
+                </div>
+                <div className="mt-1 text-sm font-semibold text-slate-900 dark:text-slate-100">
+                  {plan.item ? `${plan.item.itemName} (${plan.item.itemCode})` : "Belum diatur"}
+                </div>
+              </div>
+              <div className="rounded-xl border bg-white p-3 dark:border-[#34363B] dark:bg-[#26282D]">
+                <div className="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400">
                   Tank Volume
                 </div>
                 <div className="mt-3">
@@ -843,22 +856,17 @@ export default function ProductionPlanDetailMain({
                 </div>
                 {isEditingStatus ? (
                   <div className="mt-2">
-                    <Select
+                    <Combobox
+                      options={statusOptions.map((option) => ({
+                        value: option.value,
+                        label: option.label,
+                      }))}
                       value={selectedStatus}
                       onValueChange={setSelectedStatus}
+                      placeholder={detailDictionary.status}
+                      searchable={false}
                       disabled={updatingStatus}
-                    >
-                      <SelectTrigger className="w-full">
-                        <SelectValue placeholder={detailDictionary.status} />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {statusOptions.map((option) => (
-                          <SelectItem key={option.value} value={option.value}>
-                            {option.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    />
                   </div>
                 ) : (
                   <div className="mt-1 text-sm font-semibold text-slate-900 dark:text-slate-100">
@@ -898,6 +906,22 @@ export default function ProductionPlanDetailMain({
               renderEmpty={(text) => <SectionEmpty text={text} />}
             />
 
+            <ModalScanProductionJirigen
+              jirigenId={scanningJirigenId}
+              onClose={() => setScanningJirigenId(null)}
+              onSuccess={() => loadJirigens()}
+            />
+
+            <ModalJirigenDetailEdit
+              state={jirigenModal}
+              onClose={() => setJirigenModal(null)}
+              onChangeMode={(mode) =>
+                setJirigenModal((prev) => (prev ? { ...prev, mode } : prev))
+              }
+              onSaved={() => loadJirigens()}
+              formatDate={formatDate}
+            />
+
             <ProductionJirigenSection
               dictionary={detailDictionary}
               isOpen={isJirigenOpen}
@@ -910,6 +934,9 @@ export default function ProductionPlanDetailMain({
               onCreate={handleOpenJirigenModal}
               onPrintBarcode={handlePrintJirigenBarcode}
               printingBarcodeId={printingBarcodeId}
+              onScan={handleScanJirigen}
+              onDetail={(jirigen) => setJirigenModal({ mode: "detail", jirigen })}
+              onEdit={(jirigen) => setJirigenModal({ mode: "edit", jirigen })}
               onOpenFilter={() => setIsJirigenFilterModalOpen(true)}
               onRefresh={() => loadJirigens()}
               formatDate={formatDate}
@@ -950,7 +977,7 @@ export default function ProductionPlanDetailMain({
           <div className="space-y-3">
             <div className="space-y-2">
               <Label htmlFor="batchNumber">
-                {detailDictionary.batch_number}
+                {detailDictionary.batch_number} <span className="ml-0.5 text-red-500">*</span>
               </Label>
               <div className="flex gap-2">
                 <Input
@@ -979,7 +1006,7 @@ export default function ProductionPlanDetailMain({
             <div className="grid gap-3 sm:grid-cols-2">
               <div className="space-y-2">
                 <Label htmlFor="batchStartDate">
-                  {detailDictionary.batch_start_date}
+                  {detailDictionary.batch_start_date} <span className="ml-0.5 text-red-500">*</span>
                 </Label>
                 <Input
                   id="batchStartDate"
@@ -995,7 +1022,7 @@ export default function ProductionPlanDetailMain({
               </div>
               <div className="space-y-2">
                 <Label htmlFor="batchEndDate">
-                  {detailDictionary.batch_end_date}
+                  {detailDictionary.batch_end_date} <span className="ml-0.5 text-red-500">*</span>
                 </Label>
                 <Input
                   id="batchEndDate"
@@ -1013,7 +1040,7 @@ export default function ProductionPlanDetailMain({
             <div className="grid gap-3 sm:grid-cols-2">
               <div className="space-y-2">
                 <Label htmlFor="rawMaterialVolume">
-                  {detailDictionary.batch_raw_material_volume}
+                  {detailDictionary.batch_raw_material_volume} <span className="ml-0.5 text-red-500">*</span>
                 </Label>
                 <Input
                   id="rawMaterialVolume"
@@ -1030,7 +1057,7 @@ export default function ProductionPlanDetailMain({
               </div>
               <div className="space-y-2">
                 <Label htmlFor="targetQuantityJirigen">
-                  {detailDictionary.batch_target_quantity_jirigen}
+                  {detailDictionary.batch_target_quantity_jirigen} <span className="ml-0.5 text-red-500">*</span>
                 </Label>
                 <Input
                   id="targetQuantityJirigen"
@@ -1107,36 +1134,29 @@ export default function ProductionPlanDetailMain({
 
           <div className="space-y-3">
             <div className="space-y-2">
-              <Label htmlFor="batchId">{detailDictionary.jirigen_batch}</Label>
-              <Select
-                value={
-                  jirigenForm.batchId ? String(jirigenForm.batchId) : undefined
-                }
+              <Label htmlFor="batchId">{detailDictionary.jirigen_batch} <span className="ml-0.5 text-red-500">*</span></Label>
+              <Combobox
+                id="batchId"
+                options={eligibleBatches.map((batch) => ({
+                  value: String(batch.id),
+                  label: batch.batchNumber,
+                }))}
+                value={jirigenForm.batchId ? String(jirigenForm.batchId) : ""}
                 onValueChange={(value) =>
                   setJirigenForm((prev) => ({
                     ...prev,
                     batchId: Number(value),
                   }))
                 }
-              >
-                <SelectTrigger id="batchId" className="w-full">
-                  <SelectValue
-                    placeholder={detailDictionary.jirigen_batch_placeholder}
-                  />
-                </SelectTrigger>
-                <SelectContent>
-                  {eligibleBatches.map((batch) => (
-                    <SelectItem key={batch.id} value={String(batch.id)}>
-                      {batch.batchNumber}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                placeholder={detailDictionary.jirigen_batch_placeholder}
+                searchPlaceholder={t.common.searchBatch}
+                emptyText={t.common.batchNotFound}
+              />
             </div>
             <div className="grid gap-3 sm:grid-cols-2">
               <div className="space-y-2">
                 <Label htmlFor="jirigenNumber">
-                  {detailDictionary.jirigen_number}
+                  {detailDictionary.jirigen_number} <span className="ml-0.5 text-red-500">*</span>
                 </Label>
                 <Input
                   id="jirigenNumber"
@@ -1153,7 +1173,7 @@ export default function ProductionPlanDetailMain({
               </div>
               <div className="space-y-2">
                 <Label htmlFor="volumeLiter">
-                  {detailDictionary.jirigen_volume_liter}
+                  {detailDictionary.jirigen_volume_liter} <span className="ml-0.5 text-red-500">*</span>
                 </Label>
                 <Input
                   id="volumeLiter"
@@ -1171,7 +1191,7 @@ export default function ProductionPlanDetailMain({
             </div>
             <div className="space-y-2">
               <Label htmlFor="productionDatetime">
-                {detailDictionary.jirigen_production_datetime}
+                {detailDictionary.jirigen_production_datetime} <span className="ml-0.5 text-red-500">*</span>
               </Label>
               <Input
                 id="productionDatetime"

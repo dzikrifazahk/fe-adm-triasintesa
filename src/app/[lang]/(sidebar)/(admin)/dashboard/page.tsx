@@ -10,7 +10,7 @@ export default async function DashboardHome(props: {
 
   return (
     <>
-      <div className="h-screen border shadow w-full bg-white dark:bg-[#292A2D] flex flex-col relative rounded-lg">
+      <div className="h-full min-h-0 w-full flex flex-col relative md:rounded-lg md:border md:bg-white md:shadow md:dark:bg-[#292A2D]">
         <DashboardMainPage dictionary={dictionary.dashboard} />
       </div>
     </>

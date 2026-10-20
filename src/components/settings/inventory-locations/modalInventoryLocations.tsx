@@ -9,12 +9,14 @@ import {
 import { useContext, useEffect, useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { Combobox } from "@/components/ui/combobox";
 import { Button } from "@/components/ui/button";
 import { Pencil } from "lucide-react";
 import { openSwal } from "@/lib/swal";
 import { useLoading } from "@/context/loadingContext";
 import { codeGeneratorService, inventoryLocationsService } from "@/services";
 
+import { useFormText } from "@/hooks/use-form-text";
 type Props = {
   isOpen: boolean;
   title: string;
@@ -37,6 +39,7 @@ export function ModalUpsertInventoryLocations({
   onCancel,
   isGetData,
 }: Props) {
+  const t = useFormText();
   const { isMobile } = useContext(MobileContext);
   const { setIsLoading } = useLoading();
 
@@ -73,7 +76,17 @@ export function ModalUpsertInventoryLocations({
     event?.preventDefault();
 
     if (type === "detail" && !isDetailEditing) return;
-    if (!status) return;
+    if (!status) {
+      openSwal({
+        icon: "warning",
+        title: "Status lokasi wajib dipilih",
+        toast: true,
+        position: "top-right",
+        showConfirmButton: false,
+        timer: 2500,
+      });
+      return;
+    }
 
     const payload: IAddOrUpdateInventoryLocation = {
       locationCode,
@@ -194,23 +207,23 @@ export function ModalUpsertInventoryLocations({
               </div>
 
               <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-                <InfoCard label="Location Code" value={detailData.locationCode} />
-                <InfoCard label="Location Name" value={detailData.locationName} />
-                <InfoCard label="Status" value={detailData.status} />
-                <InfoCard label="Notes" value={detailData.notes || "-"} />
-                <InfoCard label="Created At" value={formatDate(detailData.createdAt)} />
-                <InfoCard label="Updated At" value={formatDate(detailData.updatedAt)} />
+                <InfoCard label={t.location.code} value={detailData.locationCode} />
+                <InfoCard label={t.location.name} value={detailData.locationName} />
+                <InfoCard label={t.common.status} value={detailData.status} />
+                <InfoCard label={t.common.notes} value={detailData.notes || "-"} />
+                <InfoCard label={t.common.createdAt} value={formatDate(detailData.createdAt)} />
+                <InfoCard label={t.common.updatedAt} value={formatDate(detailData.updatedAt)} />
               </div>
             </div>
           )}
 
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-            <Field label="Location Code" required>
+            <Field label={t.location.code} required>
               <div className="flex gap-2">
                 <Input
                   value={locationCode}
                   onChange={(e) => setLocationCode(e.target.value)}
-                  placeholder="Masukkan kode lokasi"
+                  placeholder={t.location.codePlaceholder}
                   disabled={isReadOnly}
                   required
                 />
@@ -227,40 +240,39 @@ export function ModalUpsertInventoryLocations({
               </div>
             </Field>
 
-            <Field label="Location Name" required>
+            <Field label={t.location.name} required>
               <Input
                 value={locationName}
                 onChange={(e) => setLocationName(e.target.value)}
-                placeholder="Masukkan nama lokasi"
+                placeholder={t.location.namePlaceholder}
                 disabled={isReadOnly}
                 required
               />
             </Field>
 
-            <Field label="Status" required className="md:col-span-2">
-              <select
+            <Field label={t.common.status} required className="md:col-span-2">
+              <Combobox
+                options={statusOptions.map((item) => ({
+                  value: item,
+                  label: item,
+                }))}
                 value={status}
-                onChange={(e) =>
-                  setStatus(e.target.value as "active" | "inactive" | "")
+                onValueChange={(value) =>
+                  setStatus(value as "active" | "inactive")
                 }
-                className="h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                placeholder={t.common.selectStatus}
+                searchPlaceholder={t.common.searchStatus}
                 disabled={isReadOnly}
-                required
-              >
-                <option value="">Pilih status</option>
-                {statusOptions.map((item) => (
-                  <option key={item} value={item}>
-                    {item}
-                  </option>
-                ))}
-              </select>
+                className="capitalize"
+                contentClassName="capitalize"
+              />
             </Field>
 
-            <Field label="Notes" className="md:col-span-2">
+            <Field label={t.common.notes} className="md:col-span-2">
               <Textarea
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
-                placeholder="Masukkan catatan"
+                placeholder={t.common.notesPlaceholder}
                 rows={4}
                 disabled={isReadOnly}
               />

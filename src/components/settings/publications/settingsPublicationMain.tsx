@@ -16,17 +16,10 @@ import { Card, CardContent } from "@/components/ui/card";
 import axios from "axios";
 import { IPublicationPost, IPublicationPostUpsert } from "@/types/publication-post";
 import { publicationCategoryService, publicationService } from "@/services";
-import {
-  Select,
-  SelectContent,
-  SelectGroup,
-  SelectItem,
-  SelectLabel,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { Combobox } from "@/components/ui/combobox";
 import { Switch } from "@/components/ui/switch";
 
+import { useFormText } from "@/hooks/use-form-text";
 const slugify = (value: string) =>
   value
     .toLowerCase()
@@ -65,6 +58,7 @@ export default function SettingsPublicationMain({
 }: {
   dictionary: Awaited<ReturnType<typeof getDictionary>>["settings_publication"];
 }) {
+  const t = useFormText();
   const { setIsLoading } = useLoading();
   const { isMobile } = useContext(MobileContext);
 
@@ -406,7 +400,7 @@ export default function SettingsPublicationMain({
         <div className="flex flex-col gap-4 p-5">
           <div>
             <span>
-              Judul <span className="text-red-500">*</span>
+              {t.publication.title} <span className="text-red-500">*</span>
             </span>
             <Input
               value={postTitle}
@@ -417,7 +411,7 @@ export default function SettingsPublicationMain({
 
           <div>
             <span>
-              Slug <span className="text-red-500">*</span>
+              {t.publication.slug} <span className="text-red-500">*</span>
             </span>
             <Input
               value={slug}
@@ -427,27 +421,21 @@ export default function SettingsPublicationMain({
           </div>
 
           <div>
-            <span>Kategori</span>
-            <Select value={categoryId} onValueChange={setCategoryId}>
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder="Pilih kategori" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectGroup>
-                  <SelectLabel>Kategori</SelectLabel>
-                  <SelectItem value={NO_CATEGORY}>Tanpa kategori</SelectItem>
-                  {categories.map((cat) => (
-                    <SelectItem key={cat.value} value={cat.value}>
-                      {cat.label}
-                    </SelectItem>
-                  ))}
-                </SelectGroup>
-              </SelectContent>
-            </Select>
+            <span>{t.publication.category}</span>
+            <Combobox
+              options={[
+                { value: NO_CATEGORY, label: "Tanpa kategori" },
+                ...categories,
+              ]}
+              value={categoryId}
+              onValueChange={setCategoryId}
+              placeholder={t.common.selectCategory}
+              searchPlaceholder={t.common.searchCategory}
+            />
           </div>
 
           <div>
-            <span>Excerpt</span>
+            <span>{t.publication.excerpt}</span>
             <Textarea
               value={excerpt}
               onChange={(e) => setExcerpt(e.target.value)}
@@ -455,7 +443,7 @@ export default function SettingsPublicationMain({
           </div>
 
           <div>
-            <span>Content</span>
+            <span>{t.publication.content}</span>
             <Textarea
               value={content}
               onChange={(e) => setContent(e.target.value)}
@@ -464,7 +452,7 @@ export default function SettingsPublicationMain({
           </div>
 
           <div className="flex flex-col gap-2">
-            <span>Featured Image</span>
+            <span>{t.publication.featuredImage}</span>
             <Input
               type="file"
               accept=".jpeg,.jpg,.png,.webp"
@@ -484,7 +472,7 @@ export default function SettingsPublicationMain({
           </div>
 
           <div>
-            <span>Published At</span>
+            <span>{t.publication.publishedAt}</span>
             <Input
               type="date"
               value={publishedAt}
@@ -494,7 +482,7 @@ export default function SettingsPublicationMain({
 
           <div className="flex items-center gap-3">
             <Switch checked={isActive} onCheckedChange={setIsActive} />
-            <span>Status Aktif</span>
+            <span>{t.publication.isActive}</span>
           </div>
         </div>
       </Modal>

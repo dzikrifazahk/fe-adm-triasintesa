@@ -20,7 +20,6 @@ import {
   DropdownMenuLabel,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import {
   Table,
@@ -30,12 +29,27 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Modal } from "@/components/custom/modal";
 import { ModalFilter } from "@/components/custom/modalFilter";
 import QcPagination from "@/components/qc/QcPagination";
-import { Edit3, Eye, Filter, MoreHorizontal, RefreshCw, RotateCcw, Trash2 } from "lucide-react";
+import {
+  CalendarDays,
+  Clock,
+  Edit3,
+  Eye,
+  FileText,
+  Filter,
+  Hash,
+  Layers,
+  MoreHorizontal,
+  RefreshCw,
+  RotateCcw,
+  Trash2,
+} from "lucide-react";
 import { FaArrowRotateLeft } from "react-icons/fa6";
 
+import { Combobox } from "@/components/ui/combobox";
+import { FormFieldCard, FormModal } from "@/components/custom/formModal";
+import { useFormText } from "@/hooks/use-form-text";
 type Dictionary = Awaited<
   ReturnType<typeof getDictionary>
 >["quality_control_page_dic"];
@@ -165,6 +179,7 @@ export default function QcInspectionList({
 }: {
   dictionary: Dictionary;
 }) {
+  const t = useFormText();
   const actionItemClassName =
     "cursor-pointer rounded-md border px-3 py-2 focus:bg-slate-50 dark:focus:bg-[#1F2023]";
 
@@ -592,7 +607,7 @@ export default function QcInspectionList({
 
             <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
               <Input
-                placeholder="QC Number"
+                placeholder={t.qc.qcNumber}
                 value={filters.qcNumber}
                 onChange={(e) =>
                   setFilters((prev) => ({ ...prev, qcNumber: e.target.value }))
@@ -603,19 +618,19 @@ export default function QcInspectionList({
                 variant="outline"
                 className="h-9 w-full justify-center gap-2 border-iprimary-blue text-iprimary-blue cursor-pointer hover:bg-iprimary-blue hover:text-white sm:w-9 sm:px-0"
                 onClick={openFilter}
-                aria-label="Filter"
+                aria-label={t.common.filter}
               >
                 <Filter className="h-4 w-4" />
-                <span className="sm:hidden">Filter</span>
+                <span className="sm:hidden">{t.common.filter}</span>
               </Button>
               <Button
                 variant="outline"
                 className="h-9 w-full justify-center gap-2 border-iprimary-blue text-iprimary-blue cursor-pointer hover:bg-iprimary-blue hover:text-white sm:w-9 sm:px-0"
                 onClick={handleRefresh}
-                aria-label="Refresh"
+                aria-label={t.common.refresh}
               >
                 <RefreshCw className="h-4 w-4" />
-                <span className="sm:hidden">Refresh</span>
+                <span className="sm:hidden">{t.common.refresh}</span>
               </Button>
               <Button
                 className="shrink-0 cursor-pointer bg-iprimary-blue text-white hover:bg-iprimary-blue-tertiary"
@@ -630,9 +645,9 @@ export default function QcInspectionList({
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>QC Number</TableHead>
-                  <TableHead>Batch</TableHead>
-                  <TableHead>Tanggal</TableHead>
+                  <TableHead>{t.qc.qcNumber}</TableHead>
+                  <TableHead>{t.common.batch}</TableHead>
+                  <TableHead>{t.common.date}</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Status Parameter</TableHead>
                   <TableHead className="text-right">Aksi</TableHead>
@@ -756,132 +771,132 @@ export default function QcInspectionList({
         </CardContent>
       </Card>
 
-      <Modal
+      <FormModal
         isOpen={isModalOpen}
         onClose={() => setModalOpen(false)}
-        title={modalType === "create" ? "Tambah QC" : "Ubah QC"}
-        width="w-[90vw] md:w-[56vw] xl:w-[48vw]"
         onSubmit={handleSubmit}
-        onCancel={() => setModalOpen(false)}
+        title={modalType === "create" ? "Tambah QC" : "Ubah QC"}
+        description="Lengkapi informasi QC sesuai dengan data yang tersedia."
+        icon={<FileText className="size-6" />}
+        width="w-[92vw] md:w-[720px]"
       >
-        <div className="flex flex-col gap-4 p-5">
-          <div className="grid gap-3 md:grid-cols-2">
-            <div>
-              <span className="text-sm font-medium">Batch</span>
-              <Select 
-                value={formState.batchId}
-                onValueChange={(value) =>
-                  setFormState((prev) => ({ ...prev, batchId: value }))
-                }
-                disabled={formLoading}
-              >
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Pilih batch" />
-                </SelectTrigger>
-                <SelectContent>
-                  {batches.map((batch) => (
-                    <SelectItem key={batch.id} value={String(batch.id)}>
-                      {batch.batchNumber}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+        <div className="grid gap-4 md:grid-cols-2">
+          <FormFieldCard icon={<Layers className="size-5" />} label={t.common.batch} required>
+            <Combobox
+              options={batches.map((batch) => ({
+                value: String(batch.id),
+                label: batch.batchNumber,
+              }))}
+              value={formState.batchId}
+              onValueChange={(value) =>
+                setFormState((prev) => ({ ...prev, batchId: value }))
+              }
+              placeholder={t.common.selectBatch}
+              searchPlaceholder={t.common.searchBatch}
+              emptyText={t.common.batchNotFound}
+              disabled={formLoading}
+              className="h-11 bg-background"
+            />
+          </FormFieldCard>
 
-            <div>
-              <span className="text-sm font-medium">Template</span>
-              <Select
-                value={formState.templateId}
-                onValueChange={(value) =>
-                  setFormState((prev) => ({ ...prev, templateId: value }))
-                }
-                disabled={formLoading}
-              >
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Pilih template" />
-                </SelectTrigger>
-                <SelectContent>
-                  {templates.map((template) => (
-                    <SelectItem key={template.id} value={String(template.id)}>
-                      {template.templateName}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="md:col-span-2">
-              <span className="mb-1 block text-xs font-medium">QC Number</span>
-              <div className="flex gap-2">
-                <Input
-                  className="h-8 text-sm"
-                  value={formState.qcNumber}
-                  onChange={(e) =>
-                    setFormState((prev) => ({
-                      ...prev,
-                      qcNumber: e.target.value,
-                    }))
-                  }
-                />
-                {modalType === "create" && (
-                  <Button
-                    type="button"
-                    variant="outline"
-                    className="h-8 px-3 text-xs"
-                    onClick={handleGenerateQcNumber}
-                    disabled={generatingQcNumber}
-                  >
-                    {generatingQcNumber ? "Generating..." : "Generate"}
-                  </Button>
-                )}
-              </div>
-            </div>
-            <div>
-              <span className="mb-1 block text-xs font-medium">Tanggal</span>
-              <Input
-                type="date"
-                className="h-8 text-sm"
-                value={formState.inspectionDate}
+          <FormFieldCard icon={<FileText className="size-5" />} label={t.qc.template} required>
+            <Combobox
+              options={templates.map((template) => ({
+                value: String(template.id),
+                label: template.templateName,
+              }))}
+              value={formState.templateId}
+              onValueChange={(value) =>
+                setFormState((prev) => ({ ...prev, templateId: value }))
+              }
+              placeholder={t.qc.selectTemplate}
+              searchPlaceholder={t.qc.searchTemplate}
+              emptyText={t.qc.templateNotFound}
+              disabled={formLoading}
+              className="h-11 bg-background"
+            />
+          </FormFieldCard>
+
+          <FormFieldCard
+            icon={<Hash className="size-5" />}
+            label={t.qc.qcNumber}
+            required
+            className="md:col-span-2"
+          >
+            <div className="flex h-11 overflow-hidden rounded-md border bg-background focus-within:ring-2 focus-within:ring-iprimary-blue/30 dark:border-white/10">
+              <input
+                className="min-w-0 flex-1 bg-transparent px-3 text-sm outline-none placeholder:text-muted-foreground"
+                placeholder={t.qc.qcNumberPlaceholder}
+                value={formState.qcNumber}
                 onChange={(e) =>
                   setFormState((prev) => ({
                     ...prev,
-                    inspectionDate: e.target.value,
+                    qcNumber: e.target.value,
                   }))
                 }
               />
+              {modalType === "create" && (
+                <button
+                  type="button"
+                  onClick={handleGenerateQcNumber}
+                  disabled={generatingQcNumber}
+                  className="flex items-center gap-2 border-l bg-blue-50 px-4 text-sm font-semibold text-iprimary-blue transition hover:bg-blue-100 disabled:opacity-60 dark:border-white/10 dark:bg-blue-500/15 dark:text-blue-300 dark:hover:bg-blue-500/25"
+                >
+                  <RefreshCw className={`size-4 ${generatingQcNumber ? "animate-spin" : ""}`} />
+                  {generatingQcNumber ? "Generating..." : "Generate"}
+                </button>
+              )}
             </div>
-            <div>
-              <span className="mb-1 block text-xs font-medium">Waktu</span>
-              <Input
-                type="time"
-                className="h-8 text-sm"
-                value={formState.inspectionTime}
-                onChange={(e) =>
-                  setFormState((prev) => ({
-                    ...prev,
-                    inspectionTime: e.target.value,
-                  }))
-                }
-              />
-            </div>
-            <div className="md:col-span-2">
-              <span className="mb-1 block text-xs font-medium">
-                Interpretation Notes
-              </span>
-              <Textarea
-                className="min-h-20 text-sm"
-                value={formState.interpretationNotes}
-                onChange={(e) =>
-                  setFormState((prev) => ({
-                    ...prev,
-                    interpretationNotes: e.target.value,
-                  }))
-                }
-                rows={2}
-              />
-            </div>
-          </div>
+          </FormFieldCard>
+
+          <FormFieldCard icon={<CalendarDays className="size-5" />} label={t.common.date} required>
+            <Input
+              type="date"
+              className="h-11 bg-background"
+              value={formState.inspectionDate}
+              onChange={(e) =>
+                setFormState((prev) => ({
+                  ...prev,
+                  inspectionDate: e.target.value,
+                }))
+              }
+            />
+          </FormFieldCard>
+
+          <FormFieldCard icon={<Clock className="size-5" />} label={t.common.time} required>
+            <Input
+              type="time"
+              className="h-11 bg-background"
+              value={formState.inspectionTime}
+              onChange={(e) =>
+                setFormState((prev) => ({
+                  ...prev,
+                  inspectionTime: e.target.value,
+                }))
+              }
+            />
+          </FormFieldCard>
+
+          <FormFieldCard
+            icon={<FileText className="size-5" />}
+            label={t.qc.interpretation}
+            className="md:col-span-2"
+          >
+            <Textarea
+              className="min-h-24 bg-background text-sm"
+              placeholder={t.qc.interpretationPlaceholder}
+              value={formState.interpretationNotes}
+              onChange={(e) =>
+                setFormState((prev) => ({
+                  ...prev,
+                  interpretationNotes: e.target.value,
+                }))
+              }
+              rows={3}
+            />
+          </FormFieldCard>
         </div>
-      </Modal>
+      </FormModal>
 
       <ModalFilter
         isOpen={isFilterOpen}
@@ -891,28 +906,29 @@ export default function QcInspectionList({
       >
         <div className="flex w-full flex-col gap-4 p-3">
           <div className="flex w-full flex-col gap-2">
-            <span className="font-bold">Batch ID</span>
+            <span className="font-bold">{t.common.batchIdPlaceholder}</span>
             <Input
-              placeholder="Batch ID"
+              placeholder={t.common.batchIdPlaceholder}
               value={pendingBatchId}
               onChange={(e) => setPendingBatchId(e.target.value)}
             />
           </div>
           <div className="flex w-full flex-col gap-2">
-            <span className="font-bold">Final Status</span>
-            <Select
-              value={pendingFinalStatus || undefined}
-              onValueChange={setPendingFinalStatus}
-            >
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder="Final Status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="pending">Pending</SelectItem>
-                <SelectItem value="approved">Approved</SelectItem>
-                <SelectItem value="rejected">Rejected</SelectItem>
-              </SelectContent>
-            </Select>
+            <span className="font-bold">{t.qc.finalStatus}</span>
+            <Combobox
+              options={[
+                { value: "__all__", label: t.common.allStatus },
+                { value: "pending", label: "Pending" },
+                { value: "approved", label: "Approved" },
+                { value: "rejected", label: "Rejected" },
+              ]}
+              value={pendingFinalStatus || "__all__"}
+              onValueChange={(value) =>
+                setPendingFinalStatus(value === "__all__" ? "" : value)
+              }
+              placeholder={t.qc.finalStatus}
+              searchable={false}
+            />
           </div>
         </div>
         <div className="sticky bottom-0 mt-10 flex flex-col gap-2 rounded-b-lg p-5 sm:flex-row sm:justify-end">

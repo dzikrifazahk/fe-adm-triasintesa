@@ -274,6 +274,7 @@ export default function SettingsUsersMain({
           try {
             setIsLoading(true);
 
+            await userService.updateUser(id, payload);
 
             if (form.avatarFile) {
               await uploadUserImage(id, form.avatarFile);

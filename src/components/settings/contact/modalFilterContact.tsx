@@ -1,12 +1,5 @@
 import { DateRangeCustom } from "@/components/custom/dateRangeCustom";
-import {
-  Select,
-  SelectContent,
-  SelectGroup,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { Combobox } from "@/components/ui/combobox";
 import { useEffect, useState } from "react";
 import { DateRange } from "react-day-picker";
 import { format } from "date-fns";
@@ -96,25 +89,15 @@ export const ModalFilterContact = ({
           </div>
           <div className="w-full flex flex-col gap-2">
             <span className="font-bold">{dictionary.column.contact_type}</span>
-            <Select
-              value={selectedContactType || "default"}
-              onValueChange={(value) => {
-                if (value !== "default") setSelectedContactType(value);
-              }}
-            >
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder={dictionary.select_contact_type_placeholder} />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectGroup>
-                  <SelectItem className="font-bold" value="default" disabled>
-                    {dictionary.select_contact_type_placeholder}
-                  </SelectItem>
-                  <SelectItem value="1">Vendor</SelectItem>
-                  <SelectItem value="2">Client</SelectItem>
-                </SelectGroup>
-              </SelectContent>
-            </Select>
+            <Combobox
+              options={[
+                { value: "1", label: "Vendor" },
+                { value: "2", label: "Client" },
+              ]}
+              value={selectedContactType}
+              onValueChange={setSelectedContactType}
+              placeholder={dictionary.select_contact_type_placeholder}
+            />
           </div>
         </div>
         <div className="mt-4 p-5 flex justify-end gap-2 rounded-b-lg sticky bottom-0">

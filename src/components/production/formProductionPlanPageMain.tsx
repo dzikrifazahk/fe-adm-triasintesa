@@ -1,6 +1,7 @@
 "use client";
 
-import { productionPlanService, tanksService } from "@/services";
+import { inventoryService, productionPlanService, tanksService } from "@/services";
+import { IInventoryItemMaster } from "@/types/inventory";
 import {
   IAddOrUpdateProductionPlan,
   IProductionPlan,
@@ -11,19 +12,14 @@ import { useEffect, useMemo, useState } from "react";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
 import { Label } from "../ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "../ui/select";
 import { Textarea } from "../ui/textarea";
 import { Beaker, CalendarRange, Droplets, Package2 } from "lucide-react";
 import { openSwal } from "@/lib/swal";
 import { useRouter } from "next/navigation";
 import { useLoading } from "@/context/loadingContext";
+import { Combobox } from "@/components/ui/combobox";
 
+import { useFormText } from "@/hooks/use-form-text";
 type Props = {
   dictionary: Awaited<ReturnType<typeof getDictionary>>["production_page_dic"];
   lang: string;
@@ -34,6 +30,7 @@ const initialForm: IAddOrUpdateProductionPlan = {
   startDate: "",
   endDate: "",
   tankId: 0,
+  itemId: null,
   targetBatches: 0,
   targetJirigenTotal: 0,
   notes: "",
@@ -54,6 +51,7 @@ export default function FormProductionPlanMain({
   lang,
   planId,
 }: Props) {
+  const t = useFormText();
   const { setIsLoading } = useLoading();
   const productionPlanDictionary = dictionary.production_plan;
   const formDictionary = productionPlanDictionary.form;
@@ -78,6 +76,7 @@ export default function FormProductionPlanMain({
   const router = useRouter();
   const [form, setForm] = useState<IAddOrUpdateProductionPlan>(initialForm);
   const [tanks, setTanks] = useState<ITank[]>([]);
+  const [items, setItems] = useState<IInventoryItemMaster[]>([]);
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
@@ -107,14 +106,19 @@ export default function FormProductionPlanMain({
       try {
         setLoading(true);
 
-        const [{ data: tankResponse }, planResponse] = await Promise.all([
+        const [{ data: tankResponse }, planResponse, itemResponse] = await Promise.all([
           tanksService.getTanks({ limit: 100 }),
           planId
             ? productionPlanService.getProductionPlan(planId)
             : Promise.resolve(null),
+          inventoryService
+            .getInventoryItems({ page: 1, limit: 200, isActive: true })
+            .catch(() => null),
         ]);
 
         setTanks(tankResponse.data ?? []);
+        const itemPayload = itemResponse?.data ?? itemResponse;
+        setItems(Array.isArray(itemPayload?.data) ? itemPayload.data : []);
         
         if (planResponse?.data) {
           const plan: IProductionPlan = planResponse.data;
@@ -122,6 +126,7 @@ export default function FormProductionPlanMain({
             startDate: plan.startDate?.slice(0, 10) ?? "",
             endDate: plan.endDate?.slice(0, 10) ?? "",
             tankId: Number(plan.tankId) || 0,
+            itemId: plan.itemId ? Number(plan.itemId) : null,
             targetBatches: Number(plan.targetBatches) || 0,
             targetJirigenTotal: Number(plan.targetJirigenTotal) || 0,
             notes: plan.notes ?? "",
@@ -174,6 +179,7 @@ export default function FormProductionPlanMain({
       startDate: form.startDate,
       endDate: form.endDate,
       tankId: Number(form.tankId),
+      itemId: form.itemId ? Number(form.itemId) : null,
       targetBatches: Number(form.targetBatches),
       targetJirigenTotal: Number(form.targetJirigenTotal),
       notes: form.notes,
@@ -294,7 +300,7 @@ export default function FormProductionPlanMain({
             <div className="grid gap-4 md:grid-cols-2">
               <div className="space-y-2">
                 <Label htmlFor="startDate">
-                  {formDictionary.field_start_date}
+                  {formDictionary.field_start_date} <span className="ml-0.5 text-red-500">*</span>
                 </Label>
                 <Input
                   id="startDate"
@@ -308,7 +314,7 @@ export default function FormProductionPlanMain({
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="endDate">{formDictionary.field_end_date}</Label>
+                <Label htmlFor="endDate">{formDictionary.field_end_date} <span className="ml-0.5 text-red-500">*</span></Label>
                 <Input
                   id="endDate"
                   type="date"
@@ -322,31 +328,46 @@ export default function FormProductionPlanMain({
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="tankId">{formDictionary.field_tank}</Label>
-              <Select
-                value={form.tankId ? String(form.tankId) : undefined}
+              <Label htmlFor="tankId">{formDictionary.field_tank} <span className="ml-0.5 text-red-500">*</span></Label>
+              <Combobox
+                id="tankId"
+                options={tanks.map((tank) => ({
+                  value: String(tank.id),
+                  label: `${tank.tankName} (${tank.tankCode})`,
+                }))}
+                value={form.tankId ? String(form.tankId) : ""}
                 onValueChange={(value) => handleChange("tankId", Number(value))}
+                placeholder={formDictionary.field_tank_placeholder}
+                searchPlaceholder={t.tank.searchTank}
+                emptyText={t.tank.tankNotFound}
                 disabled={loading || submitting}
-              >
-                <SelectTrigger id="tankId" className="w-full">
-                  <SelectValue
-                    placeholder={formDictionary.field_tank_placeholder}
-                  />
-                </SelectTrigger>
-                <SelectContent>
-                  {tanks.map((tank) => (
-                    <SelectItem key={tank.id} value={String(tank.id)}>
-                      {tank.tankName} ({tank.tankCode})
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="itemId">{t.production.producedProduct}</Label>
+              <Combobox
+                id="itemId"
+                options={items.map((item) => ({
+                  value: String(item.id),
+                  label: `${item.itemName} (${item.itemCode})`,
+                }))}
+                value={form.itemId ? String(form.itemId) : ""}
+                onValueChange={(value) => handleChange("itemId", Number(value))}
+                placeholder={t.production.selectProducedProduct}
+                searchPlaceholder={t.common.searchProduct}
+                emptyText={t.common.productNotFound}
+                disabled={loading || submitting}
+              />
+              <p className="text-xs text-muted-foreground">
+                Dipakai untuk mengisi Master Item otomatis saat jirigen hasil produksi di-scan ke Stok Barang.
+              </p>
             </div>
 
             <div className="grid gap-4 md:grid-cols-2">
               <div className="space-y-2">
                 <Label htmlFor="targetBatches">
-                  {formDictionary.field_target_batches}
+                  {formDictionary.field_target_batches} <span className="ml-0.5 text-red-500">*</span>
                 </Label>
                 <Input
                   id="targetBatches"
@@ -363,7 +384,7 @@ export default function FormProductionPlanMain({
 
               <div className="space-y-2">
                 <Label htmlFor="targetJirigenTotal">
-                  {formDictionary.field_target_jirigen_total}
+                  {formDictionary.field_target_jirigen_total} <span className="ml-0.5 text-red-500">*</span>
                 </Label>
                 <Input
                   id="targetJirigenTotal"
@@ -385,24 +406,18 @@ export default function FormProductionPlanMain({
             {planId && (
               <div className="space-y-2">
                 <Label htmlFor="status">{formDictionary.field_status}</Label>
-                <Select
+                <Combobox
+                  id="status"
+                  options={statusOptions.map((status) => ({
+                    value: status.value,
+                    label: status.label,
+                  }))}
                   value={form.status ?? "planned"}
                   onValueChange={(value) => handleChange("status", value)}
+                  placeholder={formDictionary.field_status_placeholder}
+                  searchable={false}
                   disabled={loading || submitting}
-                >
-                  <SelectTrigger id="status" className="w-full">
-                    <SelectValue
-                      placeholder={formDictionary.field_status_placeholder}
-                    />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {statusOptions.map((status) => (
-                      <SelectItem key={status.value} value={status.value}>
-                        {status.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                />
               </div>
             )}
 

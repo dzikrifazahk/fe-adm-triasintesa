@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { useLoading } from "@/context/loadingContext";
 import { getDictionary } from "../../../get-dictionary";
 import clsx from "clsx";
+import { ClipboardCheck, FileBadge, LayoutTemplate } from "lucide-react";
 
 interface Props {
   dictionary: Awaited<ReturnType<typeof getDictionary>>["quality_control_page_dic"];
@@ -12,9 +13,17 @@ interface Props {
 }
 
 const menuItems = [
-  { label: "QC Inspections", to: "/dashboard/qc/inspections" },
-  { label: "QC Templates", to: "/dashboard/qc/templates" },
-  { label: "COA Certificates", to: "/dashboard/qc/coa-certificates" },
+  {
+    label: "QC Inspections",
+    to: "/dashboard/qc/inspections",
+    icon: ClipboardCheck,
+  },
+  { label: "QC Templates", to: "/dashboard/qc/templates", icon: LayoutTemplate },
+  {
+    label: "COA Certificates",
+    to: "/dashboard/qc/coa-certificates",
+    icon: FileBadge,
+  },
 ];
 
 export function QcMenuBar({ dictionary, children }: Props) {
@@ -29,41 +38,51 @@ export function QcMenuBar({ dictionary, children }: Props) {
   };
 
   return (
-    <div className="flex h-full min-h-0 w-full flex-col gap-4 md:flex-row">
-      <aside className="w-full shrink-0 rounded-lg border bg-white p-4 dark:bg-card md:w-64">
-        <div className="mb-4">
-          <p className="text-xs uppercase tracking-wide text-muted-foreground">
-            {dictionary?.title ?? "Quality Control"}
-          </p>
-          <p className="text-sm text-slate-600 dark:text-slate-300">
-            {dictionary?.description ??
-              "Kelola QC inspection dan COA certificate."}
-          </p>
-        </div>
-
-        <div className="flex flex-row gap-2 overflow-x-auto md:flex-col md:overflow-visible">
-          {menuItems.map((item) => {
-            const active = isActive(item.to);
-            return (
-              <Link
-                key={item.to}
-                href={buildFull(item.to)}
-                onClick={() => setIsLoading(true)}
+    <div
+      data-page={dictionary?.title ?? "Quality Control"}
+      className="flex h-full min-h-0 w-full flex-col overflow-hidden rounded-lg border bg-white dark:bg-card"
+    >
+      <nav className="flex shrink-0 overflow-x-auto border-b">
+        {menuItems.map((item, idx) => {
+          const active = isActive(item.to);
+          const Icon = item.icon;
+          return (
+            <Link
+              key={item.to}
+              href={buildFull(item.to)}
+              onClick={(e) => {
+                if (active) {
+                  e.preventDefault();
+                  return;
+                }
+                setIsLoading(true);
+              }}
+              className={clsx(
+                "relative flex min-w-[180px] flex-1 items-center justify-center gap-3 px-4 py-3 text-sm font-medium transition-colors md:text-base",
+                idx > 0 &&
+                  "before:absolute before:left-0 before:top-1/2 before:h-8 before:w-px before:-translate-y-1/2 before:bg-border",
+                active
+                  ? "text-iprimary-blue after:absolute after:inset-x-0 after:bottom-0 after:h-0.5 after:bg-iprimary-blue"
+                  : "text-muted-foreground hover:text-foreground"
+              )}
+            >
+              <span
                 className={clsx(
-                  "rounded-lg px-3 py-2 text-sm transition",
+                  "flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border transition-colors",
                   active
-                    ? "bg-iprimary-blue text-white"
-                    : "text-iprimary-blue hover:bg-iprimary-blue hover:text-white"
+                    ? "border-iprimary-blue bg-iprimary-blue text-white"
+                    : "border-border bg-transparent"
                 )}
               >
-                {item.label}
-              </Link>
-            );
-          })}
-        </div>
-      </aside>
+                <Icon className="h-4 w-4" />
+              </span>
+              <span className="whitespace-nowrap">{item.label}</span>
+            </Link>
+          );
+        })}
+      </nav>
 
-      <main className="min-h-0 min-w-0 flex-1 overflow-auto rounded-lg border bg-white p-6 dark:bg-card">
+      <main className="min-h-0 min-w-0 flex-1 overflow-auto p-3 md:p-6">
         {children}
       </main>
     </div>

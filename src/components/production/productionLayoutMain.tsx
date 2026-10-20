@@ -275,7 +275,7 @@ export default function ProductionLayoutMain({
       : "w-full xl:w-[360px] 2xl:w-[400px]";
 
   return (
-    <div className="bg-card dark:bg-[#1F2023] flex h-full min-h-0 w-full min-w-0 rounded-lg border dark:border-[#34363B] p-2 shadow">
+    <div className="flex h-full min-h-0 w-full min-w-0 md:rounded-lg md:border md:bg-card md:p-2 md:shadow md:dark:border-[#34363B] md:dark:bg-[#1F2023]">
       <div className="h-full min-h-0 w-full">
         <div className={layoutWrapper}>
           <div

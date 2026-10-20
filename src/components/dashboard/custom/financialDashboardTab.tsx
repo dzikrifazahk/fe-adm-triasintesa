@@ -104,8 +104,8 @@ export default function FinancialDashboardTab() {
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h2 className="text-lg font-semibold text-slate-900">Financial Records</h2>
-          <p className="text-sm text-slate-500">
+          <h2 className="text-lg font-semibold text-foreground">Financial Records</h2>
+          <p className="text-sm text-muted-foreground">
             Belanja perusahaan — {data?.period?.from ?? dateFrom} s/d {data?.period?.to ?? dateTo}
           </p>
         </div>
@@ -130,78 +130,78 @@ export default function FinancialDashboardTab() {
       ) : (
         <>
           <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-            <Card className="rounded-2xl border-slate-200">
+            <Card className="rounded-2xl border-border">
               <CardHeader className="pb-2">
-                <CardDescription className="flex items-center gap-2 text-slate-500">
+                <CardDescription className="flex items-center gap-2 text-muted-foreground">
                   <FileClock className="size-4" /> Total Records
                 </CardDescription>
                 <CardTitle className="text-2xl">{totalRecords}</CardTitle>
               </CardHeader>
-              <CardContent className="text-xs text-slate-500">
+              <CardContent className="text-xs text-muted-foreground">
                 Submission {stages?.submission ?? 0} · Payment Req {stages?.payment_request ?? 0} · Paid {stages?.paid ?? 0}
               </CardContent>
             </Card>
 
-            <Card className="rounded-2xl border-slate-200">
+            <Card className="rounded-2xl border-border">
               <CardHeader className="pb-2">
-                <CardDescription className="flex items-center gap-2 text-slate-500">
+                <CardDescription className="flex items-center gap-2 text-muted-foreground">
                   <CircleDollarSign className="size-4" /> Belum Terbayar
                 </CardDescription>
                 <CardTitle className="text-xl">{formatCurrency(data?.unpaidAmount ?? 0)}</CardTitle>
               </CardHeader>
-              <CardContent className="text-xs text-slate-500">
+              <CardContent className="text-xs text-muted-foreground">
                 Gabungan stage submission & payment request
               </CardContent>
             </Card>
 
-            <Card className="rounded-2xl border-slate-200">
+            <Card className="rounded-2xl border-border">
               <CardHeader className="pb-2">
-                <CardDescription className="flex items-center gap-2 text-slate-500">
+                <CardDescription className="flex items-center gap-2 text-muted-foreground">
                   <CheckCircle2 className="size-4" /> Sudah Terbayar
                 </CardDescription>
                 <CardTitle className="text-xl">{formatCurrency(data?.paidAmount ?? 0)}</CardTitle>
               </CardHeader>
-              <CardContent className="text-xs text-slate-500">Stage paid</CardContent>
+              <CardContent className="text-xs text-muted-foreground">Stage paid</CardContent>
             </Card>
 
-            <Card className="rounded-2xl border-slate-200">
+            <Card className="rounded-2xl border-border">
               <CardHeader className="pb-2">
-                <CardDescription className="flex items-center gap-2 text-slate-500">
+                <CardDescription className="flex items-center gap-2 text-muted-foreground">
                   <AlertOctagon className="size-4" /> Telat Pembayaran
                 </CardDescription>
-                <CardTitle className="text-xl text-red-600">
+                <CardTitle className="text-xl text-red-600 dark:text-red-400">
                   {formatCurrency(data?.overdueAmount ?? 0)}
                 </CardTitle>
               </CardHeader>
-              <CardContent className="text-xs text-slate-500">
+              <CardContent className="text-xs text-muted-foreground">
                 Belum stage paid & sudah lewat due date
               </CardContent>
             </Card>
           </div>
 
           <div className="grid gap-4 xl:grid-cols-[0.9fr_1.1fr]">
-            <Card className="rounded-2xl border-slate-200">
+            <Card className="rounded-2xl border-border">
               <CardHeader>
                 <CardTitle className="text-base">Records per Stage</CardTitle>
                 <CardDescription>Submission → Payment Request → Paid</CardDescription>
               </CardHeader>
               <CardContent className="space-y-3">
-                <div className="flex items-center justify-between rounded-xl bg-amber-50 p-3">
-                  <span className="text-sm text-amber-700">Submission</span>
-                  <span className="font-semibold text-amber-700">{stages?.submission ?? 0}</span>
+                <div className="flex items-center justify-between rounded-xl bg-amber-50 dark:bg-amber-500/10 p-3">
+                  <span className="text-sm text-amber-700 dark:text-amber-300">Submission</span>
+                  <span className="font-semibold text-amber-700 dark:text-amber-300">{stages?.submission ?? 0}</span>
                 </div>
-                <div className="flex items-center justify-between rounded-xl bg-sky-50 p-3">
-                  <span className="text-sm text-sky-700">Payment Request</span>
-                  <span className="font-semibold text-sky-700">{stages?.payment_request ?? 0}</span>
+                <div className="flex items-center justify-between rounded-xl bg-sky-50 dark:bg-sky-500/10 p-3">
+                  <span className="text-sm text-sky-700 dark:text-sky-300">Payment Request</span>
+                  <span className="font-semibold text-sky-700 dark:text-sky-300">{stages?.payment_request ?? 0}</span>
                 </div>
-                <div className="flex items-center justify-between rounded-xl bg-emerald-50 p-3">
-                  <span className="text-sm text-emerald-700">Paid</span>
-                  <span className="font-semibold text-emerald-700">{stages?.paid ?? 0}</span>
+                <div className="flex items-center justify-between rounded-xl bg-emerald-50 dark:bg-emerald-500/10 p-3">
+                  <span className="text-sm text-emerald-700 dark:text-emerald-300">Paid</span>
+                  <span className="font-semibold text-emerald-700 dark:text-emerald-300">{stages?.paid ?? 0}</span>
                 </div>
               </CardContent>
             </Card>
 
-            <Card className="rounded-2xl border-slate-200">
+            <Card className="rounded-2xl border-border">
               <CardHeader>
                 <CardTitle className="text-base">Nominal per Kategori</CardTitle>
                 <CardDescription>Belanja terbesar berdasarkan kategori</CardDescription>

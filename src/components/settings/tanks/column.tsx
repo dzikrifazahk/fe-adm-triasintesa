@@ -38,6 +38,19 @@ const getTankTypeLabel = (value?: string | null) => {
   }
 };
 
+const getStatusBadgeClass = (value?: string | null) => {
+  switch (value) {
+    case "available":
+      return "bg-green-100 text-green-700 border-green-200";
+    case "in_use":
+      return "bg-blue-100 text-blue-700 border-blue-200";
+    case "maintenance":
+      return "bg-yellow-100 text-yellow-700 border-yellow-200";
+    default:
+      return "bg-slate-100 text-slate-700 border-slate-200";
+  }
+};
+
 export const columns = (props: childProps): ColumnDef<ITank>[] => [
   {
     id: "select",
@@ -148,6 +161,19 @@ export const columns = (props: childProps): ColumnDef<ITank>[] => [
           {props.dictionary.column.status}
           <ArrowUpDown className="ml-2 h-4 w-4" />
         </Button>
+      );
+    },
+    cell: ({ row }) => {
+      const status = row.original.status;
+      if (!status) return "-";
+      return (
+        <span
+          className={`inline-block whitespace-nowrap rounded-md border px-3 py-1 text-xs font-medium capitalize ${getStatusBadgeClass(
+            status,
+          )}`}
+        >
+          {status.replaceAll("_", " ")}
+        </span>
       );
     },
   },

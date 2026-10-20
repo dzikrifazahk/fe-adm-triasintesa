@@ -26,6 +26,7 @@ import { Modal } from "@/components/custom/modal";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 
+import { useFormText } from "@/hooks/use-form-text";
 type Dictionary = Awaited<
   ReturnType<typeof getDictionary>
 >["quality_control_page_dic"];
@@ -162,6 +163,7 @@ export default function QcInspectionDetail({
   inspectionId: string;
   dictionary: Dictionary;
 }) {
+  const t = useFormText();
   const { setIsLoading } = useLoading();
   const pathname = usePathname();
   const router = useRouter();
@@ -526,7 +528,7 @@ export default function QcInspectionDetail({
         <div className="mb-4 rounded-lg border border-slate-100 bg-slate-50 p-3 dark:border-slate-700 dark:bg-slate-800">
           <div className="mb-1 flex items-center justify-between">
             <p className="text-[11px] font-medium uppercase tracking-wide text-slate-400">
-              Interpretasi
+              Interpretasi <span className="ml-0.5 text-red-500">*</span>
             </p>
             {canEditResults && interpretationDirty ? (
               <span className="text-[11px] font-medium text-amber-600 dark:text-amber-400">
@@ -536,7 +538,7 @@ export default function QcInspectionDetail({
           </div>
           <Textarea
             value={interpretationNotes}
-            placeholder="Tulis interpretasi hasil QC..."
+            placeholder={t.qc.interpretationResultPlaceholder}
             rows={3}
             className="border-slate-200 text-sm focus-visible:ring-1 focus-visible:ring-slate-400 dark:border-slate-600"
             disabled={!canEditResults}
@@ -559,7 +561,7 @@ export default function QcInspectionDetail({
                   Spesifikasi
                 </TableHead>
                 <TableHead className="w-[24%] py-3 text-xs font-semibold uppercase tracking-wide text-slate-500">
-                  Hasil
+                  Hasil <span className="ml-0.5 text-red-500">*</span>
                 </TableHead>
                 <TableHead className="w-[24%] py-3 text-xs font-semibold uppercase tracking-wide text-slate-500">
                   Catatan
@@ -585,7 +587,7 @@ export default function QcInspectionDetail({
                     <TableCell className="py-2.5">
                       <Input
                         value={row.result}
-                        placeholder="Isi hasil..."
+                        placeholder={t.qc.resultPlaceholder}
                         className="h-8 border-slate-200 bg-white text-sm focus-visible:ring-1 focus-visible:ring-slate-400 dark:border-slate-600 dark:bg-slate-800"
                         disabled={!canEditResults}
                         onChange={(e) =>
@@ -596,7 +598,7 @@ export default function QcInspectionDetail({
                     <TableCell className="py-2.5">
                       <Input
                         value={row.notes ?? ""}
-                        placeholder="Catatan..."
+                        placeholder={t.qc.resultNotesPlaceholder}
                         className="h-8 border-slate-200 bg-white text-sm focus-visible:ring-1 focus-visible:ring-slate-400 dark:border-slate-600 dark:bg-slate-800"
                         disabled={!canEditResults}
                         onChange={(e) =>
@@ -631,7 +633,6 @@ export default function QcInspectionDetail({
                 size="sm"
                 className="h-8 bg-slate-900 px-4 text-xs font-medium text-white hover:bg-slate-700 dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-slate-300"
                 onClick={handleApprovePjtQc}
-                disabled={!allParametersFilled || !interpretationFilled || interpretationDirty}
               >
                 Approve PJT QC
               </Button>
@@ -750,22 +751,22 @@ export default function QcInspectionDetail({
         <div className="flex flex-col gap-4 p-5">
           <div className="flex flex-col gap-1.5">
             <label className="text-sm font-medium text-slate-700 dark:text-slate-200">
-              Reason <span className="text-rose-500">*</span>
+              {t.qc.reason} <span className="ml-0.5 text-red-500">*</span>
             </label>
             <Input
               value={rejectReason}
-              placeholder="Masukkan alasan penolakan..."
+              placeholder={t.qc.reasonPlaceholder}
               className="border-slate-200 text-sm focus-visible:ring-1 focus-visible:ring-slate-400 dark:border-slate-600"
               onChange={(e) => setRejectReason(e.target.value)}
             />
           </div>
           <div className="flex flex-col gap-1.5">
             <label className="text-sm font-medium text-slate-700 dark:text-slate-200">
-              Notes
+              {t.common.notes}
             </label>
             <Textarea
               value={rejectNotes}
-              placeholder="Catatan tambahan (opsional)..."
+              placeholder={t.qc.rejectNotesPlaceholder}
               rows={3}
               className="border-slate-200 text-sm focus-visible:ring-1 focus-visible:ring-slate-400 dark:border-slate-600"
               onChange={(e) => setRejectNotes(e.target.value)}

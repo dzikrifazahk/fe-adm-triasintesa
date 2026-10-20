@@ -18,11 +18,13 @@ import { IRole } from "@/types/role";
 import { ModalSetRolePermission } from "./modalSetRolePermission";
 import { roleService } from "@/services";
 
+import { useFormText } from "@/hooks/use-form-text";
 export default function SettingsRolesMain({
   dictionary,
 }: {
   dictionary: Awaited<ReturnType<typeof getDictionary>>["settings_roles"];
 }) {
+  const t = useFormText();
   const { setIsLoading } = useLoading();
   const { isMobile } = useContext(MobileContext);
 
@@ -266,7 +268,7 @@ export default function SettingsRolesMain({
           {/* NAME */}
           <div>
             <span>
-              Role Code <span className="text-red-500">*</span>
+              {t.role.code} <span className="text-red-500">*</span>
             </span>
             <Input
               value={name}
@@ -278,7 +280,7 @@ export default function SettingsRolesMain({
           {/* DISPLAY NAME */}
           <div>
             <span>
-              Display Name <span className="text-red-500">*</span>
+              {t.role.displayName} <span className="text-red-500">*</span>
             </span>
             <Input
               value={displayName}
@@ -288,7 +290,7 @@ export default function SettingsRolesMain({
 
           {/* DESCRIPTION */}
           <div>
-            <span>Description</span>
+            <span>{t.role.description}</span>
             <Input
               value={description}
               onChange={(e) => setDescription(e.target.value)}
