@@ -2,7 +2,7 @@ import { Locale } from "../../../../../../../i18n-config";
 import { redirect } from "next/navigation";
 
 type Props = {
-  params: Promise<{ lang: Locale }>;
+  params: Promise<{ lang: string }>;
 };
 
 export default async function QCPage({ params }: Props) {

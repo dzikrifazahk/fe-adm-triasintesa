@@ -3,7 +3,7 @@ import { getDictionary } from "../../../../../../../get-dictionary";
 import { Locale } from "../../../../../../../i18n-config";
 
 export default async function Notifications(props: {
-  params: Promise<{ lang: Locale }>;
+  params: Promise<{ lang: string }>;
 }) {
   const { lang } = await props.params;
 

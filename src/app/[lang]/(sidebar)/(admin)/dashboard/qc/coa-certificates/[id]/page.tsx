@@ -3,7 +3,7 @@ import { getDictionary } from "../../../../../../../../../get-dictionary";
 import QcCoaDetail from "@/components/qc/coa/QcCoaDetail";
 
 type Props = {
-  params: Promise<{ lang: Locale; id: string }>;
+  params: Promise<{ lang: string; id: string }>;
 };
 
 export default async function QcCoaCertificateDetailPage({ params }: Props) {

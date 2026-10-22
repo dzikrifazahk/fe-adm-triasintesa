@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 import type { Locale } from "../../../i18n-config";
 
 export default async function LocaleRootPage(props: {
-  params: Promise<{ lang: Locale }>;
+  params: Promise<{ lang: string }>;
 }) {
   const { lang } = await props.params;
   const cookieStore = await cookies();

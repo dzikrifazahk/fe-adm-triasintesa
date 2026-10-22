@@ -3,7 +3,7 @@ import { getDictionary } from "../../../../../../../get-dictionary";
 import SalesOrderMain from "@/components/sales-order/salesOrderMain";
 
 type Props = {
-  params: Promise<{ lang: Locale }>;
+  params: Promise<{ lang: string }>;
 };
 
 export default async function SalesOrderPage({ params }: Props) {

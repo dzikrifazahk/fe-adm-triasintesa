@@ -3,7 +3,7 @@ import { getDictionary } from "../../../../../../../get-dictionary";
 import ShippingMain from "@/components/shipping/shippingMain";
 
 type Props = {
-  params: Promise<{ lang: Locale }>;
+  params: Promise<{ lang: string }>;
 };
 
 export default async function ShippingPage({ params }: Props) {

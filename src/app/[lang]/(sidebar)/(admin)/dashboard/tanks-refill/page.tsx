@@ -3,7 +3,7 @@ import { getDictionary } from "../../../../../../../get-dictionary";
 import TanksRefillMain from "@/components/tanks-refill/tankRefillMain";
 
 type Props = {
-  params: Promise<{ lang: Locale }>;
+  params: Promise<{ lang: string }>;
 };
 
 export default async function TankRefillPage({ params }: Props) {

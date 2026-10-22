@@ -3,7 +3,7 @@ import { getDictionary } from "../../../../../../../get-dictionary";
 import ReportMain from "@/components/report/reportMain";
 
 type Props = {
-  params: Promise<{ lang: Locale }>;
+  params: Promise<{ lang: string }>;
 };
 
 export default async function ReportPage({ params }: Props) {

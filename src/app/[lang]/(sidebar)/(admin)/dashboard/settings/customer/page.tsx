@@ -3,7 +3,7 @@ import { Locale } from "../../../../../../../../i18n-config";
 import CustomerMain from "@/components/customer/customerMain";
 
 type Props = {
-  params: Promise<{ lang: Locale }>;
+  params: Promise<{ lang: string }>;
 };
 
 export default async function SettingsCustomerPage({ params }: Props) {

@@ -3,7 +3,7 @@ import { Locale } from "../../../../../../../../i18n-config";
 import SettingsInventoryItemsMain from "@/components/settings/inventory-items/settingsInventoryItemsMain";
 
 type Props = {
-  params: Promise<{ lang: Locale }>;
+  params: Promise<{ lang: string }>;
 };
 
 export default async function InventoryItemsPage({ params }: Props) {

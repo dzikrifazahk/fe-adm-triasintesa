@@ -3,7 +3,7 @@ import { getDictionary } from "../../../../../../../get-dictionary";
 import FinancialRecordMain from "@/components/financial-record/financialRecordMain";
 
 type Props = {
-  params: Promise<{ lang: Locale }>;
+  params: Promise<{ lang: string }>;
 };
 
 export default async function FinancialRecordPage({ params }: Props) {

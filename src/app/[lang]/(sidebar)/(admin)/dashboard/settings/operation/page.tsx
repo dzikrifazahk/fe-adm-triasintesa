@@ -3,7 +3,7 @@ import { Locale } from "../../../../../../../../i18n-config";
 import SettingsOperationMain from "@/components/settings/operation/settingsOperationMain";
 
 type Props = {
-  params: Promise<{ lang: Locale }>;
+  params: Promise<{ lang: string }>;
 };
 
 export default async function Divisions({ params }: Props) {

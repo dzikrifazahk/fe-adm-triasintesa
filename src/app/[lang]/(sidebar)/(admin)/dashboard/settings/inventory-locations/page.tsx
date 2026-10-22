@@ -3,7 +3,7 @@ import { Locale } from "../../../../../../../../i18n-config";
 import InventoryLocationsMain from "@/components/settings/inventory-locations/settingsTanksMain";
 
 type Props = {
-  params: Promise<{ lang: Locale }>;
+  params: Promise<{ lang: string }>;
 };
 
 export default async function InventoryLocationsPage({ params }: Props) {

@@ -3,7 +3,7 @@ import { getDictionary } from "../../../../../../../get-dictionary";
 import ProductionMain from "@/components/production/productionMain";
 
 type Props = {
-  params: Promise<{ lang: Locale }>;
+  params: Promise<{ lang: string }>;
 };
 
 export default async function ProductionPage({ params }: Props) {

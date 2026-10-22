@@ -3,7 +3,7 @@ import { getDictionary } from "../../../../../../../../get-dictionary";
 import QcTemplatesMain from "@/components/qc/templates/QcTemplatesMain";
 
 type Props = {
-  params: Promise<{ lang: Locale }>;
+  params: Promise<{ lang: string }>;
 };
 
 export default async function QcTemplatesPage({ params }: Props) {

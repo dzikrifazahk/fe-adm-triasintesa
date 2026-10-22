@@ -3,7 +3,7 @@ import { getDictionary } from "../../../../../../get-dictionary";
 import DashboardMainPage from "@/components/dashboard/dashboardMainPage";
 
 export default async function DashboardHome(props: {
-  params: Promise<{ lang: Locale }>;
+  params: Promise<{ lang: string }>;
 }) {
   const { lang } = await props.params;
   const dictionary = await getDictionary(lang);

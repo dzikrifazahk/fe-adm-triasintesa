@@ -3,7 +3,7 @@ import { getDictionary } from "../../../../../../../get-dictionary";
 import InventoryMain from "@/components/inventory/inventoryMain";
 
 type Props = {
-  params: Promise<{ lang: Locale }>;
+  params: Promise<{ lang: string }>;
 };
 
 export default async function InventoryPage({ params }: Props) {

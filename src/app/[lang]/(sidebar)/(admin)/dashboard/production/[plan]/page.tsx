@@ -3,7 +3,7 @@ import { getDictionary } from "../../../../../../../../get-dictionary";
 import { Locale } from "../../../../../../../../i18n-config";
 
 type Props = {
-  params: Promise<{ lang: Locale; plan: string }>;
+  params: Promise<{ lang: string; plan: string }>;
 };
 
 export default async function ProductionPlanDetailPage({ params }: Props) {

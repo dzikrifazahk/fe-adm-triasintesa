@@ -3,7 +3,7 @@ import { getDictionary } from "../../../../../../../../../get-dictionary";
 import QcInspectionDetail from "@/components/qc/inspections/QcInspectionDetail";
 
 type Props = {
-  params: Promise<{ lang: Locale; id: string }>;
+  params: Promise<{ lang: string; id: string }>;
 };
 
 export default async function QcInspectionDetailPage({ params }: Props) {
